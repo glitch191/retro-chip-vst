@@ -70,3 +70,7 @@ Desktop.ini
 
 # Generated reports (regenerable)
 build-reports/
+
+# Local build logs
+*.log
+
