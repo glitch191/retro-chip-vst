@@ -1,0 +1,788 @@
+{
+  "meta": {
+    "chip": "nes",
+    "source": "ENGINE_SPECS.md (hand-transcribed; regenerate with chiptool dump-params once the engines exist)"
+  },
+  "params": [
+    {
+      "default": 0,
+      "group": "Global",
+      "id": 0,
+      "isInteger": true,
+      "key": "clock",
+      "labels": [
+        "NTSC",
+        "PAL"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Clock",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "Global",
+      "id": 1,
+      "isInteger": true,
+      "key": "console_filter",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Console Filter",
+      "unit": ""
+    },
+    {
+      "default": 2,
+      "group": "Pulse 1",
+      "id": 2,
+      "isInteger": true,
+      "key": "p1_duty",
+      "labels": [
+        "12.5 %",
+        "25 %",
+        "50 %",
+        "75 %"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "Pulse 1 Duty",
+      "unit": ""
+    },
+    {
+      "default": 12,
+      "group": "Pulse 1",
+      "id": 3,
+      "isInteger": true,
+      "key": "p1_volume",
+      "max": 15,
+      "min": 0,
+      "name": "Pulse 1 Volume",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 4,
+      "isInteger": true,
+      "key": "p1_env_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 1 Envelope",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 5,
+      "isInteger": true,
+      "key": "p1_env_loop",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 1 Envelope Loop",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 6,
+      "isInteger": true,
+      "key": "p1_sweep_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 1 Sweep",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 7,
+      "isInteger": true,
+      "key": "p1_sweep_period",
+      "max": 7,
+      "min": 0,
+      "name": "Pulse 1 Sweep Period",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 8,
+      "isInteger": true,
+      "key": "p1_sweep_negate",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 1 Sweep Negate",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 9,
+      "isInteger": true,
+      "key": "p1_sweep_shift",
+      "max": 7,
+      "min": 0,
+      "name": "Pulse 1 Sweep Shift",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 10,
+      "isInteger": true,
+      "key": "p1_vibrato_rate",
+      "max": 15,
+      "min": 0,
+      "name": "Pulse 1 Vibrato Rate",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 11,
+      "isInteger": true,
+      "key": "p1_vibrato_depth",
+      "max": 31,
+      "min": 0,
+      "name": "Pulse 1 Vibrato Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 12,
+      "isInteger": true,
+      "key": "p1_vibrato_delay",
+      "max": 60,
+      "min": 0,
+      "name": "Pulse 1 Vibrato Delay",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 13,
+      "isInteger": true,
+      "key": "p1_sw_attack",
+      "max": 30,
+      "min": 0,
+      "name": "Pulse 1 Attack",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 14,
+      "isInteger": true,
+      "key": "p1_sw_decay",
+      "max": 60,
+      "min": 0,
+      "name": "Pulse 1 Decay",
+      "unit": "frames"
+    },
+    {
+      "default": 15,
+      "group": "Pulse 1",
+      "id": 15,
+      "isInteger": true,
+      "key": "p1_sw_sustain",
+      "max": 15,
+      "min": 0,
+      "name": "Pulse 1 Sustain",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 16,
+      "isInteger": true,
+      "key": "p1_sw_release",
+      "max": 60,
+      "min": 0,
+      "name": "Pulse 1 Release",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 17,
+      "isInteger": true,
+      "key": "p1_pitch_env_depth",
+      "max": 64,
+      "min": -64,
+      "name": "Pulse 1 Pitch Env Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 18,
+      "isInteger": true,
+      "key": "p1_pitch_env_speed",
+      "max": 30,
+      "min": 0,
+      "name": "Pulse 1 Pitch Env Speed",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 1",
+      "id": 19,
+      "isInteger": true,
+      "key": "p1_transpose",
+      "max": 24,
+      "min": -24,
+      "name": "Pulse 1 Transpose",
+      "unit": "st"
+    },
+    {
+      "default": 2,
+      "group": "Pulse 2",
+      "id": 20,
+      "isInteger": true,
+      "key": "p2_duty",
+      "labels": [
+        "12.5 %",
+        "25 %",
+        "50 %",
+        "75 %"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "Pulse 2 Duty",
+      "unit": ""
+    },
+    {
+      "default": 12,
+      "group": "Pulse 2",
+      "id": 21,
+      "isInteger": true,
+      "key": "p2_volume",
+      "max": 15,
+      "min": 0,
+      "name": "Pulse 2 Volume",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 22,
+      "isInteger": true,
+      "key": "p2_env_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 2 Envelope",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 23,
+      "isInteger": true,
+      "key": "p2_env_loop",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 2 Envelope Loop",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 24,
+      "isInteger": true,
+      "key": "p2_sweep_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 2 Sweep",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 25,
+      "isInteger": true,
+      "key": "p2_sweep_period",
+      "max": 7,
+      "min": 0,
+      "name": "Pulse 2 Sweep Period",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 26,
+      "isInteger": true,
+      "key": "p2_sweep_negate",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pulse 2 Sweep Negate",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 27,
+      "isInteger": true,
+      "key": "p2_sweep_shift",
+      "max": 7,
+      "min": 0,
+      "name": "Pulse 2 Sweep Shift",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 28,
+      "isInteger": true,
+      "key": "p2_vibrato_rate",
+      "max": 15,
+      "min": 0,
+      "name": "Pulse 2 Vibrato Rate",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 29,
+      "isInteger": true,
+      "key": "p2_vibrato_depth",
+      "max": 31,
+      "min": 0,
+      "name": "Pulse 2 Vibrato Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 30,
+      "isInteger": true,
+      "key": "p2_vibrato_delay",
+      "max": 60,
+      "min": 0,
+      "name": "Pulse 2 Vibrato Delay",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 31,
+      "isInteger": true,
+      "key": "p2_sw_attack",
+      "max": 30,
+      "min": 0,
+      "name": "Pulse 2 Attack",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 32,
+      "isInteger": true,
+      "key": "p2_sw_decay",
+      "max": 60,
+      "min": 0,
+      "name": "Pulse 2 Decay",
+      "unit": "frames"
+    },
+    {
+      "default": 15,
+      "group": "Pulse 2",
+      "id": 33,
+      "isInteger": true,
+      "key": "p2_sw_sustain",
+      "max": 15,
+      "min": 0,
+      "name": "Pulse 2 Sustain",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 34,
+      "isInteger": true,
+      "key": "p2_sw_release",
+      "max": 60,
+      "min": 0,
+      "name": "Pulse 2 Release",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 35,
+      "isInteger": true,
+      "key": "p2_pitch_env_depth",
+      "max": 64,
+      "min": -64,
+      "name": "Pulse 2 Pitch Env Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 36,
+      "isInteger": true,
+      "key": "p2_pitch_env_speed",
+      "max": 30,
+      "min": 0,
+      "name": "Pulse 2 Pitch Env Speed",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Pulse 2",
+      "id": 37,
+      "isInteger": true,
+      "key": "p2_transpose",
+      "max": 24,
+      "min": -24,
+      "name": "Pulse 2 Transpose",
+      "unit": "st"
+    },
+    {
+      "default": 127,
+      "group": "Triangle",
+      "id": 38,
+      "isInteger": true,
+      "key": "tri_linear_length",
+      "max": 127,
+      "min": 0,
+      "name": "Triangle Linear Length",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 39,
+      "isInteger": true,
+      "key": "tri_gate_frames",
+      "max": 30,
+      "min": 0,
+      "name": "Triangle Gate",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 40,
+      "isInteger": true,
+      "key": "tri_attack_frames",
+      "max": 8,
+      "min": 0,
+      "name": "Triangle Attack",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 41,
+      "isInteger": true,
+      "key": "tri_vibrato_rate",
+      "max": 15,
+      "min": 0,
+      "name": "Triangle Vibrato Rate",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 42,
+      "isInteger": true,
+      "key": "tri_vibrato_depth",
+      "max": 31,
+      "min": 0,
+      "name": "Triangle Vibrato Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 43,
+      "isInteger": true,
+      "key": "tri_vibrato_delay",
+      "max": 60,
+      "min": 0,
+      "name": "Triangle Vibrato Delay",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 44,
+      "isInteger": true,
+      "key": "tri_pitch_env_depth",
+      "max": 64,
+      "min": -64,
+      "name": "Triangle Pitch Env Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 45,
+      "isInteger": true,
+      "key": "tri_pitch_env_speed",
+      "max": 30,
+      "min": 0,
+      "name": "Triangle Pitch Env Speed",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Triangle",
+      "id": 46,
+      "isInteger": true,
+      "key": "tri_transpose",
+      "max": 24,
+      "min": -24,
+      "name": "Triangle Transpose",
+      "unit": "st"
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 47,
+      "isInteger": true,
+      "key": "nz_mode",
+      "labels": [
+        "Long",
+        "Short"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Noise Mode",
+      "unit": ""
+    },
+    {
+      "default": 12,
+      "group": "Noise",
+      "id": 48,
+      "isInteger": true,
+      "key": "nz_volume",
+      "max": 15,
+      "min": 0,
+      "name": "Noise Volume",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 49,
+      "isInteger": true,
+      "key": "nz_env_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Noise Envelope",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 50,
+      "isInteger": true,
+      "key": "nz_env_loop",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Noise Envelope Loop",
+      "unit": ""
+    },
+    {
+      "default": 8,
+      "group": "Noise",
+      "id": 51,
+      "isInteger": true,
+      "key": "nz_period",
+      "max": 15,
+      "min": 0,
+      "name": "Noise Period",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 52,
+      "isInteger": true,
+      "key": "nz_keyed",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Noise Keyed",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 53,
+      "isInteger": true,
+      "key": "nz_sw_attack",
+      "max": 30,
+      "min": 0,
+      "name": "Noise Attack",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 54,
+      "isInteger": true,
+      "key": "nz_sw_decay",
+      "max": 60,
+      "min": 0,
+      "name": "Noise Decay",
+      "unit": "frames"
+    },
+    {
+      "default": 15,
+      "group": "Noise",
+      "id": 55,
+      "isInteger": true,
+      "key": "nz_sw_sustain",
+      "max": 15,
+      "min": 0,
+      "name": "Noise Sustain",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 56,
+      "isInteger": true,
+      "key": "nz_sw_release",
+      "max": 60,
+      "min": 0,
+      "name": "Noise Release",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 57,
+      "isInteger": true,
+      "key": "nz_pitch_env_depth",
+      "max": 15,
+      "min": -15,
+      "name": "Noise Pitch Env Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Noise",
+      "id": 58,
+      "isInteger": true,
+      "key": "nz_pitch_env_speed",
+      "max": 30,
+      "min": 0,
+      "name": "Noise Pitch Env Speed",
+      "unit": "frames"
+    },
+    {
+      "default": 15,
+      "group": "DMC",
+      "id": 59,
+      "isInteger": true,
+      "key": "dmc_rate",
+      "max": 15,
+      "min": 0,
+      "name": "DMC Rate",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "DMC",
+      "id": 60,
+      "isInteger": true,
+      "key": "dmc_sample",
+      "max": 15,
+      "min": 0,
+      "name": "DMC Sample",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "DMC",
+      "id": 61,
+      "isInteger": true,
+      "key": "dmc_loop",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "DMC Loop",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "DMC",
+      "id": 62,
+      "isInteger": true,
+      "key": "dmc_keyed",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "DMC Keyed",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "DMC",
+      "id": 63,
+      "isInteger": true,
+      "key": "dmc_direct_level",
+      "max": 127,
+      "min": 0,
+      "name": "DMC Direct Level",
+      "unit": ""
+    }
+  ]
+}

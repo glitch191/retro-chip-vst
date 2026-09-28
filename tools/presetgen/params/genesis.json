@@ -1,0 +1,1108 @@
+{
+  "meta": {
+    "chip": "genesis",
+    "source": "ENGINE_SPECS.md (hand-transcribed; regenerate with chiptool dump-params once the engines exist)"
+  },
+  "params": [
+    {
+      "default": 0,
+      "group": "Global",
+      "id": 0,
+      "isInteger": true,
+      "key": "clock",
+      "labels": [
+        "NTSC",
+        "PAL"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Clock",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Global",
+      "id": 1,
+      "isInteger": true,
+      "key": "chip_revision",
+      "labels": [
+        "YM2612 (discrete)",
+        "YM3438 (ASIC)"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Chip Revision",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "Global",
+      "id": 2,
+      "isInteger": true,
+      "key": "model1_lowpass",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Model 1 Low-pass",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Global",
+      "id": 3,
+      "isInteger": true,
+      "key": "lfo_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "LFO",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Global",
+      "id": 4,
+      "isInteger": true,
+      "key": "lfo_freq",
+      "labels": [
+        "3.98 Hz",
+        "5.56 Hz",
+        "6.02 Hz",
+        "6.37 Hz",
+        "6.88 Hz",
+        "9.63 Hz",
+        "48.1 Hz",
+        "72.2 Hz"
+      ],
+      "max": 7,
+      "min": 0,
+      "name": "LFO Frequency",
+      "unit": ""
+    },
+    {
+      "default": 4,
+      "group": "FM",
+      "id": 5,
+      "isInteger": true,
+      "key": "algorithm",
+      "max": 7,
+      "min": 0,
+      "name": "Algorithm",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 6,
+      "isInteger": true,
+      "key": "feedback",
+      "max": 7,
+      "min": 0,
+      "name": "Feedback",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 7,
+      "isInteger": true,
+      "key": "ams",
+      "labels": [
+        "0 dB",
+        "1.4 dB",
+        "5.9 dB",
+        "11.8 dB"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "AMS",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 8,
+      "isInteger": true,
+      "key": "fms",
+      "labels": [
+        "0",
+        "3.4 cents",
+        "6.7 cents",
+        "10 cents",
+        "14 cents",
+        "20 cents",
+        "40 cents",
+        "80 cents"
+      ],
+      "max": 7,
+      "min": 0,
+      "name": "FMS",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 9,
+      "isInteger": true,
+      "key": "transpose",
+      "max": 24,
+      "min": -24,
+      "name": "Transpose",
+      "unit": "st"
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 10,
+      "isInteger": true,
+      "key": "fine_tune",
+      "max": 100,
+      "min": -100,
+      "name": "Fine Tune",
+      "unit": "cents"
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 11,
+      "isInteger": true,
+      "key": "vibrato_rate",
+      "max": 15,
+      "min": 0,
+      "name": "Vibrato Rate",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 12,
+      "isInteger": true,
+      "key": "vibrato_depth",
+      "max": 64,
+      "min": 0,
+      "name": "Vibrato Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 13,
+      "isInteger": true,
+      "key": "vibrato_delay",
+      "max": 60,
+      "min": 0,
+      "name": "Vibrato Delay",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "FM",
+      "id": 14,
+      "isInteger": true,
+      "key": "unison_detune",
+      "max": 15,
+      "min": 0,
+      "name": "Unison Detune",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "FM",
+      "id": 15,
+      "isInteger": true,
+      "key": "fm1_pan",
+      "labels": [
+        "L",
+        "C",
+        "R"
+      ],
+      "max": 2,
+      "min": 0,
+      "name": "FM 1 Pan",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "FM",
+      "id": 16,
+      "isInteger": true,
+      "key": "fm2_pan",
+      "labels": [
+        "L",
+        "C",
+        "R"
+      ],
+      "max": 2,
+      "min": 0,
+      "name": "FM 2 Pan",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "FM",
+      "id": 17,
+      "isInteger": true,
+      "key": "fm3_pan",
+      "labels": [
+        "L",
+        "C",
+        "R"
+      ],
+      "max": 2,
+      "min": 0,
+      "name": "FM 3 Pan",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "FM",
+      "id": 18,
+      "isInteger": true,
+      "key": "fm4_pan",
+      "labels": [
+        "L",
+        "C",
+        "R"
+      ],
+      "max": 2,
+      "min": 0,
+      "name": "FM 4 Pan",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "FM",
+      "id": 19,
+      "isInteger": true,
+      "key": "fm5_pan",
+      "labels": [
+        "L",
+        "C",
+        "R"
+      ],
+      "max": 2,
+      "min": 0,
+      "name": "FM 5 Pan",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "FM",
+      "id": 20,
+      "isInteger": true,
+      "key": "fm6_pan",
+      "labels": [
+        "L",
+        "C",
+        "R"
+      ],
+      "max": 2,
+      "min": 0,
+      "name": "FM 6 Pan",
+      "unit": ""
+    },
+    {
+      "default": 30,
+      "group": "Operator 1",
+      "id": 21,
+      "isInteger": true,
+      "key": "op1_tl",
+      "max": 127,
+      "min": 0,
+      "name": "Op 1 TL",
+      "unit": ""
+    },
+    {
+      "default": 31,
+      "group": "Operator 1",
+      "id": 22,
+      "isInteger": true,
+      "key": "op1_ar",
+      "max": 31,
+      "min": 0,
+      "name": "Op 1 AR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 23,
+      "isInteger": true,
+      "key": "op1_dr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 1 DR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 24,
+      "isInteger": true,
+      "key": "op1_sr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 1 SR",
+      "unit": ""
+    },
+    {
+      "default": 15,
+      "group": "Operator 1",
+      "id": 25,
+      "isInteger": true,
+      "key": "op1_rr",
+      "max": 15,
+      "min": 0,
+      "name": "Op 1 RR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 26,
+      "isInteger": true,
+      "key": "op1_sl",
+      "max": 15,
+      "min": 0,
+      "name": "Op 1 SL",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "Operator 1",
+      "id": 27,
+      "isInteger": true,
+      "key": "op1_mul",
+      "max": 15,
+      "min": 0,
+      "name": "Op 1 MUL",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 28,
+      "isInteger": true,
+      "key": "op1_dt",
+      "max": 7,
+      "min": 0,
+      "name": "Op 1 DT",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 29,
+      "isInteger": true,
+      "key": "op1_rs",
+      "max": 3,
+      "min": 0,
+      "name": "Op 1 RS",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 30,
+      "isInteger": true,
+      "key": "op1_am",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Op 1 AM",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 31,
+      "isInteger": true,
+      "key": "op1_ssg",
+      "labels": [
+        "Off",
+        "Mode 0",
+        "Mode 1",
+        "Mode 2",
+        "Mode 3",
+        "Mode 4",
+        "Mode 5",
+        "Mode 6",
+        "Mode 7"
+      ],
+      "max": 8,
+      "min": 0,
+      "name": "Op 1 SSG-EG",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 32,
+      "isInteger": true,
+      "key": "op2_tl",
+      "max": 127,
+      "min": 0,
+      "name": "Op 2 TL",
+      "unit": ""
+    },
+    {
+      "default": 31,
+      "group": "Operator 2",
+      "id": 33,
+      "isInteger": true,
+      "key": "op2_ar",
+      "max": 31,
+      "min": 0,
+      "name": "Op 2 AR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 34,
+      "isInteger": true,
+      "key": "op2_dr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 2 DR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 35,
+      "isInteger": true,
+      "key": "op2_sr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 2 SR",
+      "unit": ""
+    },
+    {
+      "default": 15,
+      "group": "Operator 2",
+      "id": 36,
+      "isInteger": true,
+      "key": "op2_rr",
+      "max": 15,
+      "min": 0,
+      "name": "Op 2 RR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 37,
+      "isInteger": true,
+      "key": "op2_sl",
+      "max": 15,
+      "min": 0,
+      "name": "Op 2 SL",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "Operator 2",
+      "id": 38,
+      "isInteger": true,
+      "key": "op2_mul",
+      "max": 15,
+      "min": 0,
+      "name": "Op 2 MUL",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 39,
+      "isInteger": true,
+      "key": "op2_dt",
+      "max": 7,
+      "min": 0,
+      "name": "Op 2 DT",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 40,
+      "isInteger": true,
+      "key": "op2_rs",
+      "max": 3,
+      "min": 0,
+      "name": "Op 2 RS",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 41,
+      "isInteger": true,
+      "key": "op2_am",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Op 2 AM",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 42,
+      "isInteger": true,
+      "key": "op2_ssg",
+      "labels": [
+        "Off",
+        "Mode 0",
+        "Mode 1",
+        "Mode 2",
+        "Mode 3",
+        "Mode 4",
+        "Mode 5",
+        "Mode 6",
+        "Mode 7"
+      ],
+      "max": 8,
+      "min": 0,
+      "name": "Op 2 SSG-EG",
+      "unit": ""
+    },
+    {
+      "default": 30,
+      "group": "Operator 3",
+      "id": 43,
+      "isInteger": true,
+      "key": "op3_tl",
+      "max": 127,
+      "min": 0,
+      "name": "Op 3 TL",
+      "unit": ""
+    },
+    {
+      "default": 31,
+      "group": "Operator 3",
+      "id": 44,
+      "isInteger": true,
+      "key": "op3_ar",
+      "max": 31,
+      "min": 0,
+      "name": "Op 3 AR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 45,
+      "isInteger": true,
+      "key": "op3_dr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 3 DR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 46,
+      "isInteger": true,
+      "key": "op3_sr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 3 SR",
+      "unit": ""
+    },
+    {
+      "default": 15,
+      "group": "Operator 3",
+      "id": 47,
+      "isInteger": true,
+      "key": "op3_rr",
+      "max": 15,
+      "min": 0,
+      "name": "Op 3 RR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 48,
+      "isInteger": true,
+      "key": "op3_sl",
+      "max": 15,
+      "min": 0,
+      "name": "Op 3 SL",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "Operator 3",
+      "id": 49,
+      "isInteger": true,
+      "key": "op3_mul",
+      "max": 15,
+      "min": 0,
+      "name": "Op 3 MUL",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 50,
+      "isInteger": true,
+      "key": "op3_dt",
+      "max": 7,
+      "min": 0,
+      "name": "Op 3 DT",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 51,
+      "isInteger": true,
+      "key": "op3_rs",
+      "max": 3,
+      "min": 0,
+      "name": "Op 3 RS",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 52,
+      "isInteger": true,
+      "key": "op3_am",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Op 3 AM",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 53,
+      "isInteger": true,
+      "key": "op3_ssg",
+      "labels": [
+        "Off",
+        "Mode 0",
+        "Mode 1",
+        "Mode 2",
+        "Mode 3",
+        "Mode 4",
+        "Mode 5",
+        "Mode 6",
+        "Mode 7"
+      ],
+      "max": 8,
+      "min": 0,
+      "name": "Op 3 SSG-EG",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 54,
+      "isInteger": true,
+      "key": "op4_tl",
+      "max": 127,
+      "min": 0,
+      "name": "Op 4 TL",
+      "unit": ""
+    },
+    {
+      "default": 31,
+      "group": "Operator 4",
+      "id": 55,
+      "isInteger": true,
+      "key": "op4_ar",
+      "max": 31,
+      "min": 0,
+      "name": "Op 4 AR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 56,
+      "isInteger": true,
+      "key": "op4_dr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 4 DR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 57,
+      "isInteger": true,
+      "key": "op4_sr",
+      "max": 31,
+      "min": 0,
+      "name": "Op 4 SR",
+      "unit": ""
+    },
+    {
+      "default": 15,
+      "group": "Operator 4",
+      "id": 58,
+      "isInteger": true,
+      "key": "op4_rr",
+      "max": 15,
+      "min": 0,
+      "name": "Op 4 RR",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 59,
+      "isInteger": true,
+      "key": "op4_sl",
+      "max": 15,
+      "min": 0,
+      "name": "Op 4 SL",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "Operator 4",
+      "id": 60,
+      "isInteger": true,
+      "key": "op4_mul",
+      "max": 15,
+      "min": 0,
+      "name": "Op 4 MUL",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 61,
+      "isInteger": true,
+      "key": "op4_dt",
+      "max": 7,
+      "min": 0,
+      "name": "Op 4 DT",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 62,
+      "isInteger": true,
+      "key": "op4_rs",
+      "max": 3,
+      "min": 0,
+      "name": "Op 4 RS",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 63,
+      "isInteger": true,
+      "key": "op4_am",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Op 4 AM",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 64,
+      "isInteger": true,
+      "key": "op4_ssg",
+      "labels": [
+        "Off",
+        "Mode 0",
+        "Mode 1",
+        "Mode 2",
+        "Mode 3",
+        "Mode 4",
+        "Mode 5",
+        "Mode 6",
+        "Mode 7"
+      ],
+      "max": 8,
+      "min": 0,
+      "name": "Op 4 SSG-EG",
+      "unit": ""
+    },
+    {
+      "default": 24,
+      "group": "FM",
+      "id": 65,
+      "isInteger": true,
+      "key": "velocity_depth",
+      "max": 127,
+      "min": 0,
+      "name": "Velocity Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "DAC",
+      "id": 66,
+      "isInteger": true,
+      "key": "dac_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "DAC",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "DAC",
+      "id": 67,
+      "isInteger": true,
+      "key": "dac_sample",
+      "max": 15,
+      "min": 0,
+      "name": "DAC Sample",
+      "unit": ""
+    },
+    {
+      "default": 8000,
+      "group": "DAC",
+      "id": 68,
+      "isInteger": true,
+      "key": "dac_rate",
+      "max": 32000,
+      "min": 4000,
+      "name": "DAC Rate",
+      "unit": "Hz"
+    },
+    {
+      "default": 0,
+      "group": "DAC",
+      "id": 69,
+      "isInteger": true,
+      "key": "dac_keyed",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "DAC Keyed",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "DAC",
+      "id": 70,
+      "isInteger": true,
+      "key": "dac_loop",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "DAC Loop",
+      "unit": ""
+    },
+    {
+      "default": 127,
+      "group": "DAC",
+      "id": 71,
+      "isInteger": true,
+      "key": "dac_volume",
+      "max": 127,
+      "min": 0,
+      "name": "DAC Volume",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 72,
+      "isInteger": true,
+      "key": "psg1_att",
+      "max": 15,
+      "min": 0,
+      "name": "PSG 1 Attenuation",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 73,
+      "isInteger": true,
+      "key": "psg2_att",
+      "max": 15,
+      "min": 0,
+      "name": "PSG 2 Attenuation",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 74,
+      "isInteger": true,
+      "key": "psg3_att",
+      "max": 15,
+      "min": 0,
+      "name": "PSG 3 Attenuation",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 75,
+      "isInteger": true,
+      "key": "psgn_att",
+      "max": 15,
+      "min": 0,
+      "name": "PSG Noise Attenuation",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "PSG",
+      "id": 76,
+      "isInteger": true,
+      "key": "psg_noise_mode",
+      "labels": [
+        "Periodic",
+        "White"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "PSG Noise Mode",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 77,
+      "isInteger": true,
+      "key": "psg_noise_rate",
+      "labels": [
+        "/512",
+        "/1024",
+        "/2048",
+        "Tone 3"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "PSG Noise Rate",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 78,
+      "isInteger": true,
+      "key": "psg_sw_attack",
+      "max": 60,
+      "min": 0,
+      "name": "PSG Attack",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 79,
+      "isInteger": true,
+      "key": "psg_sw_decay",
+      "max": 60,
+      "min": 0,
+      "name": "PSG Decay",
+      "unit": "frames"
+    },
+    {
+      "default": 15,
+      "group": "PSG",
+      "id": 80,
+      "isInteger": true,
+      "key": "psg_sw_sustain",
+      "max": 15,
+      "min": 0,
+      "name": "PSG Sustain",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 81,
+      "isInteger": true,
+      "key": "psg_sw_release",
+      "max": 60,
+      "min": 0,
+      "name": "PSG Release",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 82,
+      "isInteger": true,
+      "key": "psg_vibrato_rate",
+      "max": 15,
+      "min": 0,
+      "name": "PSG Vibrato Rate",
+      "unit": "frames"
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 83,
+      "isInteger": true,
+      "key": "psg_vibrato_depth",
+      "max": 15,
+      "min": 0,
+      "name": "PSG Vibrato Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 84,
+      "isInteger": true,
+      "key": "psg_unison_detune",
+      "max": 7,
+      "min": 0,
+      "name": "PSG Unison Detune",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "PSG",
+      "id": 85,
+      "isInteger": true,
+      "key": "psg_transpose",
+      "max": 24,
+      "min": -24,
+      "name": "PSG Transpose",
+      "unit": "st"
+    }
+  ]
+}
