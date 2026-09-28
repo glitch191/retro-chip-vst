@@ -51,6 +51,7 @@ target_link_libraries(RetroChip
     PRIVATE
         chipdsp::chipdsp
         juce::juce_audio_utils
+        juce::juce_audio_formats
         juce::juce_audio_processors
         juce::juce_gui_basics
         juce::juce_gui_extra
