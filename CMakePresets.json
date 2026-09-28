@@ -1,0 +1,57 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 22, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "architecture": { "value": "x64", "strategy": "external" },
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "windows-x64-release",
+      "displayName": "Windows x64 Release (Ninja + MSVC)",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "windows-x64-debug",
+      "displayName": "Windows x64 Debug (Ninja + MSVC)",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "dsp-only-release",
+      "displayName": "chipdsp + tests only, no JUCE (Ninja + MSVC)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "RCV_BUILD_PLUGIN": "OFF"
+      }
+    },
+    {
+      "name": "vs2022",
+      "displayName": "Visual Studio 2022 solution (multi-config)",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "windows-x64-release", "configurePreset": "windows-x64-release" },
+    { "name": "windows-x64-debug", "configurePreset": "windows-x64-debug" },
+    { "name": "dsp-only-release", "configurePreset": "dsp-only-release" },
+    { "name": "vs2022-release", "configurePreset": "vs2022", "configuration": "Release" }
+  ],
+  "testPresets": [
+    { "name": "windows-x64-release", "configurePreset": "windows-x64-release", "output": { "outputOnFailure": true } },
+    { "name": "windows-x64-debug", "configurePreset": "windows-x64-debug", "output": { "outputOnFailure": true } },
+    { "name": "dsp-only-release", "configurePreset": "dsp-only-release", "output": { "outputOnFailure": true } }
+  ]
+}
