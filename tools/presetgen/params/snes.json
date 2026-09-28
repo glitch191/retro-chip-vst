@@ -1,0 +1,467 @@
+{
+  "meta": {
+    "chip": "snes",
+    "source": "ENGINE_SPECS.md (hand-transcribed; regenerate with chiptool dump-params once the engines exist)"
+  },
+  "params": [
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 0,
+      "isInteger": true,
+      "key": "sample",
+      "max": 31,
+      "min": 0,
+      "name": "Sample",
+      "unit": ""
+    },
+    {
+      "default": 1,
+      "group": "Instrument",
+      "id": 1,
+      "isInteger": true,
+      "key": "adsr_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "ADSR",
+      "unit": ""
+    },
+    {
+      "default": 15,
+      "group": "Instrument",
+      "id": 2,
+      "isInteger": true,
+      "key": "attack",
+      "max": 15,
+      "min": 0,
+      "name": "Attack",
+      "unit": ""
+    },
+    {
+      "default": 7,
+      "group": "Instrument",
+      "id": 3,
+      "isInteger": true,
+      "key": "decay",
+      "max": 7,
+      "min": 0,
+      "name": "Decay",
+      "unit": ""
+    },
+    {
+      "default": 7,
+      "group": "Instrument",
+      "id": 4,
+      "isInteger": true,
+      "key": "sustain_level",
+      "max": 7,
+      "min": 0,
+      "name": "Sustain Level",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 5,
+      "isInteger": true,
+      "key": "sustain_rate",
+      "max": 31,
+      "min": 0,
+      "name": "Sustain Rate",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 6,
+      "isInteger": true,
+      "key": "gain_mode",
+      "labels": [
+        "Direct",
+        "Linear decrease",
+        "Exponential decrease",
+        "Linear increase",
+        "Bent-line increase"
+      ],
+      "max": 4,
+      "min": 0,
+      "name": "Gain Mode",
+      "unit": ""
+    },
+    {
+      "default": 127,
+      "group": "Instrument",
+      "id": 7,
+      "isInteger": true,
+      "key": "gain_value",
+      "max": 127,
+      "min": 0,
+      "name": "Gain Value",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 8,
+      "isInteger": true,
+      "key": "release_mode",
+      "labels": [
+        "Hardware KOFF",
+        "GAIN exponential"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Release Mode",
+      "unit": ""
+    },
+    {
+      "default": 31,
+      "group": "Instrument",
+      "id": 9,
+      "isInteger": true,
+      "key": "release_rate",
+      "max": 31,
+      "min": 0,
+      "name": "Release Rate",
+      "unit": ""
+    },
+    {
+      "default": 100,
+      "group": "Instrument",
+      "id": 10,
+      "isInteger": true,
+      "key": "volume",
+      "max": 127,
+      "min": 0,
+      "name": "Volume",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 11,
+      "isInteger": true,
+      "key": "pan",
+      "max": 64,
+      "min": -64,
+      "name": "Pan",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 12,
+      "isInteger": true,
+      "key": "transpose",
+      "max": 24,
+      "min": -24,
+      "name": "Transpose",
+      "unit": "st"
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 13,
+      "isInteger": true,
+      "key": "fine_tune",
+      "max": 100,
+      "min": -100,
+      "name": "Fine Tune",
+      "unit": "cents"
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 14,
+      "isInteger": true,
+      "key": "vibrato_rate",
+      "max": 15,
+      "min": 0,
+      "name": "Vibrato Rate",
+      "unit": "ticks"
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 15,
+      "isInteger": true,
+      "key": "vibrato_depth",
+      "max": 64,
+      "min": 0,
+      "name": "Vibrato Depth",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 16,
+      "isInteger": true,
+      "key": "vibrato_delay",
+      "max": 60,
+      "min": 0,
+      "name": "Vibrato Delay",
+      "unit": "ticks"
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 17,
+      "isInteger": true,
+      "key": "noise_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Noise",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 18,
+      "isInteger": true,
+      "key": "noise_clock",
+      "max": 31,
+      "min": 0,
+      "name": "Noise Clock",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 19,
+      "isInteger": true,
+      "key": "pmon",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Pitch Modulation",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Instrument",
+      "id": 20,
+      "isInteger": true,
+      "key": "loop_override",
+      "labels": [
+        "Sample default",
+        "Force one-shot",
+        "Force loop"
+      ],
+      "max": 2,
+      "min": 0,
+      "name": "Loop Override",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 21,
+      "isInteger": true,
+      "key": "echo_enable",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 22,
+      "isInteger": true,
+      "key": "echo_delay",
+      "max": 15,
+      "min": 0,
+      "name": "Echo Delay",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 23,
+      "isInteger": true,
+      "key": "echo_feedback",
+      "max": 127,
+      "min": -128,
+      "name": "Echo Feedback",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 24,
+      "isInteger": true,
+      "key": "echo_volume",
+      "max": 127,
+      "min": -128,
+      "name": "Echo Volume",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 25,
+      "isInteger": true,
+      "key": "fir_preset",
+      "labels": [
+        "Pass-through",
+        "Low-pass soft",
+        "Low-pass strong",
+        "High-pass",
+        "Band-pass",
+        "Comb",
+        "Bright",
+        "Dark"
+      ],
+      "max": 7,
+      "min": 0,
+      "name": "FIR Preset",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 26,
+      "isInteger": true,
+      "key": "v1_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 1 Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 27,
+      "isInteger": true,
+      "key": "v2_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 2 Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 28,
+      "isInteger": true,
+      "key": "v3_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 3 Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 29,
+      "isInteger": true,
+      "key": "v4_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 4 Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 30,
+      "isInteger": true,
+      "key": "v5_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 5 Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 31,
+      "isInteger": true,
+      "key": "v6_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 6 Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 32,
+      "isInteger": true,
+      "key": "v7_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 7 Echo",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Echo",
+      "id": 33,
+      "isInteger": true,
+      "key": "v8_echo",
+      "labels": [
+        "Off",
+        "On"
+      ],
+      "max": 1,
+      "min": 0,
+      "name": "Voice 8 Echo",
+      "unit": ""
+    },
+    {
+      "default": 127,
+      "group": "Global",
+      "id": 34,
+      "isInteger": true,
+      "key": "main_volume",
+      "max": 127,
+      "min": 0,
+      "name": "Main Volume",
+      "unit": ""
+    }
+  ]
+}

@@ -15,6 +15,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 option(RCV_BUILD_PLUGIN "Build the JUCE VST3 plugin (fetches JUCE)" ON)
 option(RCV_BUILD_TESTS  "Build the chipdsp unit tests (fetches Catch2)" ON)
 option(RCV_BUILD_BENCH  "Build the chipdsp CPU-cost benchmark" ON)
+option(RCV_BUILD_TOOLS  "Build chiptool (preset rendering and parameter dump CLI)" ON)
 option(RCV_COPY_PLUGIN_AFTER_BUILD "Copy the .vst3 to the user VST3 folder after build" OFF)
 option(RCV_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
@@ -43,6 +44,10 @@ endif()
 
 if(RCV_BUILD_BENCH)
     add_subdirectory(dsp/bench)
+endif()
+
+if(RCV_BUILD_TOOLS)
+    add_subdirectory(dsp/tools)
 endif()
 
 if(RCV_BUILD_PLUGIN)
