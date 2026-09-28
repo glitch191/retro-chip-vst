@@ -56,8 +56,9 @@ venv/
 .pytest_cache/
 *.egg-info/
 
-# Tools fetched locally (pluginval etc.)
+# Tools and dependencies fetched locally (pluginval, JUCE checkout)
 tools/bin/
+third_party/
 
 # Editor / OS noise
 .vscode/
