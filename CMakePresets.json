@@ -35,6 +35,17 @@
       }
     },
     {
+      "name": "plugin-dev",
+      "displayName": "Plugin layer with StubEngine placeholders (Ninja + MSVC)",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "RCV_USE_STUB_ENGINES": "ON",
+        "RCV_BUILD_TESTS": "OFF",
+        "RCV_BUILD_BENCH": "OFF"
+      }
+    },
+    {
       "name": "vs2022",
       "displayName": "Visual Studio 2022 solution (multi-config)",
       "generator": "Visual Studio 17 2022",
@@ -47,6 +58,7 @@
     { "name": "windows-x64-release", "configurePreset": "windows-x64-release" },
     { "name": "windows-x64-debug", "configurePreset": "windows-x64-debug" },
     { "name": "dsp-only-release", "configurePreset": "dsp-only-release" },
+    { "name": "plugin-dev", "configurePreset": "plugin-dev" },
     { "name": "vs2022-release", "configurePreset": "vs2022", "configuration": "Release" }
   ],
   "testPresets": [
