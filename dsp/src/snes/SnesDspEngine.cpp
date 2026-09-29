@@ -40,9 +40,11 @@ namespace
         { E::Pan,          "pan",           "Pan",              "Instrument", -64.0f, 64.0f, 0.0f, true, "", nullptr },
         { E::Transpose,    "transpose",     "Transpose",        "Instrument", -24.0f, 24.0f, 0.0f, true, "st", nullptr },
         { E::FineTune,     "fine_tune",     "Fine Tune",        "Instrument", -100.0f, 100.0f, 0.0f, true, "cents", nullptr },
-        { E::VibratoRate,  "vibrato_rate",  "Vibrato Rate",     "Instrument", 0.0f, 15.0f, 0.0f, true, "ticks", nullptr },
+        // Driver vibrato in 4 ms ticks: rate = ticks per half cycle, 63 -> 2.0 Hz, 23 -> 5.4 Hz,
+        // 15 -> 8.3 Hz (a 0..15 range could not reach the 4.5-6.5 Hz of strings and voices).
+        { E::VibratoRate,  "vibrato_rate",  "Vibrato Rate",     "Instrument", 0.0f, 63.0f, 0.0f, true, "ticks", nullptr },
         { E::VibratoDepth, "vibrato_depth", "Vibrato Depth",    "Instrument", 0.0f, 64.0f, 0.0f, true, "", nullptr },
-        { E::VibratoDelay, "vibrato_delay", "Vibrato Delay",    "Instrument", 0.0f, 60.0f, 0.0f, true, "ticks", nullptr },
+        { E::VibratoDelay, "vibrato_delay", "Vibrato Delay",    "Instrument", 0.0f, 250.0f, 0.0f, true, "ticks", nullptr },
         { E::NoiseEnable,  "noise_enable",  "Noise",            "Instrument", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
         { E::NoiseClock,   "noise_clock",   "Noise Clock",      "Instrument", 0.0f, 31.0f, 0.0f, true, "", nullptr },
         { E::Pmon,         "pmon",          "Pitch Modulation", "Instrument", 0.0f, 1.0f, 0.0f, true, "", kOffOn },

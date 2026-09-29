@@ -21,11 +21,9 @@ the global echo unit with a per-voice EON mask. Values are raw register values
   steps through its BRR sample at the key's pitch, so the sample's end code still ends the
   note: sustained noise uses the looped noise sample.
 
-Driver vibrato limits (engine parameters, ENGINE_SPECS): `vibrato_rate` counts 4 ms ticks
-per half cycle and stops at 15, so the slowest vibrato is 8.3 Hz and rate 10 is 12.5 Hz;
-the musical 4.5-6.5 Hz of strings, voices and winds cannot be expressed (reported to the
-orchestrator as a spec issue). Profiles are therefore named after their real rate, never
-"slow". `vibrato_depth` is in pitch-register units, so its size in cents depends on the
+Driver vibrato (engine parameters, ENGINE_SPECS): `vibrato_rate` counts 4 ms ticks per
+half cycle (0..63): rate 23 is 5.4 Hz, 18 is 6.9 Hz, 4 is 31 Hz. Profiles are named after
+their real rate. `vibrato_depth` is in pitch-register units, so its size in cents depends on the
 pitch register value P: depth 40 is about 17 cents at P = 0x1000 (a 32 kHz sample at its
 root key) and twice that at P = 0x800 (a 16 kHz sample, or a 32 kHz sample an octave
 down), which is why the low/16 kHz seeds use half the depth.
@@ -192,10 +190,10 @@ def echo(delay: int, feedback: int, volume: int, fir: int, mask: Sequence[int]) 
 # ----- named profiles ---------------------------------------------------------------------
 
 VIB_OFF = vib(0, 0, 0)
-VIB_8HZ = vib(15, 40, 40)      # slowest possible rate (15 ticks), ~17 cents at P 0x1000, after 160 ms
-VIB_8HZ_LOW = vib(15, 20, 40)  # the same in cents for P around 0x800 (16 kHz samples, octave-down seeds)
-VIB_DELAYED = vib(15, 48, 60)  # 8.3 Hz, ~20 cents, only on held notes (after 240 ms)
-VIB_12HZ = vib(10, 32, 15)     # 12.5 Hz, ~13 cents shimmer, rotary-like, after 60 ms
+VIB_5HZ = vib(23, 40, 40)      # 5.4 Hz (23 ticks), ~17 cents at P 0x1000, after 160 ms
+VIB_5HZ_LOW = vib(23, 20, 40)  # the same in cents for P around 0x800 (16 kHz samples, octave-down seeds)
+VIB_DELAYED = vib(23, 48, 125) # 5.4 Hz, ~20 cents, only on held notes (after 500 ms)
+VIB_7HZ = vib(18, 32, 15)      # 6.9 Hz, ~13 cents shimmer, rotary-like, after 60 ms
 VIB_DEEP = vib(4, 64, 0)       # 31 Hz, maximum depth: an audible warble for SFX
 
 ECHO_OFF = {"echo_enable": 0, "echo_delay": 0, "echo_feedback": 0, "echo_volume": 0,
@@ -295,11 +293,11 @@ def instrument_seeds() -> list[Seed]:
              axes={"echo": [("off", ECHO_OFF), ("Short", ECHO_SHORT), ("Hall", ECHO_HALL)]},
              tags=["piano", "keys"]),
         seed("EPiano", "Instrument", "Piano", "epiano",
-             "FM electric piano sample: A15 D4 SL2 SR16 for the tine bark and fade; the 8.3 Hz "
+             "FM electric piano sample: A15 D4 SL2 SR16 for the tine bark and fade; the 5.4 Hz "
              "driver vibrato stands in for the tremolo chorus of the real instrument.",
              env=adsr(15, 4, 2, 16, exp_release(20)), mixing=mix(100, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib8Hz", VIB_8HZ)], "echo": ECHO_3},
+             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ)], "echo": ECHO_3},
              tags=["epiano", "keys"]),
         # Strings
         seed("Ensemble Strings", "Instrument", "Strings", "strings_ensemble",
@@ -337,10 +335,10 @@ def instrument_seeds() -> list[Seed]:
              tags=["guitar", "acoustic"]),
         seed("Steel Guitar", "Instrument", "Guitar", "guitar_steel",
              "Steel guitar: A15 D2 SL4 SR14 for a brighter, longer ring, panned slightly left; the "
-             "8.3 Hz vibrato imitates finger vibrato on held notes.",
+             "5.4 Hz vibrato imitates finger vibrato on held notes.",
              env=adsr(15, 2, 4, 14, exp_release(18)), mixing=mix(100, -16, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib8Hz", VIB_8HZ)], "echo": ECHO_3},
+             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ)], "echo": ECHO_3},
              tags=["guitar", "acoustic"]),
         seed("Muted Guitar", "Instrument", "Guitar", "guitar_muted",
              "Palm-muted guitar: A15 D6 to SL1 then SR24 and hardware KOFF, a chugging rhythm part "
@@ -360,21 +358,21 @@ def instrument_seeds() -> list[Seed]:
              "optional since the sample is dry.",
              env=adsr(11, 7, 7, 0, exp_release(22)), mixing=mix(100, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib8Hz", VIB_8HZ)], "echo": ECHO_3},
+             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ)], "echo": ECHO_3},
              tags=["woodwind", "clarinet", "lead"]),
         seed("Oboe", "Instrument", "Woodwind", "oboe",
              "Oboe (reed formants, looped): A11 then D3 to SL5 (~33 ms, -2.4 dB) for a reed accent "
-             "before the held tone; vibrato none, 8.3 Hz or a nervous 12.5 Hz.",
+             "before the held tone; vibrato none, 5.4 Hz or a nervous 6.9 Hz.",
              env=adsr(11, 3, 5, 0, exp_release(22)), mixing=mix(96, 8, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib8Hz", VIB_8HZ), ("Vib12Hz", VIB_12HZ)], "echo": ECHO_2},
+             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ), ("Vib7Hz", VIB_7HZ)], "echo": ECHO_2},
              tags=["woodwind", "oboe", "lead"]),
         # Organ
         seed("Drawbar Organ", "Instrument", "Organ", "organ_full",
              "Drawbar organ: A15 D7 SL7 SR0 is a gate (full level while held), hardware KOFF for the "
-             "key click stop; 12.5 Hz vibrato for a rotary feel.",
+             "key click stop; 6.9 Hz vibrato for a rotary feel.",
              env=organ, mixing=mix(92, 0, 0, 0), vibrato=VIB_OFF, voice=TONE, fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib12Hz", VIB_12HZ)], "echo": ECHO_3},
+             axes={"vib": [("off", VIB_OFF), ("Vib7Hz", VIB_7HZ)], "echo": ECHO_3},
              tags=["organ", "keys"]),
         seed("Perc Organ", "Instrument", "Organ", "organ_perc",
              "Percussive organ: the click is in the sample, the gate envelope holds the loop; "
@@ -386,7 +384,7 @@ def instrument_seeds() -> list[Seed]:
              "Square-wave organ from an 11-cycle loop: gate envelope with KOFF, volume 84 because a "
              "full-scale square is louder than the recorded samples.",
              env=organ, mixing=mix(84, 0, 0, 0), vibrato=VIB_OFF, voice=TONE, fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib12Hz", VIB_12HZ)], "echo": ECHO_3},
+             axes={"vib": [("off", VIB_OFF), ("Vib7Hz", VIB_7HZ)], "echo": ECHO_3},
              tags=["organ", "chip", "square"]),
     ]
 
@@ -503,11 +501,11 @@ def pad_seeds() -> list[Seed]:
              tags=["pad", "warm", "echo"]),
         seed("Glass Pad", "Pad", "Echo", "pad_glass",
              "Glassy FM pad (16 kHz loop): A7 then D1 to SL6; the Bright echo (N-SPC high-pass) "
-             "gives thin shimmering repeats; half-depth 8.3 Hz vibrato for the 16 kHz sample.",
+             "gives thin shimmering repeats; half-depth 5.4 Hz vibrato for the 16 kHz sample.",
              env=adsr(7, 1, 6, 0, exp_release(13)), mixing=mix(88, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_SHORT, main_volume=110,
              axes={"echo": [("Short", ECHO_SHORT), ("Long", ECHO_LONG), ("Bright", ECHO_BRIGHT)],
-                   "vib": [("off", VIB_OFF), ("Vib8Hz", VIB_8HZ_LOW)]},
+                   "vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ_LOW)]},
              tags=["pad", "glass", "echo"]),
         seed("Sine Pad", "Pad", "Echo", "sine_loop",
              "Pure sine pad: A5 (378 ms) SL7; all the colour comes from the echo FIR (low-pass or "
@@ -517,9 +515,9 @@ def pad_seeds() -> list[Seed]:
                    "swell": [("", sine), ("Swell", gain(GAIN_BENT_INC, 10, exp_release(12)))]},
              tags=["pad", "sine", "echo"]),
         seed("Saw Pad", "Pad", "Echo", "saw_loop",
-             "Saw pad from the 11-cycle loop: A6 SL6 with 8.3 Hz vibrato; Swell is GAIN bent-line "
+             "Saw pad from the 11-cycle loop: A6 SL6 with 5.4 Hz vibrato; Swell is GAIN bent-line "
              "increase rate 9 (~1.1 s).",
-             env=saw, mixing=mix(80, 0, 0, 0), vibrato=VIB_8HZ, voice=TONE, fx=ECHO_SHORT, main_volume=110,
+             env=saw, mixing=mix(80, 0, 0, 0), vibrato=VIB_5HZ, voice=TONE, fx=ECHO_SHORT, main_volume=110,
              axes={"echo": PAD_ECHO_3, "swell": [("", saw), ("Swell", gain(GAIN_BENT_INC, 9, exp_release(14)))]},
              tags=["pad", "saw", "echo"]),
         seed("Triangle Pad", "Pad", "Echo", "triangle_loop",
@@ -532,9 +530,9 @@ def pad_seeds() -> list[Seed]:
              tags=["pad", "triangle", "echo"]),
         # Strings
         seed("Slow Strings", "Pad", "Strings", "strings_ensemble",
-             "Slow string pad: A4 (630 ms) bow, SL7 held, 8.3 Hz vibrato, GAIN release 14 (~2 s); "
+             "Slow string pad: A4 (630 ms) bow, SL7 held, 5.4 Hz vibrato, GAIN release 14 (~2 s); "
              "Slower uses A2 (1.5 s).",
-             env=slow_strings, mixing=mix(92, 0, 0, 0), vibrato=VIB_8HZ, voice=TONE, fx=ECHO_SHORT,
+             env=slow_strings, mixing=mix(92, 0, 0, 0), vibrato=VIB_5HZ, voice=TONE, fx=ECHO_SHORT,
              main_volume=110,
              axes={"slower": [("", slow_strings), ("Slower", adsr(2, 0, 7, 0, exp_release(12)))],
                    "echo": PAD_ECHO_3},
@@ -561,15 +559,15 @@ def pad_seeds() -> list[Seed]:
              env=adsr(5, 0, 7, 0, exp_release(13)), mixing=mix(96, 0, -12, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_LONG, main_volume=110,
              axes={"echo": [("Long", ECHO_LONG), ("Hall", ECHO_HALL)],
-                   "vib": [("off", VIB_OFF), ("Vib8Hz", VIB_8HZ_LOW)]},
+                   "vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ_LOW)]},
              tags=["pad", "strings", "orchestral", "low", "octave"]),
         # Choir
         seed("Choir Ah", "Pad", "Choir", "choir_ah",
-             "Choir 'ah': A5 (378 ms) SL7 held on the formant loop, GAIN release 13; 8.3 Hz vibrato "
+             "Choir 'ah': A5 (378 ms) SL7 held on the formant loop, GAIN release 13; 5.4 Hz vibrato "
              "for a massed-voices wobble.",
              env=adsr(5, 0, 7, 0, exp_release(13)), mixing=mix(96, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_SHORT, main_volume=110,
-             axes={"echo": PAD_ECHO_3, "vib": [("off", VIB_OFF), ("Vib8Hz", VIB_8HZ)]},
+             axes={"echo": PAD_ECHO_3, "vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ)]},
              tags=["pad", "choir", "vocal"]),
         seed("Choir Oo", "Pad", "Choir", "choir_oo",
              "Choir 'oo': A6 SL7, darker vowel; delayed vibrato only blooms on long chords.",
@@ -580,7 +578,7 @@ def pad_seeds() -> list[Seed]:
         seed("Swell Choir", "Pad", "Choir", "choir_ah",
              "Choir swelling in with GAIN bent-line increase rate 12 (~560 ms, fast then slower near "
              "the top like a breath), long echo; OctDown for male voices with half the vibrato depth.",
-             env=gain(GAIN_BENT_INC, 12, exp_release(12)), mixing=mix(96, 0, 0, 0), vibrato=VIB_8HZ, voice=TONE,
+             env=gain(GAIN_BENT_INC, 12, exp_release(12)), mixing=mix(96, 0, 0, 0), vibrato=VIB_5HZ, voice=TONE,
              fx=ECHO_LONG, main_volume=110,
              axes={"echo": [("Long", ECHO_LONG), ("Hall", ECHO_HALL)],
                    "oct": [("", {}), ("OctDown", {"transpose": -12, "vibrato_depth": 20})]},
@@ -755,12 +753,12 @@ def sfx_seeds() -> list[Seed]:
              axes={"transpose": [-12, -24], "echo": ECHO_2},
              tags=["sfx", "pmon", "growl"]),
         seed("PMON Trill", "SFX", "PMON", "square_loop",
-             "Square PMON pair with a 31 Hz deep or a 12.5 Hz driver vibrato on both voices: the "
+             "Square PMON pair with a 31 Hz deep or a 6.9 Hz driver vibrato on both voices: the "
              "modulation ratio trills and buzzes (the driver vibrato cannot sweep slowly enough for "
              "a siren); GAIN release 24.",
              env=adsr(12, 7, 7, 0, exp_release(24)), mixing=mix(84, 0, 0, 0), vibrato=VIB_DEEP, voice=PMON_SOURCE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("VibDeep", VIB_DEEP), ("Vib12Hz", VIB_12HZ)],
+             axes={"vib": [("VibDeep", VIB_DEEP), ("Vib7Hz", VIB_7HZ)],
                    "echo": [("off", ECHO_OFF), ("Long", ECHO_LONG)]},
              tags=["sfx", "pmon", "trill", "buzz"]),
         seed("PMON Glass", "SFX", "PMON", "pad_glass",
