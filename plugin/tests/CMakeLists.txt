@@ -23,8 +23,13 @@ target_include_directories(plugin_tests PRIVATE
 target_compile_definitions(plugin_tests PRIVATE
     $<TARGET_PROPERTY:RetroChip,COMPILE_DEFINITIONS>)
 
+# The engine libraries are linked directly as well: some tests inspect the real engines
+# (dynamic_cast to Nes2A03Engine / SnesDspEngine), which must also link in stub builds.
 target_link_libraries(plugin_tests PRIVATE
     RetroChip
+    chipdsp::nes
+    chipdsp::snes
+    chipdsp::genesis
     Catch2::Catch2WithMain)
 
 catch_discover_tests(plugin_tests

@@ -91,6 +91,12 @@ public:
 
     static juce::String channelBusName (int busIndex);   // 1..10 -> "Out 1".."Out 10"
 
+    // Development hook (editor screenshots, RCV_SCREENSHOT_NOTES): note-ons on MIDI channel 1
+    // queued on the message thread and added at the start of the next block. Ignored while a
+    // previous queue has not been consumed. Nothing is queued in normal use.
+    static constexpr int kMaxTestNotes = 8;
+    void queueTestNotes (std::initializer_list<int> notes, int velocity);
+
 private:
     struct PendingRestore
     {
@@ -115,6 +121,14 @@ private:
     juce::CriticalSection pendingLock;           // message thread vs. the host's state thread; never the audio thread
     std::optional<PendingRestore> pendingRestore;
     int restoreSerial = 0;                       // guarded by pendingLock
+
+    // queueTestNotes(): the message thread writes the notes while numTestNotes is 0, then
+    // publishes the count; the audio thread copies them into testMidi (capacity reserved in
+    // prepareToPlay) and resets the count.
+    std::array<std::atomic<int>, kMaxTestNotes> testNotes {};
+    std::atomic<int> testVelocity { 100 };
+    std::atomic<int> numTestNotes { 0 };
+    juce::MidiBuffer testMidi;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RetroChipProcessor)
 };

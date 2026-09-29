@@ -95,7 +95,8 @@ enabled; the README records what was observed.
 `setStateInformation` restores all of it and re-encodes user samples through the engines
 without writing any parameter: the preset is looked up on the restored chip and its
 samples go into the slots the restored parameters reference; slots that held a user
-sample before return to their default content. When the host restores off the message
+sample before return to their default content (the current preset's sample for that
+slot, otherwise empty through `IChipEngine::clearSample`). When the host restores off the message
 thread, the preset part is queued; `getStateInformation` (any thread) then writes the
 queued values.
 
@@ -120,7 +121,12 @@ Banks: `assets/presets/<chip>.json` = JSON array of preset documents, embedded w
 `juce_add_binary_data`. `params` keys are engine keys without the chip prefix; unknown
 keys are ignored with a log line; missing keys keep the engine default. `samples` maps a
 sample-slot parameter to a sample name from `assets/samples/<chip>/<name>.wav`; the
-manager loads the WAV into the slot referenced by the parameter's value.
+manager loads the WAV into the slot referenced by the parameter's value (presets always
+write that value), then calls `setSampleInfo(slot, root_note, loop_start or -1,
+sample_rate)` from `assets/samples/index.json`. Before loading, factory samples in the
+chip's other slots are cleared (`clearSample`); user samples are kept unless the preset
+writes their slot. A failed load is logged and reported by `sampleStatus()`, which the
+strip shows under the sidebar forms (hidden when empty).
 
 API: `loadBanks()`, `categories(chip)`, `subcategories(chip, category)`,
 `presets(chip, category, subcategory)`, `search(chip, text)` (case-insensitive

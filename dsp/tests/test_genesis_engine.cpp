@@ -436,6 +436,39 @@ TEST_CASE("DAC plays a loaded sample on channel 6", "[genesis][engine][dac]")
     CHECK(rms(out.chL[0], 4800, 12000) < 5e-4);   // idle FM1: only the decaying ladder DC step
     render(e, 14000);
     CHECK_FALSE(e.isChannelActive(5));   // one-shot sample finished
+
+    // clearSample: the slot is empty afterwards, a new DAC note plays nothing.
+    REQUIRE(e.loadSample(4, pcm.data(), static_cast<int>(pcm.size()), 16000.0));
+    REQUIRE(e.clearSample(3));
+    CHECK_FALSE(e.clearSample(16));
+    e.noteOn(5, 60.0f, 1.0f);
+    const Render cleared = render(e, 4800, true);
+    // No tone: at most the DAC's DC level step at key-on, far below the sample-to-sample
+    // steps of the 500 Hz tone played from the slot before.
+    auto maxStep = [](const std::vector<float>& x, size_t from, size_t to) {
+        double m = 0.0;
+        for (size_t i = from + 1; i < to; ++i)
+            m = std::max(m, static_cast<double>(std::abs(x[i] - x[i - 1])));
+        return m;
+    };
+    CHECK(maxStep(cleared.chL[5], 0, 4800) < 0.2 * maxStep(out.chL[5], 4800, 12000));
+    e.noteOff(5);
+    e.setParameter(E::DacSample, 4);   // the other slot survived the bank flip
+    e.noteOn(5, 60.0f, 1.0f);
+    const Render other = render(e, 9600, true);
+    CHECK(measureFrequency(other.chL[5], 4800) == Approx(500.0).margin(1.0));
+}
+
+TEST_CASE("stageParameter sets the DAC encoding rate before setParameter", "[genesis][engine][dac]")
+{
+    GenesisEngine e;
+    e.prepare(kRate, kBlock);
+    std::vector<float> pcm(40000, 0.0f);   // 2.5 s at 16 kHz
+    e.stageParameter(E::DacRate, 32000.0f);
+    CHECK(e.getParameter(E::DacRate) == 32000.0f);
+    CHECK_FALSE(e.loadSample(0, pcm.data(), 40000, 16000.0));   // 80000 bytes > 65536
+    e.stageParameter(E::DacRate, 4000.0f);
+    CHECK(e.loadSample(0, pcm.data(), 40000, 16000.0));         // 10000 bytes
 }
 
 TEST_CASE("Per-channel outputs sum to the main output", "[genesis][engine]")

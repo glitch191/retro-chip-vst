@@ -272,3 +272,33 @@ TEST_CASE("NES engine sample slots: 16 slots, 4081-byte limit, padded L*16+1 len
     REQUIRE(Nes2A03Engine::paddedDmcLength(18) == 33);
     REQUIRE(Nes2A03Engine::paddedDmcLength(4081) == 4081);
 }
+
+TEST_CASE("NES engine clearSample empties one slot; stageParameter sets the encoder rate", "[nes][dmc][engine]")
+{
+    Nes2A03Engine engine;
+    engine.prepare(48000.0, 512);
+    std::vector<float> pcm(2000, 0.25f);
+    REQUIRE(engine.loadSample(0, pcm.data(), 2000, 44100.0));
+    REQUIRE(engine.loadSample(1, pcm.data(), 2000, 44100.0));
+    const int len = engine.sampleLength(1);
+
+    REQUIRE(engine.clearSample(0));
+    REQUIRE(engine.sampleLength(0) == 0);
+    REQUIRE(engine.sampleLength(1) == len);
+    REQUIRE_FALSE(engine.clearSample(16));
+
+    // A DMC note on the empty slot maps nothing: the channel is not active.
+    engine.noteOn(4, 60.0f, 1.0f);
+    std::vector<float> l(512), r(512);
+    engine.renderBlock(l.data(), r.data(), nullptr, nullptr, 512);
+    REQUIRE_FALSE(engine.isChannelActive(4));
+
+    // Staged dmc_rate 0 (not yet delivered by setParameter) already drives the encoder.
+    std::vector<float> longPcm(88200, 0.0f);
+    REQUIRE_FALSE(engine.loadSample(2, longPcm.data(), 88200, 44100.0));
+    engine.stageParameter(Nes2A03Engine::DmcRate, 0.0f);
+    REQUIRE(engine.getParameter(Nes2A03Engine::DmcRate) == 0.0f);
+    REQUIRE(engine.loadSample(2, longPcm.data(), 88200, 44100.0));
+    engine.stageParameter(Nes2A03Engine::DmcRate, 99.0f);   // clamped like setParameter()
+    REQUIRE(engine.getParameter(Nes2A03Engine::DmcRate) == 15.0f);
+}

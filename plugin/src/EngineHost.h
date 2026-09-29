@@ -76,7 +76,8 @@ class MidiLearn;
 //      signals, channel signals are copied to the enabled host buses (BusMap), and the
 //      main and channel signals are pushed into the VisualizerBuffers.
 //
-// Threads: prepare(), attachParameters(), loadUserSample() are message-thread only.
+// Threads: prepare(), attachParameters(), loadUserSample(), stageParameters() are
+// message-thread only.
 // process() and reset() are audio-thread only. activeChip() may be read from any thread.
 class EngineHost
 {
@@ -130,8 +131,12 @@ public:
     chipdsp::ChipId activeChip() const noexcept { return static_cast<chipdsp::ChipId> (activeChipIndex.load (std::memory_order_relaxed)); }
     bool isCrossfading() const noexcept { return crossfading.load (std::memory_order_relaxed); }
 
-    // Mono-mixes 'audio' and forwards it to IChipEngine::loadSample. Message thread only.
+    // Mono-mixes 'audio' and forwards it to IChipEngine::loadSample, after stageParameters().
+    // Message thread only.
     bool loadUserSample (chipdsp::ChipId chip, int slot, const juce::AudioBuffer<float>& audio, double sampleRate);
+    // Hands the chip's current APVTS values to IChipEngine::stageParameter() so the sample
+    // encoders see them before the audio thread forwards them. Message thread only.
+    void stageParameters (chipdsp::ChipId chip);
 
     VisualizerBuffers& visualizer() noexcept { return scopes; }
     const VisualizerBuffers& visualizer() const noexcept { return scopes; }

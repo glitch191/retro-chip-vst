@@ -176,6 +176,34 @@ TEST_CASE("Engine: sample budget is 64 KiB minus the echo buffer", "[snes][engin
     REQUIRE(!engine.loadSample(0, nullptr, 10, 32000.0));
 }
 
+TEST_CASE("Engine: clearSample frees the slot's BRR bytes", "[snes][engine][ram]")
+{
+    Rig rig;
+    SnesDspEngine& engine = *rig.engine;
+    std::vector<float> big(100000, 0.1f);          // 56250 bytes
+    REQUIRE(engine.loadSample(0, big.data(), static_cast<int>(big.size()), 32000.0));
+    std::vector<float> more(20000, 0.1f);          // 11250 bytes: does not fit next to it
+    REQUIRE(!engine.loadSample(1, more.data(), static_cast<int>(more.size()), 32000.0));
+
+    REQUIRE(engine.clearSample(0));
+    REQUIRE(!engine.sampleInfo(0).loaded);
+    REQUIRE(engine.freeSampleBytes() == sampleCapacityBytes(0));
+    REQUIRE(engine.loadSample(1, more.data(), static_cast<int>(more.size()), 32000.0));
+    REQUIRE(!engine.clearSample(32));
+    REQUIRE(!engine.clearSample(-1));
+
+    // A note on the cleared slot plays the silent loop block.
+    engine.noteOn(0, 60.0f, 1.0f);
+    const auto out = rig.renderSeconds(0.1);
+    REQUIRE(rms(out, 0, out.size()) < 1.0e-4);
+
+    // stageParameter: the echo_delay budget applies before the audio thread delivers it.
+    SnesDspEngine staged;
+    staged.stageParameter(SnesDspEngine::EchoDelay, 15.0f);
+    REQUIRE(staged.getParameter(SnesDspEngine::EchoDelay) == 15.0f);
+    REQUIRE(!staged.loadSample(0, big.data(), static_cast<int>(big.size()), 32000.0));
+}
+
 TEST_CASE("Engine: sources above 32 kHz are stored at 32 kHz, lower rates as-is", "[snes][engine][ram]")
 {
     SnesDspEngine engine;

@@ -201,6 +201,15 @@ void Nes2A03Engine::setParameter(int id, float value) noexcept
     applyParam(id, static_cast<int>(v));
 }
 
+void Nes2A03Engine::stageParameter(int id, float value) noexcept
+{
+    // Only the atomic (read by loadSample()); the driver settings follow at setParameter().
+    if (id < 0 || id >= NumParams)
+        return;
+    const ParamDesc& d = kDescs[id];
+    params[static_cast<size_t>(id)].store(std::clamp(std::round(value), d.minValue, d.maxValue));
+}
+
 float Nes2A03Engine::getParameter(int id) const noexcept
 {
     return (id >= 0 && id < NumParams) ? params[static_cast<size_t>(id)].load() : 0.0f;
@@ -427,6 +436,25 @@ bool Nes2A03Engine::loadSample(int slot, const float* mono, int numFrames, doubl
     dst = banks[static_cast<size_t>(active)];
     std::memcpy(dst.data.data() + static_cast<size_t>(slot) * kSlotCapacity, encoded.data(), kSlotCapacity);
     dst.length[static_cast<size_t>(slot)] = playable;
+    activeBank.store(target);
+    return true;
+}
+
+bool Nes2A03Engine::clearSample(int slot)
+{
+    if (slot < 0 || slot >= kNumSampleSlots)
+        return false;
+    // Same bank rotation as loadSample(); length 0 = empty slot (the DMC note plays nothing).
+    const int active = activeBank.load();
+    const int mapped = mappedBank.load();
+    int target = 0;
+    while (target == active || target == mapped)
+        ++target;
+
+    SampleBank& dst = banks[static_cast<size_t>(target)];
+    dst = banks[static_cast<size_t>(active)];
+    std::memset(dst.data.data() + static_cast<size_t>(slot) * kSlotCapacity, 0x55, kSlotCapacity);
+    dst.length[static_cast<size_t>(slot)] = 0;
     activeBank.store(target);
     return true;
 }

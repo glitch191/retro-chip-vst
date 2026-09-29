@@ -26,8 +26,10 @@ namespace rcv
 // Tooltips: each tile names its channel and the output bus that carries it.
 //
 // Display: the newest kWindow samples (about 21 ms at 48 kHz), started on the first rising
-// zero crossing of a longer read so periodic waveforms stand still; full scale is +/-1
-// (no automatic gain), one min/max bar per pixel column.
+// zero crossing of a longer read so periodic waveforms stand still; one min/max bar per
+// pixel column. Each tile scales its window so the peak fills the tile, with at most
+// kMaxDisplayGain (24 dB): the real chips' channels often peak near 0.1, which is two
+// pixels at +/-1 full scale. A steady signal keeps a steady gain, so it stays at rest.
 class ChannelScope final : public juce::Component,
                            public juce::TooltipClient
 {
@@ -35,6 +37,7 @@ public:
     static constexpr int kWindow = 1024;
     static constexpr int kRead = 2048;
     static constexpr int kMaxColumns = 512;
+    static constexpr float kMaxDisplayGain = 16.0f;
 
     explicit ChannelScope (VisualizerBuffers& buffers);
 

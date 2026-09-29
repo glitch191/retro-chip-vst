@@ -442,6 +442,27 @@ bool GenesisEngine::loadSample(int slot, const float* mono, int numFrames, doubl
     return true;
 }
 
+bool GenesisEngine::clearSample(int slot)
+{
+    if (slot < 0 || slot >= kDacSlots)
+        return false;
+    // Same two-bank flip as loadSample(); length 0 = empty slot.
+    const int current = activeBank.load(std::memory_order_seq_cst);
+    const int target = current ^ 1;
+    while (bankInUse.load(std::memory_order_seq_cst) == target)
+        std::this_thread::yield();
+    DacBank& dst = banks[target];
+    const DacBank& src = banks[current];
+    for (int s = 0; s < kDacSlots; ++s)
+    {
+        const int length = s == slot ? 0 : src.view[s].length;
+        std::copy_n(src.data[s].begin(), length, dst.data[s].begin());
+        dst.view[s].length = length;
+    }
+    activeBank.store(target, std::memory_order_seq_cst);
+    return true;
+}
+
 // ----- notes --------------------------------------------------------------------------------------
 
 void GenesisEngine::noteOn(int channel, float midiNote, float velocity) noexcept

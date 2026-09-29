@@ -72,20 +72,24 @@ namespace
     }
 } // namespace
 
-// The held note keeps sounding on NES; at block 100 the chip parameter switches to SNES
-// (optionally with a new note on the new chip). Three processors are rendered:
-//   Y: the note on NES, switch at block 100 (the case under test);
-//   B: the note on NES, note-off at block 100, no switch (what the outgoing engine plays);
-//   A: no note on NES, switch at block 100 (the incoming engine with its fade-in alone).
+// A note held on the outgoing chip keeps sounding; at block 100 the chip parameter switches
+// (optionally with a new note on the new chip). Three processors are rendered, all starting
+// on the outgoing chip (its start-up switch away from NES is over before the note at block 20):
+//   Y: the note on the outgoing chip, switch at block 100 (the case under test);
+//   B: the note, note-off at block 100, no switch (what the outgoing engine plays);
+//   A: no note, switch at block 100 (the incoming engine with its fade-in alone).
 // The engines are deterministic and the outgoing engine's fade gain is applied to B only,
 // so during the 20 ms equal-power fade (L = 0.020 * 48000 = 960 samples)
 //     Y[n] = A[n] + cos(pi/2 * (k + 1) / L) * B[n],   k = n - switchSample,
 // and after it Y = A. Step bound, from |cos'| <= (pi/2) / L per sample:
 //     |Y[n] - Y[n-1]| <= |dA[n]| + |dB[n]| + |B[n-1]| * (pi/2) / L.
-// A hard cut instead of the fade would step by |B[switch - 1]|.
+// A hard cut instead of the fade would step by |B[switch - 1]|. With the real engines the
+// NES note has a one-second release and the SNES plays a looped sample (prepareAudibleDefaults),
+// so the fade always shapes an audible tail.
 TEST_CASE ("Chip switch crossfades without clicks", "[enginehost][crossfade]")
 {
     constexpr int kBlocks = 200;
+    constexpr int kNoteBlock = 20;
     constexpr int kSwitchBlock = 100;
     constexpr size_t kSwitch = static_cast<size_t> (kSwitchBlock * kBlock);
     const int fadeLength = static_cast<int> (std::lround (rcv::EngineHost::kCrossfadeSeconds * kSampleRate));
@@ -93,20 +97,38 @@ TEST_CASE ("Chip switch crossfades without clicks", "[enginehost][crossfade]")
     const float maxGainStep = (kPi * 0.5f) / static_cast<float> (fadeLength);
     const int fadeBlocks = fadeLength / kBlock + 1;
 
+    struct Switch
+    {
+        chipdsp::ChipId from, to;
+    };
+    const auto sw = GENERATE (Switch { chipdsp::ChipId::Nes, chipdsp::ChipId::Snes },
+                              Switch { chipdsp::ChipId::Snes, chipdsp::ChipId::Genesis },
+                              Switch { chipdsp::ChipId::Genesis, chipdsp::ChipId::Nes });
     const bool noteOnNewChip = GENERATE (false, true);
-    INFO ("new note on the incoming chip: " << (noteOnNewChip ? "yes" : "no"));
+    INFO ("switch " << chipdsp::chipKey (sw.from) << " -> " << chipdsp::chipKey (sw.to)
+                    << ", new note on the incoming chip: " << (noteOnNewChip ? "yes" : "no"));
+    const float fromChip = static_cast<float> (static_cast<int> (sw.from));
+    const float toChip = static_cast<float> (static_cast<int> (sw.to));
 
     bool crossfadingAfterSwitch = false;
     bool crossfadingAtEnd = true;
-    chipdsp::ChipId activeAtEnd = chipdsp::ChipId::Nes;
+    chipdsp::ChipId activeAtEnd = sw.from;
+
+    const auto start = [&] (rcv::RetroChipProcessor& proc)
+    {
+        rcvtest::prepareAudibleDefaults (proc);
+        rcvtest::setRaw (proc, rcv::ParamIds::chip, fromChip);
+    };
 
     const auto switched = renderMain (kBlocks, [&] (rcv::RetroChipProcessor& proc, rcvtest::Runner& runner, int b)
     {
         if (b == 0)
+            start (proc);
+        if (b == kNoteBlock)
             runner.noteOn (1, 60, 100);
         if (b == kSwitchBlock)
         {
-            rcvtest::setRaw (proc, rcv::ParamIds::chip, 1.0f);   // SNES
+            rcvtest::setRaw (proc, rcv::ParamIds::chip, toChip);
             if (noteOnNewChip)
                 runner.noteOn (1, 67, 100);
         }
@@ -119,9 +141,11 @@ TEST_CASE ("Chip switch crossfades without clicks", "[enginehost][crossfade]")
         }
     });
 
-    const auto outgoing = renderMain (kBlocks, [&] (rcv::RetroChipProcessor&, rcvtest::Runner& runner, int b)
+    const auto outgoing = renderMain (kBlocks, [&] (rcv::RetroChipProcessor& proc, rcvtest::Runner& runner, int b)
     {
         if (b == 0)
+            start (proc);
+        if (b == kNoteBlock)
             runner.noteOn (1, 60, 100);
         if (b == kSwitchBlock)
             runner.noteOff (1, 60);
@@ -129,9 +153,11 @@ TEST_CASE ("Chip switch crossfades without clicks", "[enginehost][crossfade]")
 
     const auto incoming = renderMain (kBlocks, [&] (rcv::RetroChipProcessor& proc, rcvtest::Runner& runner, int b)
     {
+        if (b == 0)
+            start (proc);
         if (b == kSwitchBlock)
         {
-            rcvtest::setRaw (proc, rcv::ParamIds::chip, 1.0f);
+            rcvtest::setRaw (proc, rcv::ParamIds::chip, toChip);
             if (noteOnNewChip)
                 runner.noteOn (1, 67, 100);
         }
@@ -140,12 +166,13 @@ TEST_CASE ("Chip switch crossfades without clicks", "[enginehost][crossfade]")
     REQUIRE (switched.size() == outgoing.size());
     REQUIRE (incoming.size() == outgoing.size());
 
-    // Before the switch the processor renders the NES reference; the incoming chip is silent.
+    // Before the switch the processor renders the outgoing reference; without a note the
+    // chip is silent (real engines: below one 16-bit LSB of output-stage settling).
     REQUIRE (maxAbs (outgoing, kSwitch / 2, kSwitch) > 1.0e-3f);   // the held note is audible
     for (size_t n = 0; n < kSwitch; ++n)
         if (std::abs (switched[n] - outgoing[n]) > 1.0e-6f)
             FAIL ("sample " << n << " differs before the switch");
-    REQUIRE (maxAbs (incoming, 0, kSwitch) == 0.0f);
+    REQUIRE (maxAbs (incoming, static_cast<size_t> (kNoteBlock * kBlock), kSwitch) < 1.0e-4f);
 
     const size_t fadeEnd = kSwitch + static_cast<size_t> (fadeLength);
     float fadeMaxStep = 0.0f;
@@ -182,7 +209,8 @@ TEST_CASE ("Chip switch crossfades without clicks", "[enginehost][crossfade]")
                           + maxAbs (outgoing, 0, outgoing.size()) * maxGainStep + 1.0e-5f;
     const float runMaxStep = maxStep (switched, 1, switched.size());
     const float hardCutStep = std::abs (outgoing[kSwitch - 1]);
-    WARN ("chip switch (" << (noteOnNewChip ? "with" : "without") << " new note): max step " << runMaxStep
+    WARN ("chip switch " << chipdsp::chipKey (sw.from) << " -> " << chipdsp::chipKey (sw.to) << " ("
+          << (noteOnNewChip ? "with" : "without") << " new note): max step " << runMaxStep
           << " over the run, " << fadeMaxStep << " around the fade, threshold " << threshold
           << "; fade gain step <= " << maxGainStep << ", max deviation from the cos fade " << maxShapeError
           << ", a hard cut would drop " << hardCutStep << " in one sample");
@@ -190,10 +218,12 @@ TEST_CASE ("Chip switch crossfades without clicks", "[enginehost][crossfade]")
 
     CHECK (crossfadingAfterSwitch);
     CHECK_FALSE (crossfadingAtEnd);
-    CHECK (activeAtEnd == chipdsp::ChipId::Snes);
+    CHECK (activeAtEnd == sw.to);
 
+    // Nothing plays on the incoming chip without a note: the real output stages may settle
+    // by less than one 16-bit LSB (3e-5) after their reset, so "silent" is below -80 dBFS.
     if (! noteOnNewChip)
-        CHECK (maxAbs (switched, fadeEnd, switched.size()) == 0.0f);   // nothing plays on SNES
+        CHECK (maxAbs (switched, fadeEnd, switched.size()) < 1.0e-4f);
     else
         CHECK (maxAbs (switched, fadeEnd, switched.size()) > 1.0e-3f);
 }
@@ -323,6 +353,7 @@ TEST_CASE ("Channel buses carry the hardware channels and Main still sums", "[en
     {
         owner = rcvtest::makeProcessor();
         rcvtest::setRaw (*owner, rcv::ParamIds::polyChannels, 31.0f);   // all five NES channels
+        rcvtest::prepareAudibleDefaults (*owner);                       // a looped DMC sample for the fifth note
         rcvtest::enableChannelBuses (*owner, busesToEnable);
         rcvtest::Runner runner (*owner, kSampleRate, kBlock);
         REQUIRE (owner->getTotalNumOutputChannels() == 2 + 2 * busesToEnable);

@@ -203,7 +203,8 @@ TEST_CASE ("Channel-mode messages act on their own MIDI channel", "[enginehost][
     }
 }
 
-// NES plays a held note; the chip switches to SNES at block 100 and to Genesis at block 105,
+// NES plays a held note (Pulse 1 with a one-second release, so it is still audible when
+// released); the chip switches to SNES at block 100 and to Genesis at block 105,
 // in the middle of the 960-sample fade. SNES and Genesis play nothing, so the output must
 // equal the single NES -> SNES switch sample for sample: the NES engine keeps fading along
 // its cos curve and the second switch waits for the fade to end.
@@ -218,7 +219,10 @@ TEST_CASE ("A second chip switch during a fade does not cut the fading engine", 
         for (int b = 0; b < kBlocks; ++b)
         {
             if (b == 0)
+            {
+                rcvtest::prepareAudibleDefaults (*proc);   // NES Pulse 1 release: the fade has a tail to shape
                 runner.noteOn (1, 60, 100);
+            }
             if (b == 100)
                 rcvtest::setRaw (*proc, rcv::ParamIds::chip, 1.0f);
             if (b == 105 && secondSwitch)
@@ -240,10 +244,13 @@ TEST_CASE ("A second chip switch during a fade does not cut the fading engine", 
         fadingPeak = std::max (fadingPeak, std::abs (single[n]));
     REQUIRE (fadingPeak > 1.0e-3f);   // the NES note is still fading out at the second switch
 
+    // The idle SNES and Genesis output stages of the real engines settle by less than one
+    // 16-bit LSB after their reset, and that residue is faded differently in the two runs:
+    // the tolerance is -80 dBFS (the NES tail being cut would differ by up to fadingPeak).
     float maxDiff = 0.0f;
     for (size_t n = 0; n < single.size(); ++n)
         maxDiff = std::max (maxDiff, std::abs (single[n] - twice[n]));
-    CHECK (maxDiff <= 1.0e-6f);
+    CHECK (maxDiff <= 1.0e-4f);
     CHECK (singleEnd == chipdsp::ChipId::Snes);
     CHECK (doubleEnd == chipdsp::ChipId::Genesis);
 }

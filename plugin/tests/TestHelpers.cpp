@@ -1,5 +1,7 @@
 #include "TestHelpers.h"
 
+#include "chipdsp/factory/StubEngine.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/reporters/catch_reporter_event_listener.hpp>
 #include <catch2/reporters/catch_reporter_registrars.hpp>
@@ -62,6 +64,22 @@ void enableChannelBuses (rcv::RetroChipProcessor& proc, int count)
         REQUIRE (bus != nullptr);
         REQUIRE (bus->enable (true));
     }
+}
+
+bool usesStubEngines (rcv::RetroChipProcessor& proc)
+{
+    return dynamic_cast<const chipdsp::StubEngine*> (&proc.engineHost().engine (chipdsp::ChipId::Nes)) != nullptr;
+}
+
+void prepareAudibleDefaults (rcv::RetroChipProcessor& proc)
+{
+    if (usesStubEngines (proc))
+        return;
+    setRaw (proc, "nes_p1_sw_release", 60.0f);
+    setRaw (proc, "nes_dmc_loop", 1.0f);
+    auto& pm = proc.presetManager();
+    REQUIRE (pm.loadFactorySampleIntoSlot (chipdsp::ChipId::Snes, 0, "square_loop"));
+    REQUIRE (pm.loadFactorySampleIntoSlot (chipdsp::ChipId::Nes, 0, "kick_long"));
 }
 
 Runner::Runner (rcv::RetroChipProcessor& proc, double sampleRate, int blockSize)

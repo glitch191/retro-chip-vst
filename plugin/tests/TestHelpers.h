@@ -19,6 +19,15 @@ float getRaw (rcv::RetroChipProcessor& proc, const juce::String& id);
 // Enables "Out 1".."Out <count>" (the main bus stays enabled). Call before prepare().
 void enableChannelBuses (rcv::RetroChipProcessor& proc, int count);
 
+// True when the plugin was built with RCV_USE_STUB_ENGINES (StubEngine placeholders).
+bool usesStubEngines (rcv::RetroChipProcessor& proc);
+
+// Real engines only (no-op on the stubs): a one-second software release on NES Pulse 1, so
+// a released or switched-away note keeps sounding for a while, and looped factory samples
+// in slot 0 of the SNES (square_loop) and the NES DMC (kick_long, dmc_loop on), so notes on
+// sample channels sound. Call on the message thread before the first block.
+void prepareAudibleDefaults (rcv::RetroChipProcessor& proc);
+
 // Drives processBlock() the way a host does: one buffer sized for every enabled output
 // channel and one MIDI buffer, cleared after each block.
 class Runner

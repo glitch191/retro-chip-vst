@@ -49,7 +49,10 @@ namespace rcv
 // then waits 2.5 s so the statistics fill), RCV_SCREENSHOT_SEARCH types into the preset
 // search field and RCV_SCREENSHOT_MENU (preset, learn) then opens the preset menu or the
 // MIDI learn menu of the panel's first control and saves each menu window as
-// "<name>_menu.png" next to the editor snapshot.
+// "<name>_menu.png" next to the editor snapshot. RCV_SCREENSHOT_PRESET applies a factory
+// preset of the selected chip by name; RCV_SCREENSHOT_NOTES=1 queues a held chord (C2 C3 E3
+// G3) through RetroChipProcessor::queueTestNotes() and waits 0.5 s, so the channel scopes
+// show real waveforms. None of this runs unless RCV_SCREENSHOT is set.
 class RetroChipEditor final : public juce::AudioProcessorEditor,
                               private juce::ChangeListener
 {
@@ -111,6 +114,7 @@ private:
     juce::String screenshotPath;
     juce::String screenshotMenu;
     bool screenshotQuit = false;
+    bool screenshotNotes = false;
     bool editorShotTaken = false;
     bool screenshotDone = false;
     int shownFrames = 0;

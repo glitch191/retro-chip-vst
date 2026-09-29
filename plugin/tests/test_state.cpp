@@ -4,6 +4,9 @@
 
 #include "TestHelpers.h"
 
+#include "chipdsp/nes/Nes2A03Engine.h"
+#include "chipdsp/snes/SnesDspEngine.h"
+
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/matchers/catch_matchers_floating_point.hpp>
 
@@ -73,11 +76,20 @@ TEST_CASE ("State round trip restores parameters, preset name, MIDI learn and us
     source->midiLearn().setMapping (74, learnTarget);
     REQUIRE (source->midiLearn().controllerForParam (learnTarget) == 74);
 
+    // Real engines: one user sample in NES DMC slot 0 and one in SNES slot 1, encoded for the
+    // parameter values set above (dmc_rate, echo_delay budget).
     const auto sampleChip = chipWithSampleSlots (*source);
-    if (sampleChip.has_value())
-        REQUIRE (source->presetManager().setUserSample (*sampleChip, 0, makeTestWav()));
+    const bool realSlots = sampleChip.has_value() && ! rcvtest::usesStubEngines (*source);
+    if (realSlots)
+    {
+        REQUIRE (source->presetManager().setUserSample (chipdsp::ChipId::Nes, 0, makeTestWav()));
+        REQUIRE (source->presetManager().setUserSample (chipdsp::ChipId::Snes, 1, makeTestWav()));
+    }
     else
+    {
         WARN ("No engine exposes sample slots (stub engines): only the empty user-sample case is checked");
+    }
+    const int numUserSamples = realSlots ? 2 : 0;
 
     juce::MemoryBlock state;
     source->getStateInformation (state);
@@ -94,9 +106,22 @@ TEST_CASE ("State round trip restores parameters, preset name, MIDI learn and us
     REQUIRE (xml->getChildByName ("MidiLearn") != nullptr);
     CHECK (xml->getChildByName ("MidiLearn")->getNumChildElements() == 1);
     REQUIRE (xml->getChildByName ("UserSamples") != nullptr);
-    CHECK (xml->getChildByName ("UserSamples")->getNumChildElements() == (sampleChip.has_value() ? 1 : 0));
+    CHECK (xml->getChildByName ("UserSamples")->getNumChildElements() == numUserSamples);
 
     auto restored = rcvtest::makeProcessor();
+    const auto* sourceNes = dynamic_cast<const chipdsp::Nes2A03Engine*> (&source->engineHost().engine (chipdsp::ChipId::Nes));
+    const auto* sourceSnes = dynamic_cast<const chipdsp::SnesDspEngine*> (&source->engineHost().engine (chipdsp::ChipId::Snes));
+    const auto* restoredNes = dynamic_cast<const chipdsp::Nes2A03Engine*> (&restored->engineHost().engine (chipdsp::ChipId::Nes));
+    const auto* restoredSnes = dynamic_cast<const chipdsp::SnesDspEngine*> (&restored->engineHost().engine (chipdsp::ChipId::Snes));
+    if (realSlots)
+    {
+        REQUIRE (sourceNes != nullptr);
+        REQUIRE (sourceSnes != nullptr);
+        REQUIRE (restoredNes != nullptr);
+        REQUIRE (restoredSnes != nullptr);
+        REQUIRE (restoredNes->sampleLength (0) == 0);          // nothing there before the restore
+        REQUIRE_FALSE (restoredSnes->sampleInfo (1).loaded);
+    }
     restored->setStateInformation (state.getData(), static_cast<int> (state.getSize()));
 
     for (const auto& [id, value] : expected)
@@ -112,12 +137,30 @@ TEST_CASE ("State round trip restores parameters, preset name, MIDI learn and us
     CHECK (restored->midiLearn().controllerForParam (learnTarget) == 74);
     CHECK (restored->midiLearn().paramForController (74) == learnTarget);
 
-    if (sampleChip.has_value())
+    if (realSlots)
     {
-        REQUIRE (restored->presetManager().userSamples().size() == 1);
-        CHECK (restored->presetManager().userSamples().front().chip == *sampleChip);
-        CHECK (restored->presetManager().userSamples().front().slot == 0);
-        CHECK (restored->presetManager().userSamples().front().wav.getSize() > 0);
+        const auto& userSamples = restored->presetManager().userSamples();
+        REQUIRE (userSamples.size() == 2);
+        CHECK (userSamples[0].chip == chipdsp::ChipId::Nes);
+        CHECK (userSamples[0].slot == 0);
+        CHECK (userSamples[1].chip == chipdsp::ChipId::Snes);
+        CHECK (userSamples[1].slot == 1);
+        CHECK (userSamples[0].wav == source->presetManager().userSamples()[0].wav);
+        CHECK (userSamples[1].wav == source->presetManager().userSamples()[1].wav);
+        CHECK (restored->presetManager().sampleStatus().isEmpty());
+
+        // The engines hold the same encoded data as the source's: same DMC length (encoded at
+        // the restored dmc_rate), same BRR size, stored rate and root note / one-shot loop.
+        CHECK (restoredNes->sampleLength (0) > 0);
+        CHECK (restoredNes->sampleLength (0) == sourceNes->sampleLength (0));
+        const auto a = sourceSnes->sampleInfo (1);
+        const auto b = restoredSnes->sampleInfo (1);
+        CHECK (b.loaded);
+        CHECK (b.brrBytes == a.brrBytes);
+        CHECK (b.brrBytes > 0);
+        CHECK (b.storedRate == a.storedRate);
+        CHECK (b.rootNote == a.rootNote);
+        CHECK (b.loopStartBlock == a.loopStartBlock);
     }
     else
     {
@@ -128,19 +171,27 @@ TEST_CASE ("State round trip restores parameters, preset name, MIDI learn and us
 TEST_CASE ("A stored user sample the engine cannot take is dropped on restore", "[state]")
 {
     auto proc = rcvtest::makeProcessor();
-    if (chipWithSampleSlots (*proc).has_value())
-        SKIP ("Engines with sample slots are linked; the refusal path is not reachable with slot 0");
+    // Stub engines refuse every sample. Real engines refuse one larger than the hardware
+    // memory: 5 s at 32 kHz is 90000 BRR bytes on the SNES (64 KiB of APU RAM) and more
+    // than the 4081-byte DMC limit on the NES.
+    const bool real = ! rcvtest::usesStubEngines (*proc);
+    const char* chipKeyText = real ? "snes" : "nes";
 
-    // Hand-made state: the default parameters plus one NES sample in slot 0.
+    // Hand-made state: the default parameters plus one sample in slot 0.
     juce::MemoryBlock state;
     proc->getStateInformation (state);
     auto xml = juce::AudioProcessor::getXmlFromBinary (state.getData(), static_cast<int> (state.getSize()));
     REQUIRE (xml != nullptr);
     auto* samples = xml->getChildByName ("UserSamples");
     REQUIRE (samples != nullptr);
-    const auto wav = makeTestWav();
+    juce::MemoryBlock wav = makeTestWav();
+    if (real)
+    {
+        std::vector<float> longData (160000, 0.25f);
+        wav = rcv::PresetManager::encodeWavMono16 (longData.data(), static_cast<int> (longData.size()), 32000.0);
+    }
     auto* node = samples->createNewChildElement ("Sample");
-    node->setAttribute ("chip", "nes");
+    node->setAttribute ("chip", chipKeyText);
     node->setAttribute ("slot", 0);
     node->setAttribute ("wav", juce::Base64::toBase64 (wav.getData(), wav.getSize()));
 
@@ -149,6 +200,7 @@ TEST_CASE ("A stored user sample the engine cannot take is dropped on restore", 
     auto restored = rcvtest::makeProcessor();
     restored->setStateInformation (edited.getData(), static_cast<int> (edited.getSize()));
     CHECK (restored->presetManager().userSamples().empty());
+    CHECK (restored->presetManager().sampleStatus().isNotEmpty());   // reported, not silent
 }
 
 TEST_CASE ("getState right after an off-thread setState writes the restored preset", "[state]")

@@ -209,8 +209,29 @@ CommonStrip::CommonStrip (RetroChipProcessor& p, UiContext& context)
         rateModeAttachment->sendInitialUpdate();
     }
 
+    sampleStatus.setFont (theme::font());
+    sampleStatus.setColour (juce::Label::textColourId, theme::colours::text);
+    sampleStatus.setColour (juce::Label::backgroundColourId, theme::colours::panel);
+    sampleStatus.setColour (juce::Label::outlineColourId, theme::colours::border);
+    sampleStatus.setJustificationType (juce::Justification::topLeft);
+    sampleStatus.setBorderSize (juce::BorderSize<int> (theme::kUnit, theme::kPad, theme::kUnit, theme::kPad));
+    sampleStatus.setMinimumHorizontalScale (1.0f);
+    addChildComponent (sampleStatus);
+
     processor.presetManager().addChangeListener (this);
     refreshPresetName();
+    refreshSampleStatus();
+}
+
+void CommonStrip::refreshSampleStatus()
+{
+    const auto status = processor.presetManager().sampleStatus();
+    const auto text = status.isEmpty() ? juce::String() : "Sample not loaded. " + status;
+    if (text == sampleStatus.getText())
+        return;
+    sampleStatus.setText (text, juce::dontSendNotification);
+    sampleStatus.setTooltip (text);   // the box may cut long names
+    sampleStatus.setVisible (text.isNotEmpty());
 }
 
 CommonStrip::~CommonStrip()
@@ -327,6 +348,8 @@ void CommonStrip::resized()
         form->setBounds (side.removeFromTop (form->heightForWidth (side.getWidth())));
         side.removeFromTop (theme::kGap);
     }
+    // Up to five lines of text in the space left under the forms.
+    sampleStatus.setBounds (side.removeFromTop (juce::jmin (side.getHeight(), 5 * theme::kLabelHeight + 2 * theme::kUnit)));
 }
 
 void CommonStrip::paint (juce::Graphics& g)
@@ -387,6 +410,7 @@ void CommonStrip::randomize()
 void CommonStrip::changeListenerCallback (juce::ChangeBroadcaster*)
 {
     refreshPresetName();
+    refreshSampleStatus();
 }
 
 void CommonStrip::refreshPresetName()
@@ -597,10 +621,11 @@ void CommonStrip::importSample()
                                   const auto file = chooser.getResult();
                                   if (safeThis == nullptr || ! file.existsAsFile())
                                       return;
-                                  if (! safeThis->processor.presetManager().importUserSample (chip, slot, file))
+                                  auto& pm = safeThis->processor.presetManager();
+                                  if (! pm.importUserSample (chip, slot, file))
                                       juce::AlertWindow::showMessageBoxAsync (juce::MessageBoxIconType::WarningIcon, "Import sample",
                                                                               "The file could not be loaded into slot " + juce::String (slot)
-                                                                                  + ": it is not a readable WAV file, or it does not fit the chip's sample memory.");
+                                                                                  + ". " + pm.sampleStatus() + ".");
                               });
 }
 
