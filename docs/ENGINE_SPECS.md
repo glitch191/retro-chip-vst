@@ -100,8 +100,8 @@ Parameters (key: range, default):
   increase); `gain_value` 0..127 (direct) / 0..31 (rates, clamped); `release_mode`
   0..1 (0 = hardware KOFF, 1 = driver writes GAIN exponential decrease with
   `release_rate` 0..31); `volume` 0..127; `pan` -64..64; `transpose` -24..24;
-  `fine_tune` -100..100 (cents); `vibrato_rate` 0..15 (ticks per half cycle);
-  `vibrato_depth` 0..64 (pitch register units); `vibrato_delay` 0..60 (ticks);
+  `fine_tune` -100..100 (cents); `vibrato_rate` 0..63 (4 ms ticks per half cycle: 23 = 5.4 Hz);
+  `vibrato_depth` 0..64 (pitch register units); `vibrato_delay` 0..250 (ticks, 1 s);
   `noise_enable` 0..1; `noise_clock` 0..31; `pmon` 0..1 (voices 1..7 modulated by
   previous voice); `loop_override` 0..2 (sample default / force one-shot / force loop).
 * Echo: `echo_enable` 0..1; `echo_delay` 0..15; `echo_feedback` -128..127;

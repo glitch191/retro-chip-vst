@@ -5148,9 +5148,9 @@
       "v6_echo": 0,
       "v7_echo": 0,
       "v8_echo": 0,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -5199,9 +5199,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -5251,9 +5251,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -5303,9 +5303,9 @@
       "v6_echo": 0,
       "v7_echo": 0,
       "v8_echo": 0,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -5355,9 +5355,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -5408,9 +5408,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -6373,7 +6373,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Steel Guitar Vib8Hz",
+    "name": "SNES Instrument Steel Guitar Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -6408,7 +6408,7 @@
       "v8_echo": 0,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -6418,14 +6418,14 @@
     "tags": [
       "acoustic",
       "guitar",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Steel Guitar Vib8Hz Echo Long",
+    "name": "SNES Instrument Steel Guitar Vib5Hz Echo Long",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -6460,7 +6460,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -6471,14 +6471,14 @@
       "acoustic",
       "echo-long",
       "guitar",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Steel Guitar Vib8Hz Echo Short",
+    "name": "SNES Instrument Steel Guitar Vib5Hz Echo Short",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -6513,7 +6513,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -6524,7 +6524,7 @@
       "acoustic",
       "echo-short",
       "guitar",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
@@ -6689,7 +6689,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Chip Organ Vib12Hz",
+    "name": "SNES Instrument Chip Organ Vib7Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -6724,7 +6724,7 @@
       "v8_echo": 0,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 84
     },
     "samples": {
@@ -6735,14 +6735,14 @@
       "chip",
       "organ",
       "square",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Chip Organ Vib12Hz Echo Long",
+    "name": "SNES Instrument Chip Organ Vib7Hz Echo Long",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -6777,7 +6777,7 @@
       "v8_echo": 1,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 84
     },
     "samples": {
@@ -6789,14 +6789,14 @@
       "echo-long",
       "organ",
       "square",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Chip Organ Vib12Hz Echo Short",
+    "name": "SNES Instrument Chip Organ Vib7Hz Echo Short",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -6831,7 +6831,7 @@
       "v8_echo": 1,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 84
     },
     "samples": {
@@ -6843,7 +6843,7 @@
       "echo-short",
       "organ",
       "square",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {
@@ -7005,7 +7005,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Drawbar Organ Vib12Hz",
+    "name": "SNES Instrument Drawbar Organ Vib7Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -7040,7 +7040,7 @@
       "v8_echo": 0,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 92
     },
     "samples": {
@@ -7050,14 +7050,14 @@
     "tags": [
       "keys",
       "organ",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Drawbar Organ Vib12Hz Echo Long",
+    "name": "SNES Instrument Drawbar Organ Vib7Hz Echo Long",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -7092,7 +7092,7 @@
       "v8_echo": 1,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 92
     },
     "samples": {
@@ -7103,14 +7103,14 @@
       "echo-long",
       "keys",
       "organ",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Drawbar Organ Vib12Hz Echo Short",
+    "name": "SNES Instrument Drawbar Organ Vib7Hz Echo Short",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -7145,7 +7145,7 @@
       "v8_echo": 1,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 92
     },
     "samples": {
@@ -7156,7 +7156,7 @@
       "echo-short",
       "keys",
       "organ",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {
@@ -7637,7 +7637,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument EPiano Vib8Hz",
+    "name": "SNES Instrument EPiano Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -7672,7 +7672,7 @@
       "v8_echo": 0,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -7682,14 +7682,14 @@
     "tags": [
       "epiano",
       "keys",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument EPiano Vib8Hz Echo Long",
+    "name": "SNES Instrument EPiano Vib5Hz Echo Long",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -7724,7 +7724,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -7735,14 +7735,14 @@
       "echo-long",
       "epiano",
       "keys",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument EPiano Vib8Hz Echo Short",
+    "name": "SNES Instrument EPiano Vib5Hz Echo Short",
     "params": {
       "adsr_enable": 1,
       "attack": 15,
@@ -7777,7 +7777,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -7788,7 +7788,7 @@
       "echo-short",
       "epiano",
       "keys",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
@@ -8296,9 +8296,9 @@
       "v6_echo": 0,
       "v7_echo": 0,
       "v8_echo": 0,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -8347,9 +8347,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -8399,9 +8399,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -8451,9 +8451,9 @@
       "v6_echo": 0,
       "v7_echo": 0,
       "v8_echo": 0,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -8503,9 +8503,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -8556,9 +8556,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -9053,7 +9053,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Clarinet Vib8Hz",
+    "name": "SNES Instrument Clarinet Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 11,
@@ -9088,7 +9088,7 @@
       "v8_echo": 0,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -9098,7 +9098,7 @@
     "tags": [
       "clarinet",
       "lead",
-      "vib8hz",
+      "vib5hz",
       "woodwind"
     ]
   },
@@ -9106,7 +9106,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Clarinet Vib8Hz Echo Long",
+    "name": "SNES Instrument Clarinet Vib5Hz Echo Long",
     "params": {
       "adsr_enable": 1,
       "attack": 11,
@@ -9141,7 +9141,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -9152,7 +9152,7 @@
       "clarinet",
       "echo-long",
       "lead",
-      "vib8hz",
+      "vib5hz",
       "woodwind"
     ]
   },
@@ -9160,7 +9160,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Clarinet Vib8Hz Echo Short",
+    "name": "SNES Instrument Clarinet Vib5Hz Echo Short",
     "params": {
       "adsr_enable": 1,
       "attack": 11,
@@ -9195,7 +9195,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -9206,7 +9206,7 @@
       "clarinet",
       "echo-short",
       "lead",
-      "vib8hz",
+      "vib5hz",
       "woodwind"
     ]
   },
@@ -9638,114 +9638,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Oboe Vib12Hz",
-    "params": {
-      "adsr_enable": 1,
-      "attack": 11,
-      "decay": 3,
-      "echo_delay": 0,
-      "echo_enable": 0,
-      "echo_feedback": 0,
-      "echo_volume": 0,
-      "fine_tune": 0,
-      "fir_preset": 0,
-      "gain_mode": 0,
-      "gain_value": 127,
-      "loop_override": 0,
-      "main_volume": 127,
-      "noise_clock": 0,
-      "noise_enable": 0,
-      "pan": 8,
-      "pmon": 0,
-      "release_mode": 1,
-      "release_rate": 22,
-      "sample": 20,
-      "sustain_level": 5,
-      "sustain_rate": 0,
-      "transpose": 0,
-      "v1_echo": 0,
-      "v2_echo": 0,
-      "v3_echo": 0,
-      "v4_echo": 0,
-      "v5_echo": 0,
-      "v6_echo": 0,
-      "v7_echo": 0,
-      "v8_echo": 0,
-      "vibrato_delay": 15,
-      "vibrato_depth": 32,
-      "vibrato_rate": 10,
-      "volume": 96
-    },
-    "samples": {
-      "sample": "oboe"
-    },
-    "subcategory": "Woodwind",
-    "tags": [
-      "lead",
-      "oboe",
-      "vib12hz",
-      "woodwind"
-    ]
-  },
-  {
-    "category": "Instrument",
-    "chip": "snes",
-    "global": {},
-    "name": "SNES Instrument Oboe Vib12Hz Echo Short",
-    "params": {
-      "adsr_enable": 1,
-      "attack": 11,
-      "decay": 3,
-      "echo_delay": 3,
-      "echo_enable": 1,
-      "echo_feedback": 32,
-      "echo_volume": 44,
-      "fine_tune": 0,
-      "fir_preset": 1,
-      "gain_mode": 0,
-      "gain_value": 127,
-      "loop_override": 0,
-      "main_volume": 127,
-      "noise_clock": 0,
-      "noise_enable": 0,
-      "pan": 8,
-      "pmon": 0,
-      "release_mode": 1,
-      "release_rate": 22,
-      "sample": 20,
-      "sustain_level": 5,
-      "sustain_rate": 0,
-      "transpose": 0,
-      "v1_echo": 1,
-      "v2_echo": 1,
-      "v3_echo": 1,
-      "v4_echo": 1,
-      "v5_echo": 1,
-      "v6_echo": 1,
-      "v7_echo": 1,
-      "v8_echo": 1,
-      "vibrato_delay": 15,
-      "vibrato_depth": 32,
-      "vibrato_rate": 10,
-      "volume": 96
-    },
-    "samples": {
-      "sample": "oboe"
-    },
-    "subcategory": "Woodwind",
-    "tags": [
-      "echo-short",
-      "lead",
-      "oboe",
-      "vib12hz",
-      "woodwind"
-    ]
-  },
-  {
-    "category": "Instrument",
-    "chip": "snes",
-    "global": {},
-    "name": "SNES Instrument Oboe Vib8Hz",
+    "name": "SNES Instrument Oboe Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 11,
@@ -9780,7 +9673,7 @@
       "v8_echo": 0,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -9790,7 +9683,7 @@
     "tags": [
       "lead",
       "oboe",
-      "vib8hz",
+      "vib5hz",
       "woodwind"
     ]
   },
@@ -9798,7 +9691,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {},
-    "name": "SNES Instrument Oboe Vib8Hz Echo Short",
+    "name": "SNES Instrument Oboe Vib5Hz Echo Short",
     "params": {
       "adsr_enable": 1,
       "attack": 11,
@@ -9833,7 +9726,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -9844,7 +9737,114 @@
       "echo-short",
       "lead",
       "oboe",
-      "vib8hz",
+      "vib5hz",
+      "woodwind"
+    ]
+  },
+  {
+    "category": "Instrument",
+    "chip": "snes",
+    "global": {},
+    "name": "SNES Instrument Oboe Vib7Hz",
+    "params": {
+      "adsr_enable": 1,
+      "attack": 11,
+      "decay": 3,
+      "echo_delay": 0,
+      "echo_enable": 0,
+      "echo_feedback": 0,
+      "echo_volume": 0,
+      "fine_tune": 0,
+      "fir_preset": 0,
+      "gain_mode": 0,
+      "gain_value": 127,
+      "loop_override": 0,
+      "main_volume": 127,
+      "noise_clock": 0,
+      "noise_enable": 0,
+      "pan": 8,
+      "pmon": 0,
+      "release_mode": 1,
+      "release_rate": 22,
+      "sample": 20,
+      "sustain_level": 5,
+      "sustain_rate": 0,
+      "transpose": 0,
+      "v1_echo": 0,
+      "v2_echo": 0,
+      "v3_echo": 0,
+      "v4_echo": 0,
+      "v5_echo": 0,
+      "v6_echo": 0,
+      "v7_echo": 0,
+      "v8_echo": 0,
+      "vibrato_delay": 15,
+      "vibrato_depth": 32,
+      "vibrato_rate": 18,
+      "volume": 96
+    },
+    "samples": {
+      "sample": "oboe"
+    },
+    "subcategory": "Woodwind",
+    "tags": [
+      "lead",
+      "oboe",
+      "vib7hz",
+      "woodwind"
+    ]
+  },
+  {
+    "category": "Instrument",
+    "chip": "snes",
+    "global": {},
+    "name": "SNES Instrument Oboe Vib7Hz Echo Short",
+    "params": {
+      "adsr_enable": 1,
+      "attack": 11,
+      "decay": 3,
+      "echo_delay": 3,
+      "echo_enable": 1,
+      "echo_feedback": 32,
+      "echo_volume": 44,
+      "fine_tune": 0,
+      "fir_preset": 1,
+      "gain_mode": 0,
+      "gain_value": 127,
+      "loop_override": 0,
+      "main_volume": 127,
+      "noise_clock": 0,
+      "noise_enable": 0,
+      "pan": 8,
+      "pmon": 0,
+      "release_mode": 1,
+      "release_rate": 22,
+      "sample": 20,
+      "sustain_level": 5,
+      "sustain_rate": 0,
+      "transpose": 0,
+      "v1_echo": 1,
+      "v2_echo": 1,
+      "v3_echo": 1,
+      "v4_echo": 1,
+      "v5_echo": 1,
+      "v6_echo": 1,
+      "v7_echo": 1,
+      "v8_echo": 1,
+      "vibrato_delay": 15,
+      "vibrato_depth": 32,
+      "vibrato_rate": 18,
+      "volume": 96
+    },
+    "samples": {
+      "sample": "oboe"
+    },
+    "subcategory": "Woodwind",
+    "tags": [
+      "echo-short",
+      "lead",
+      "oboe",
+      "vib7hz",
       "woodwind"
     ]
   },
@@ -9905,7 +9905,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Choir Ah Echo Hall Vib8Hz",
+    "name": "SNES Pad Choir Ah Echo Hall Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 5,
@@ -9940,7 +9940,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -9951,7 +9951,7 @@
       "choir",
       "echo-hall",
       "pad",
-      "vib8hz",
+      "vib5hz",
       "vocal"
     ]
   },
@@ -10012,7 +10012,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Choir Ah Echo Long Vib8Hz",
+    "name": "SNES Pad Choir Ah Echo Long Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 5,
@@ -10047,7 +10047,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -10058,7 +10058,7 @@
       "choir",
       "echo-long",
       "pad",
-      "vib8hz",
+      "vib5hz",
       "vocal"
     ]
   },
@@ -10119,7 +10119,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Choir Ah Echo Short Vib8Hz",
+    "name": "SNES Pad Choir Ah Echo Short Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 5,
@@ -10154,7 +10154,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -10165,7 +10165,7 @@
       "choir",
       "echo-short",
       "pad",
-      "vib8hz",
+      "vib5hz",
       "vocal"
     ]
   },
@@ -10259,9 +10259,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -10366,9 +10366,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -10473,9 +10473,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 100
     },
     "samples": {
@@ -10747,7 +10747,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -10801,7 +10801,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 20,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -10856,7 +10856,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -10910,7 +10910,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 20,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -10983,7 +10983,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Glass Echo Bright Vib8Hz",
+    "name": "SNES Pad Glass Echo Bright Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 7,
@@ -11018,7 +11018,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 20,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 88
     },
     "samples": {
@@ -11030,7 +11030,7 @@
       "echo-bright",
       "glass",
       "pad",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
@@ -11090,7 +11090,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Glass Echo Long Vib8Hz",
+    "name": "SNES Pad Glass Echo Long Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 7,
@@ -11125,7 +11125,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 20,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 88
     },
     "samples": {
@@ -11137,7 +11137,7 @@
       "echo-long",
       "glass",
       "pad",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
@@ -11197,7 +11197,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Glass Echo Short Vib8Hz",
+    "name": "SNES Pad Glass Echo Short Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 7,
@@ -11232,7 +11232,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 20,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 88
     },
     "samples": {
@@ -11244,7 +11244,7 @@
       "echo-short",
       "glass",
       "pad",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
@@ -11286,7 +11286,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -11339,7 +11339,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -11393,7 +11393,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -11446,7 +11446,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -11500,7 +11500,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -11553,7 +11553,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -12483,7 +12483,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Low Strings Echo Hall Vib8Hz",
+    "name": "SNES Pad Low Strings Echo Hall Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 5,
@@ -12518,7 +12518,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 20,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -12532,7 +12532,7 @@
       "orchestral",
       "pad",
       "strings",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
@@ -12594,7 +12594,7 @@
     "category": "Pad",
     "chip": "snes",
     "global": {},
-    "name": "SNES Pad Low Strings Echo Long Vib8Hz",
+    "name": "SNES Pad Low Strings Echo Long Vib5Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 5,
@@ -12629,7 +12629,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 20,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 96
     },
     "samples": {
@@ -12643,7 +12643,7 @@
       "orchestral",
       "pad",
       "strings",
-      "vib8hz"
+      "vib5hz"
     ]
   },
   {
@@ -12683,9 +12683,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -12736,9 +12736,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 24,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -12790,9 +12790,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -12843,9 +12843,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 24,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -12897,9 +12897,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -12950,9 +12950,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 24,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 80
     },
     "samples": {
@@ -13006,7 +13006,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13059,7 +13059,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13112,7 +13112,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13165,7 +13165,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13219,7 +13219,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13273,7 +13273,7 @@
       "v8_echo": 1,
       "vibrato_delay": 40,
       "vibrato_depth": 40,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13325,9 +13325,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13378,9 +13378,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13431,9 +13431,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -13485,9 +13485,9 @@
       "v6_echo": 1,
       "v7_echo": 1,
       "v8_echo": 1,
-      "vibrato_delay": 60,
+      "vibrato_delay": 125,
       "vibrato_depth": 48,
-      "vibrato_rate": 15,
+      "vibrato_rate": 23,
       "volume": 92
     },
     "samples": {
@@ -16183,7 +16183,7 @@
     "category": "SFX",
     "chip": "snes",
     "global": {},
-    "name": "SNES SFX PMON Trill Vib12Hz",
+    "name": "SNES SFX PMON Trill Vib7Hz",
     "params": {
       "adsr_enable": 1,
       "attack": 12,
@@ -16218,7 +16218,7 @@
       "v8_echo": 0,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 84
     },
     "samples": {
@@ -16230,14 +16230,14 @@
       "pmon",
       "sfx",
       "trill",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {
     "category": "SFX",
     "chip": "snes",
     "global": {},
-    "name": "SNES SFX PMON Trill Vib12Hz Echo Long",
+    "name": "SNES SFX PMON Trill Vib7Hz Echo Long",
     "params": {
       "adsr_enable": 1,
       "attack": 12,
@@ -16272,7 +16272,7 @@
       "v8_echo": 1,
       "vibrato_delay": 15,
       "vibrato_depth": 32,
-      "vibrato_rate": 10,
+      "vibrato_rate": 18,
       "volume": 84
     },
     "samples": {
@@ -16285,7 +16285,7 @@
       "pmon",
       "sfx",
       "trill",
-      "vib12hz"
+      "vib7hz"
     ]
   },
   {

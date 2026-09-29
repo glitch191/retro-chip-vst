@@ -107,7 +107,7 @@ TEST_CASE("Engine: parameter descriptors match ENGINE_SPECS", "[snes][engine]")
         { "sustain_level", 0, 7, 7 }, { "sustain_rate", 0, 31, 0 }, { "gain_mode", 0, 4, 0 },
         { "gain_value", 0, 127, 127 }, { "release_mode", 0, 1, 0 }, { "release_rate", 0, 31, 31 },
         { "volume", 0, 127, 100 }, { "pan", -64, 64, 0 }, { "transpose", -24, 24, 0 }, { "fine_tune", -100, 100, 0 },
-        { "vibrato_rate", 0, 15, 0 }, { "vibrato_depth", 0, 64, 0 }, { "vibrato_delay", 0, 60, 0 },
+        { "vibrato_rate", 0, 63, 0 }, { "vibrato_depth", 0, 64, 0 }, { "vibrato_delay", 0, 250, 0 },
         { "noise_enable", 0, 1, 0 }, { "noise_clock", 0, 31, 0 }, { "pmon", 0, 1, 0 }, { "loop_override", 0, 2, 0 },
         { "echo_enable", 0, 1, 0 }, { "echo_delay", 0, 15, 0 }, { "echo_feedback", -128, 127, 0 },
         { "echo_volume", -128, 127, 0 }, { "fir_preset", 0, 7, 0 }, { "v1_echo", 0, 1, 0 }, { "v2_echo", 0, 1, 0 },

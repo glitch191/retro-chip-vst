@@ -179,7 +179,7 @@
       "id": 14,
       "isInteger": true,
       "key": "vibrato_rate",
-      "max": 15,
+      "max": 63,
       "min": 0,
       "name": "Vibrato Rate",
       "unit": "ticks"
@@ -201,7 +201,7 @@
       "id": 16,
       "isInteger": true,
       "key": "vibrato_delay",
-      "max": 60,
+      "max": 250,
       "min": 0,
       "name": "Vibrato Delay",
       "unit": "ticks"
