@@ -13,9 +13,31 @@ Two presets are duplicates when every parameter distance is below its threshold:
 * AMS / FMS / LFO depth indexes: 0 -> 1 is significant, a change between the two highest
   indexes is not.
 
-When a features JSON produced by `chiptool features` is given, a pair is also a duplicate
-when the cosine distance of the 40 log-mel bands is under MEL_COSINE_THRESHOLD and the mean
-L1 distance of the 20-point RMS envelope is under ENVELOPE_L1_THRESHOLD.
+When a features JSON produced by `chiptool features` is given (two renders per preset
+through the real engine after a 0.4 s pre-roll: C4 held 1.4 s of 2 s, and C3 held 80 ms of
+0.5 s), a pair is also a perceptual
+duplicate when, in both renders:
+
+* the spectral shape (40 left + 40 right log-mel bands, each vector minus its mean over the
+  bands within 60 dB of the loudest band) differs by less than SHAPE_DB_THRESHOLD dB on
+  average;
+* the overall level differs by less than LEVEL_DB_THRESHOLD dB;
+* the 10 ms RMS envelope, in dB relative to its own peak (floored at -60 dB), differs by
+  less than ENVELOPE_DB_THRESHOLD dB on average;
+* the per-frame pitch track differs by less than PITCH_CENTS_THRESHOLD cents on average
+  over the frames voiced in both, and at most VOICING_MISMATCH_THRESHOLD of the voiced
+  frames are voiced in only one of them.
+
+The thresholds sit at or below the usual just-noticeable differences (about 1 dB for level
+and spectral balance, 3-5 cents for pitch), so the pass only removes variants a listener
+cannot tell apart. They were calibrated on the rendered banks (docs/PRESET_QA.md).
+
+Rules that keep a pair apart regardless of features:
+
+* different `global` settings other than poly_channels (arpeggiator, glide): the renders
+  play a single note without the arpeggiator, so they cannot see those differences;
+* different values of parameters a single-note render cannot observe (RENDER_BLIND_KEYS:
+  echo enable of voices 2-8, pitch modulation between voices, pan of the other FM channels).
 
 The greedy pass keeps the first preset of a duplicate group in expansion order (seed order,
 then axis order) so that the seed author's canonical variant survives. Pair comparisons are
@@ -46,16 +68,29 @@ LEVEL_STEP_THRESHOLD = 1
 # (15 % is the documented just-noticeable step for envelope times in this project).
 TIME_RELATIVE_THRESHOLD = 0.15
 
-# Feature-vector thresholds (chiptool features: 1 s C4 render, 48 kHz).
-# Cosine distance over the 40 log-mel bands after shifting them above MEL_FLOOR_DB, so that
-# the vectors are non-negative and silence maps to the zero vector. 0.02 corresponds to a
-# spectral tilt change too small to hear on chip waveforms; distinct duty cycles are > 0.1.
-MEL_COSINE_THRESHOLD = 0.02
-# Mean absolute difference of the 20 RMS envelope points (linear amplitude, 0..1).
-# 0.02 is below one 4-bit volume step at full scale (1/15 = 0.067).
-ENVELOPE_L1_THRESHOLD = 0.02
+# Feature thresholds (chiptool features, 48 kHz). Calibration on the rendered banks: distinct
+# duty cycles differ by > 1.5 dB in shape, a 2-frame vs 4-frame PSG hat by > 2 dB in
+# envelope, and the shallowest vibrato profiles by 2.6-5 cents, so all of them stay.
+SHAPE_DB_THRESHOLD = 0.5        # mean |shape difference| over active bands, dB
+LEVEL_DB_THRESHOLD = 1.0        # overall level difference, dB
+# Mean |envelope difference|, dB re each envelope's peak. Kept low because a periodic
+# modulation is audible well below its mean difference: YM2612 AMS 1 (1.4 dB peak-to-peak
+# tremolo) only moves the mean by 0.4-0.7 dB but is at the detection threshold for 4-6 Hz AM.
+ENVELOPE_DB_THRESHOLD = 0.3
+PITCH_CENTS_THRESHOLD = 2.0     # mean |pitch difference| over frames voiced in both
+VOICING_MISMATCH_THRESHOLD = 0.1
+ACTIVE_BAND_RANGE_DB = 60.0     # bands this far below the loudest band are ignored
+ENVELOPE_FLOOR_DB = -60.0
 # Floor used by chiptool for log-mel energies (dB); bands at or below it are silence.
 MEL_FLOOR_DB = -100.0
+
+# Parameters a single-note render on the preset's first channel cannot observe; presets that
+# differ in any of them are never removed by the feature rule.
+RENDER_BLIND_KEYS: dict[str, tuple[str, ...]] = {
+    "nes": (),
+    "snes": tuple(f"v{i}_echo" for i in range(2, 9)) + ("pmon",),
+    "genesis": tuple(f"fm{i}_pan" for i in range(2, 7)),
+}
 
 # Presets below this count are compared inline: spawning workers would cost more than it saves.
 MIN_PRESETS_FOR_POOL = 64
@@ -139,36 +174,70 @@ def compare_vectors(a: Sequence[float], b: Sequence[float], keys: Sequence[str],
     return True, "; ".join(diffs) if diffs else "identical parameters"
 
 
-def mel_cosine_distance(a: Sequence[float], b: Sequence[float]) -> float:
-    """Cosine distance of two log-mel vectors shifted above MEL_FLOOR_DB (0 = identical)."""
-    ua = [max(x - MEL_FLOOR_DB, 0.0) for x in a]
-    ub = [max(x - MEL_FLOOR_DB, 0.0) for x in b]
-    dot = sum(x * y for x, y in zip(ua, ub))
-    na = math.sqrt(sum(x * x for x in ua))
-    nb = math.sqrt(sum(x * x for x in ub))
-    if na == 0.0 and nb == 0.0:
-        return 0.0
-    if na == 0.0 or nb == 0.0:
-        return 1.0
-    return max(0.0, 1.0 - dot / (na * nb))
+def spectral_distance(a: Sequence[float], b: Sequence[float]) -> tuple[float, float]:
+    """(shape dB, level dB) between two log-mel vectors of the same length.
+
+    Only bands within ACTIVE_BAND_RANGE_DB of the loudest band of either vector count; each
+    vector's mean over those bands is its level, and the shape is what remains.
+    """
+    n = min(len(a), len(b))
+    if n == 0:
+        return 0.0, 0.0
+    top = max(max(a[:n]), max(b[:n]))
+    if top <= MEL_FLOOR_DB:
+        return 0.0, 0.0   # both silent
+    active = [i for i in range(n) if max(a[i], b[i]) > top - ACTIVE_BAND_RANGE_DB]
+    level_a = sum(a[i] for i in active) / len(active)
+    level_b = sum(b[i] for i in active) / len(active)
+    shape = sum(abs((a[i] - level_a) - (b[i] - level_b)) for i in active) / len(active)
+    return shape, abs(level_a - level_b)
 
 
-def envelope_l1_distance(a: Sequence[float], b: Sequence[float]) -> float:
-    """Mean absolute difference of two RMS envelopes."""
+def envelope_distance(a: Sequence[float], b: Sequence[float]) -> float:
+    """Mean |difference| (dB) of two RMS envelopes, each relative to its own peak."""
     n = min(len(a), len(b))
     if n == 0:
         return 0.0
-    return sum(abs(a[i] - b[i]) for i in range(n)) / n
+
+    def to_db(env: Sequence[float]) -> list[float]:
+        peak = max(max(env[:n]), 1e-9)
+        return [max(20.0 * math.log10(max(x, 1e-9) / peak), ENVELOPE_FLOOR_DB) for x in env[:n]]
+
+    da, db = to_db(a), to_db(b)
+    return sum(abs(x - y) for x, y in zip(da, db)) / n
+
+
+def pitch_distance(a: Sequence[float], b: Sequence[float]) -> tuple[float, float]:
+    """(mean |cents| over frames voiced in both, fraction of voiced frames voiced in one only)."""
+    both = [(x, y) for x, y in zip(a, b) if x > 0 and y > 0]
+    voiced = sum(1 for x, y in zip(a, b) if x > 0 or y > 0)
+    single = sum(1 for x, y in zip(a, b) if (x > 0) != (y > 0))
+    cents = sum(abs(x - y) for x, y in both) / len(both) if both else 0.0
+    return cents, (single / voiced if voiced else 0.0)
+
+
+def feature_distances(fa: Mapping[str, Any], fb: Mapping[str, Any]) -> tuple[float, float, float, float, float]:
+    """Worst case over both renders: (shape dB, level dB, envelope dB, pitch cents, voicing)."""
+    worst = [0.0, 0.0, 0.0, 0.0, 0.0]
+    for suffix in ("", "_short"):
+        if f"mel{suffix}" not in fa or f"mel{suffix}" not in fb:
+            continue
+        shape, level = spectral_distance(fa[f"mel{suffix}"], fb[f"mel{suffix}"])
+        env = envelope_distance(fa.get(f"env{suffix}", ()), fb.get(f"env{suffix}", ()))
+        cents, voicing = pitch_distance(fa.get(f"pitch{suffix}", ()), fb.get(f"pitch{suffix}", ()))
+        for i, v in enumerate((shape, level, env, cents, voicing)):
+            worst[i] = max(worst[i], v)
+    return worst[0], worst[1], worst[2], worst[3], worst[4]
 
 
 def compare_features(fa: Mapping[str, Any] | None, fb: Mapping[str, Any] | None) -> tuple[bool, str]:
     if fa is None or fb is None:
         return False, ""
-    mel = mel_cosine_distance(fa.get("mel", ()), fb.get("mel", ()))
-    env = envelope_l1_distance(fa.get("env", ()), fb.get("env", ()))
-    if mel < MEL_COSINE_THRESHOLD and env < ENVELOPE_L1_THRESHOLD:
-        return True, (f"mel cosine distance {mel:.4f} < {MEL_COSINE_THRESHOLD} and envelope L1 "
-                      f"{env:.4f} < {ENVELOPE_L1_THRESHOLD}")
+    shape, level, env, cents, voicing = feature_distances(fa, fb)
+    if (shape < SHAPE_DB_THRESHOLD and level < LEVEL_DB_THRESHOLD and env < ENVELOPE_DB_THRESHOLD
+            and cents < PITCH_CENTS_THRESHOLD and voicing < VOICING_MISMATCH_THRESHOLD):
+        return True, (f"rendered: shape {shape:.2f} dB, level {level:.2f} dB, envelope {env:.2f} dB, "
+                      f"pitch {cents:.1f} cents, voicing mismatch {voicing:.2f}")
     return False, ""
 
 
@@ -177,29 +246,43 @@ def compare_features(fa: Mapping[str, Any] | None, fb: Mapping[str, Any] | None)
 _W: dict[str, Any] = {}
 
 
-def _init_worker(vectors, keys, classes, maxes, features) -> None:
+def _init_worker(vectors, keys, classes, maxes, features, globals_=None, samples=None, blind=None) -> None:
     _W["vectors"] = vectors
     _W["keys"] = keys
     _W["classes"] = classes
     _W["maxes"] = maxes
     _W["features"] = features
+    _W["globals"] = globals_ if globals_ is not None else [()] * len(vectors)
+    _W["samples"] = samples if samples is not None else [()] * len(vectors)
+    _W["blind"] = blind if blind is not None else [()] * len(vectors)
 
 
 def _compare_rows(rows: Sequence[int]) -> list[tuple[int, int, str, str]]:
-    """For every row i in `rows`, every j > i that duplicates i: (j, i, kind, reason)."""
+    """For every row i in `rows`, every j > i that duplicates i: (j, i, kind, reason).
+
+    Presets whose `global` settings differ (arpeggiator, glide; poly_channels excluded) are
+    never duplicates: `chiptool features` renders a single note without the arpeggiator, so
+    their renders cannot tell them apart. Presets that load different samples are compared
+    by their rendered features only (the slot index alone does not identify the sample).
+    Presets that differ in a RENDER_BLIND_KEYS parameter are compared by parameters only.
+    """
     vectors, keys, classes, maxes, features = (_W["vectors"], _W["keys"], _W["classes"], _W["maxes"],
                                                 _W["features"])
+    globals_, samples, blind = _W["globals"], _W["samples"], _W["blind"]
     n = len(vectors)
     out: list[tuple[int, int, str, str]] = []
     for i in rows:
         vi = vectors[i]
         fi = features[i]
         for j in range(i + 1, n):
-            duplicate, reason = compare_vectors(vi, vectors[j], keys, classes, maxes)
-            if duplicate:
-                out.append((j, i, "parameters", reason))
+            if globals_[i] != globals_[j]:
                 continue
-            if fi is not None:
+            if samples[i] == samples[j]:
+                duplicate, reason = compare_vectors(vi, vectors[j], keys, classes, maxes)
+                if duplicate:
+                    out.append((j, i, "parameters", reason))
+                    continue
+            if fi is not None and blind[i] == blind[j]:
                 duplicate, reason = compare_features(fi, features[j])
                 if duplicate:
                     out.append((j, i, "perceptual", reason))
@@ -256,6 +339,11 @@ def deduplicate(presets: Sequence[Preset], table: ParamTable, features: Mapping[
     maxes = [spec.max for spec in specs]
     defaults = table.defaults()
     vectors = [tuple(float(p.params.get(key, defaults[key])) for key in keys) for p in presets]
+    globals_ = [tuple(sorted((k, float(v)) for k, v in p.global_params.items() if k != "poly_channels"))
+                for p in presets]
+    sample_maps = [tuple(sorted(p.samples.items())) for p in presets]
+    blind_keys = RENDER_BLIND_KEYS.get(table.chip, ())
+    blind = [tuple(float(p.params.get(k, defaults.get(k, 0.0))) for k in blind_keys) for p in presets]
 
     feature_list: list[Mapping[str, Any] | None] = [None] * len(presets)
     if features is not None:
@@ -269,7 +357,7 @@ def deduplicate(presets: Sequence[Preset], table: ParamTable, features: Mapping[
     n = len(presets)
     jobs = default_jobs() if jobs is None else max(1, int(jobs))
     if jobs == 1 or n < MIN_PRESETS_FOR_POOL:
-        _init_worker(vectors, keys, classes, maxes, feature_list)
+        _init_worker(vectors, keys, classes, maxes, feature_list, globals_, sample_maps, blind)
         pairs = _compare_rows(range(n))
     else:
         # Interleaved row chunks balance the triangular workload across workers.
@@ -277,7 +365,8 @@ def deduplicate(presets: Sequence[Preset], table: ParamTable, features: Mapping[
         chunks = [list(range(k, n, chunk_count)) for k in range(chunk_count)]
         pairs = []
         with ProcessPoolExecutor(max_workers=jobs, initializer=_init_worker,
-                                 initargs=(vectors, keys, classes, maxes, feature_list)) as pool:
+                                 initargs=(vectors, keys, classes, maxes, feature_list, globals_,
+                                           sample_maps, blind)) as pool:
             for part in pool.map(_compare_rows, chunks):
                 pairs.extend(part)
 

@@ -4,7 +4,9 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 using Catch::Approx;
@@ -555,21 +557,16 @@ TEST_CASE("Arpeggiator: a pending note off is delivered in a later block", "[per
 TEST_CASE("Arpeggiator: a released key leaves the pattern at the next step", "[perf][arp]")
 {
     // Up over C-E-G: 0:C, 6000:E. E is released at 6100 while it sounds: its gate still ends
-    // at 9000 (50 % of 6000) and it never plays again; the pattern continues over C and G.
+    // at 9000 (50 % of 6000) and it never plays again. The pattern continues from E, the
+    // last note played, over C and G: the note after E is G, then C, G, C, G.
     Harness h;
     h.arp.setParams(defaultParams());
     holdCMajor(h);
     h.queueOff(6100, 64);
     h.run(80); // 38400 samples: steps at 0, 6000, 12000, 18000, 24000, 30000, 36000
 
-    const auto ons = h.noteOns();
-    REQUIRE(ons.size() == 7);
-    REQUIRE(ons[0].event.note == 60);
-    REQUIRE(ons[1].event.note == 64);
-    for (size_t i = 2; i < ons.size(); ++i)
-        REQUIRE(ons[i].event.note != 64);
-    REQUIRE(ons[2].event.note == 60); // pattern is now C G, index restarts at C
-    REQUIRE(ons[3].event.note == 67);
+    REQUIRE(h.noteOns().size() == 7);
+    REQUIRE(h.noteOnPitches(7) == std::vector<int> { 60, 64, 67, 60, 67, 60, 67 });
 
     bool foundEOff = false;
     for (const AbsEvent& e : h.noteOffs())
@@ -580,6 +577,59 @@ TEST_CASE("Arpeggiator: a released key leaves the pattern at the next step", "[p
         }
     REQUIRE(foundEOff);
     REQUIRE(h.arp.numHeldNotes() == 2);
+}
+
+TEST_CASE("Arpeggiator: a chord change continues after the last note played", "[perf][arp]")
+{
+    // Up over C-E-G at 1/16: 0:C, 6000:E. C (below the position) is released at 6100:
+    // the note after E among E-G is G at 12000, then E, G.
+    {
+        Harness h;
+        h.arp.setParams(defaultParams());
+        holdCMajor(h);
+        h.queueOff(6100, 60);
+        h.run(60); // steps at 0, 6000, 12000, 18000, 24000
+        REQUIRE(h.noteOnPitches(5) == std::vector<int> { 60, 64, 67, 64, 67 });
+        REQUIRE(h.noteOns()[2].time == 12000);
+    }
+
+    // A3 (57) joins below at sample 100, after C played at 0: the note after C among
+    // A3-C-E-G is E at 6000, then G, then the wrap to the lowest note A3, then C.
+    {
+        Harness h;
+        h.arp.setParams(defaultParams());
+        holdCMajor(h);
+        h.queueOn(100, 57);
+        h.run(60);
+        REQUIRE(h.noteOnPitches(5) == std::vector<int> { 60, 64, 67, 57, 60 });
+    }
+
+    // Down over C-E-G: 0:G, 6000:E. G (above the position) is released at 6100: the note
+    // after E going down is C, then the wrap to the top, now E.
+    {
+        Harness h;
+        Arpeggiator::Params p = defaultParams();
+        p.pattern = Arpeggiator::Pattern::Down;
+        h.arp.setParams(p);
+        holdCMajor(h);
+        h.queueOff(6100, 67);
+        h.run(60);
+        REQUIRE(h.noteOnPitches(5) == std::vector<int> { 67, 64, 60, 64, 60 });
+    }
+
+    // UpDown over C-E-G: 0:C, 6000:E, 12000:G (the top: the walk turns down). G is
+    // released at 12100: going down from G the next note is E, then C (the bottom: turn
+    // up), then E, C.
+    {
+        Harness h;
+        Arpeggiator::Params p = defaultParams();
+        p.pattern = Arpeggiator::Pattern::UpDown;
+        h.arp.setParams(p);
+        holdCMajor(h);
+        h.queueOff(12100, 67);
+        h.run(80); // steps at 0 .. 36000
+        REQUIRE(h.noteOnPitches(7) == std::vector<int> { 60, 64, 67, 64, 60, 64, 60 });
+    }
 }
 
 TEST_CASE("Arpeggiator: releasing every key stops the pattern after the sounding note's gate", "[perf][arp]")
@@ -807,4 +857,237 @@ TEST_CASE("Arpeggiator: the output buffer has a fixed capacity", "[perf][arp]")
     arp.process(transport, kSampleRate, 512, input, out);
     REQUIRE(out.size() == kMaxEventsPerBlock);
     REQUIRE(out.full());
+}
+
+TEST_CASE("Arpeggiator: a note off that does not fit in the output buffer is sent in the next block", "[perf][arp]")
+{
+    // C sounds (gate 100 %, off pending). The arp is switched off and 64 note offs
+    // (notes 0..63) arrive in the same block at 960..1023: the flushed off(60) takes one
+    // of the 64 slots, so the pass-through off of note 63 waits and is sent at the start
+    // of the next block (sample 1440).
+    Harness h;
+    Arpeggiator::Params p = defaultParams();
+    p.gatePercent = 100.0f;
+    h.arp.setParams(p);
+    holdCMajor(h);
+    h.run(2);
+    REQUIRE(h.arp.numPendingNoteOffs() == 1);
+
+    p.enabled = false;
+    h.arp.setParams(p);
+    for (int i = 0; i < kMaxEventsPerBlock; ++i)
+        h.queueOff(960 + i, i);
+    h.run(1);
+    REQUIRE(h.out.size() == 1 + static_cast<size_t>(kMaxEventsPerBlock));
+    REQUIRE(h.out[1].event.note == 60); // the flush comes first
+    REQUIRE(h.out[1].time == 960);
+    REQUIRE(h.out.back().event.note == 62);
+    REQUIRE(h.arp.numPendingNoteOffs() == 1);
+
+    h.run(1);
+    REQUIRE(h.out.size() == 2 + static_cast<size_t>(kMaxEventsPerBlock));
+    REQUIRE(h.out.back().event.isNoteOff());
+    REQUIRE(h.out.back().event.note == 63);
+    REQUIRE(h.out.back().time == 1440);
+    REQUIRE(h.out.back().event.sampleOffset == 0);
+    REQUIRE(h.arp.numPendingNoteOffs() == 0);
+}
+
+// ---------------------------------------------------------------------------------------
+// Timing edge cases
+// ---------------------------------------------------------------------------------------
+
+TEST_CASE("Arpeggiator: gate 100 % with a fractional step never ends a note after the next one starts", "[perf][arp]")
+{
+    // 1/16 at 120 BPM and 44.1 kHz = 5512.5 samples: onsets 0, 5513, 11025, 16538, 22050
+    // (5513 and 5512 samples apart). Gate 100 % = llround(5512.5) = 5513 samples, which
+    // would end the 5513 note at 11026, after the 11025 onset: every note ends exactly at
+    // the next onset instead, off first.
+    Harness h;
+    h.sampleRate = 44100.0;
+    h.blockSize = 441;
+    Arpeggiator::Params p = defaultParams();
+    p.gatePercent = 100.0f;
+    h.arp.setParams(p);
+    holdCMajor(h);
+    h.run(60); // 26460 samples
+
+    const long long onsets[] = { 0, 5513, 11025, 16538, 22050 };
+    const int pitches[] = { 60, 64, 67, 60, 64 };
+    REQUIRE(h.out.size() == 9);
+    REQUIRE(h.out[0].event.isNoteOn());
+    REQUIRE(h.out[0].time == 0);
+    for (size_t k = 1; k < 5; ++k)
+    {
+        const AbsEvent& off = h.out[2 * k - 1];
+        const AbsEvent& on = h.out[2 * k];
+        REQUIRE(off.event.isNoteOff());
+        REQUIRE(off.event.note == pitches[k - 1]);
+        REQUIRE(off.time == onsets[k]);
+        REQUIRE(on.event.isNoteOn());
+        REQUIRE(on.event.note == pitches[k]);
+        REQUIRE(on.time == onsets[k]);
+    }
+}
+
+TEST_CASE("Arpeggiator: a grid line after a block's last sample fires on the next block's first sample", "[perf][arp]")
+{
+    // 44.1 kHz, blocks of 5513 samples. The 1/16 line at 5512.5 lies after sample 5512,
+    // the last of block 0: it fires at 5513, sample 0 of block 1. The next lines fall at
+    // 11025, 16538 (16537.5), 22050 and 27563 (27562.5).
+    Harness h;
+    h.sampleRate = 44100.0;
+    h.blockSize = 5513;
+    h.arp.setParams(defaultParams());
+    h.queueOn(0, 60);
+    h.run(5); // 27565 samples
+
+    const auto ons = h.noteOns();
+    REQUIRE(ons.size() == 6);
+    const long long expected[] = { 0, 5513, 11025, 16538, 22050, 27563 };
+    for (size_t i = 0; i < ons.size(); ++i)
+        REQUIRE(ons[i].time == expected[i]);
+}
+
+TEST_CASE("Arpeggiator: a short forward locate skips the grid lines it passes over", "[perf][arp]")
+{
+    // 1/16 at 120 BPM, 480-sample blocks. Steps at 0 (C) and 6000 (E). At sample 6240
+    // (ppq 0.26) the transport jumps to ppq 0.635, over the 0.5 line. The next step is on
+    // the 0.75 line: 6240 + (0.75 - 0.635) * 24000 = 9000, then 15000 and 21000. The E
+    // started at 6000 keeps its full 3000-sample gate (off at 9000, before the new on).
+    Harness h;
+    h.arp.setParams(defaultParams());
+    holdCMajor(h);
+    h.run(13); // 6240 samples, ppq 0.26
+    h.transport.ppqPosition = 0.635;
+    h.run(40); // up to 25440
+
+    const auto ons = h.noteOns();
+    REQUIRE(ons.size() == 5);
+    const long long expected[] = { 0, 6000, 9000, 15000, 21000 };
+    for (size_t i = 0; i < ons.size(); ++i)
+        REQUIRE(ons[i].time == expected[i]);
+    REQUIRE(h.noteOnPitches(5) == std::vector<int> { 60, 64, 67, 60, 64 });
+
+    bool foundEOff = false;
+    for (size_t i = 0; i < h.out.size(); ++i)
+        if (h.out[i].event.isNoteOff() && h.out[i].event.note == 64 && h.out[i].time < 12000)
+        {
+            REQUIRE(h.out[i].time == 9000);
+            REQUIRE(h.out[i + 1].event.isNoteOn());
+            REQUIRE(h.out[i + 1].time == 9000);
+            foundEOff = true;
+        }
+    REQUIRE(foundEOff);
+}
+
+TEST_CASE("Arpeggiator: a non-finite transport falls back to 120 BPM free-running", "[perf][arp]")
+{
+    // Sync, stopped, bpm NaN: the step length is that of 120 BPM, 6000 samples.
+    {
+        Harness h;
+        h.transport.isPlaying = false;
+        h.transport.bpm = std::numeric_limits<double>::quiet_NaN();
+        h.arp.setParams(defaultParams());
+        REQUIRE(h.arp.stepLengthSamples(h.transport, kSampleRate) == Approx(6000.0));
+        h.queueOn(250, 60);
+        h.run(60);
+        const auto ons = h.noteOns();
+        REQUIRE(ons.size() == 5);
+        for (size_t i = 0; i < ons.size(); ++i)
+            REQUIRE(ons[i].time == 250 + kStep * static_cast<long long>(i));
+    }
+
+    // Sync, playing, ppq NaN (or infinite, with a negative infinite bpm): no grid can be
+    // placed, so the steps run free at the tempo from the key press.
+    const double badPpq[] = { std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity() };
+    for (const double ppq : badPpq)
+    {
+        Harness h;
+        h.transport.ppqPosition = ppq;
+        if (std::isinf(ppq))
+            h.transport.bpm = -std::numeric_limits<double>::infinity();
+        h.arp.setParams(defaultParams());
+        h.queueOn(100, 60);
+        h.run(60);
+        const auto ons = h.noteOns();
+        REQUIRE(ons.size() == 5);
+        for (size_t i = 0; i < ons.size(); ++i)
+            REQUIRE(ons[i].time == 100 + kStep * static_cast<long long>(i));
+    }
+
+    // A NaN sample rate counts as 48 kHz.
+    {
+        Harness h;
+        h.transport.isPlaying = false;
+        h.sampleRate = std::numeric_limits<double>::quiet_NaN();
+        h.arp.setParams(defaultParams());
+        h.queueOn(0, 60);
+        h.run(30); // 14400 samples: 0, 6000, 12000
+        REQUIRE(h.noteOns().size() == 3);
+        REQUIRE(h.noteOns()[2].time == 12000);
+    }
+
+    // The grid comes back when ppq is finite again: NaN for blocks 13..24 (samples 6240 to
+    // 12000; the free-running rhythm from 6000 would put the next step at 12000), then the
+    // transport reports ppq 0.5, a grid line, at sample 12000: steps at 12000 and 18000.
+    {
+        Harness h;
+        h.arp.setParams(defaultParams());
+        h.queueOn(0, 60);
+        h.run(13); // 0, 6000
+        h.transport.ppqPosition = std::numeric_limits<double>::quiet_NaN();
+        h.run(12); // up to 12000: free-running from 6000 -> no further step before 12000
+        h.transport.ppqPosition = 0.5;
+        h.run(20); // up to 21600
+        const auto ons = h.noteOns();
+        REQUIRE(ons.size() == 4);
+        REQUIRE(ons[1].time == 6000);
+        REQUIRE(ons[2].time == 12000); // ppq 0.5 is a grid line: fires on the jump point
+        REQUIRE(ons[3].time == 18000);
+    }
+}
+
+TEST_CASE("Arpeggiator: reset and a transport start replay the same Random sequence", "[perf][arp]")
+{
+    Arpeggiator::Params p = defaultParams();
+    p.pattern = Arpeggiator::Pattern::Random;
+    p.octaves = 2;
+
+    // 16 steps from sample 0 (steps at 0 .. 90000), keys released at 95000.
+    auto playPass = [](Harness& h)
+    {
+        const long long start = h.blockStart;
+        h.queueOn(start, 60);
+        h.queueOn(start, 64);
+        h.queueOn(start, 67);
+        h.queueOff(start + 95000, 60);
+        h.queueOff(start + 95000, 64);
+        h.queueOff(start + 95000, 67);
+        const size_t before = h.noteOns().size();
+        h.run(200); // 96000 samples
+        std::vector<int> pitches;
+        const auto ons = h.noteOns();
+        for (size_t i = before; i < ons.size(); ++i)
+            pitches.push_back(ons[i].event.note);
+        return pitches;
+    };
+
+    Harness h;
+    h.arp.setParams(p);
+    h.arp.seed(42u);
+    const std::vector<int> first = playPass(h);
+    REQUIRE(first.size() == 16);
+
+    // reset() (e.g. before an offline render) returns to the seed.
+    h.arp.reset();
+    h.transport.ppqPosition = 0.0;
+    REQUIRE(playPass(h) == first);
+
+    // Stop, then start again from the top: same sequence.
+    h.transport.isPlaying = false;
+    h.run(10);
+    h.transport.isPlaying = true;
+    h.transport.ppqPosition = 0.0;
+    REQUIRE(playPass(h) == first);
 }

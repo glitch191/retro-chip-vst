@@ -13,8 +13,10 @@ Each engine is two layers:
    instances (main L/R and one pair per hardware channel when requested).
 2. **Driver**: the small "sound engine" a game would run on the CPU. It turns
    `noteOn/noteOff/setChannelPitch` and the engine parameters into register writes,
-   at the rate a real driver would (NES and Genesis: once per video frame, 60.0988 Hz
-   NTSC / 50.0070 Hz PAL; SNES: once per 4 ms tick, like typical SPC700 drivers).
+   at the rate a real driver would (NES: once per video frame, 60.0988 Hz NTSC /
+   50.0070 Hz PAL; Genesis: once per video frame, 3420 master clocks x 262 / 313 lines =
+   59.92274 Hz NTSC / 49.70146 Hz PAL, see docs/research/genesis.md Ambiguities 28;
+   SNES: once per 4 ms tick, like typical SPC700 drivers).
    Software features games implemented in code live here and are labelled as such:
    vibrato by period rewrites, pitch envelopes for drums, software volume envelopes,
    gating. Anything the driver writes goes through the register model, so the

@@ -209,6 +209,11 @@ about 12.4 kHz maximum). blargg's `apu_ref.txt` draws the four sequences graphic
 (dash/underscore art) with the same 12.5 / 25 / 50 / 25 %-negated labels; it was not usable as a
 digit-by-digit cross-check.
 
+Verified 2026-09-28 (second pass) against NESdev wiki "APU Pulse" raw wikitext: both columns
+refetched and identical; the page also states that the sequencer counter "counts downward
+rather than upward. Thus it reads the sequence lookup table in the order 0, 7, 6, 5, 4, 3, 2,
+1", which turns the lookup column into the time-order column used by `kPulseDuty`.
+
 Register side effects (wiki "APU Pulse", quoted): on a $4003/$4007 write "The sequencer
 is immediately restarted at the first value of the current sequence. The envelope is
 also restarted. The period divider is not reset." Writing $4002/$4006 does not restart
@@ -217,10 +222,10 @@ it only changes which sequence the current position indexes.
 
 Implementation notes:
 
-* Because the divider is not reset by $4003, a period change takes effect when the
-  divider next reloads (it finishes the current count with the old value only if the
-  hardware loads the reload register; the wiki says the divider "is not reset", so the
-  new `t` is used at the next reload).
+* Because the divider is not reset by $4002/$4003 writes (wiki: "The period divider is
+  not reset"), a period change does not restart the current count: the divider keeps
+  counting down from its current value and loads the new `t` the next time it reaches 0
+  and reloads (NESdev "APU Misc" divider definition: reload from the period on reaching 0).
 * Velocity mapping (`ENGINE_SPECS.md`): 4-bit volume = round(velocity * 15).
 
 ---
@@ -393,6 +398,11 @@ table `05,0A,14,28,50,1E,07,0D` (bit 7 = 0) / `06,0C,18,30,60,24,08,10` (bit 7 =
 table `7F,01,02,...,0F`, "conditionally clocked at a frequency of 60 Hz"; `verify_nes.py`
 confirms every entry is exactly half of the wiki value).
 
+Verified 2026-09-28 (second pass) against NESdev wiki "APU Length Counter" raw wikitext (the
+two 16-value rows refetched, identical to `kLengthTable`), blargg `apu_ref.txt` (even/odd hex
+columns identical) and Brad Taylor (bits 4-6 x bit 7 tables and the `7F, 01-0F` table
+refetched; mapped to index = bits 7-3 they give exactly half of each wiki entry).
+
 ---
 
 ## Triangle channel ($4008, $400A, $400B)
@@ -498,7 +508,10 @@ The mode-1 step is a bijection on the 32768 states, so every state lies on a cyc
 one 31-step cycle (31 states). Documented start states for tests: `$0001`, `$4000` and
 `$7FFF` are on 93-step cycles; `$0737` (the smallest state of the 31-step cycle, reached
 after 14739 mode-0 clocks from 1) has period 31 in mode 1, and its 31 bit-0 outputs are
-`1101100111000011010100100010111`. First 16 states after clocking from 1 in mode 0: `$4000,
+`1101100111000011010100100010111` (bit 0 of the state after each mode-1 clock, as in the
+16-state lists below: the first digit belongs to the state after one clock, the 31st to
+`$0737` itself; bit 0 of `$0737` read before any clock is 1, so the string read from the
+start state is the same string rotated right by one, `1110110011100001101010010001011`). First 16 states after clocking from 1 in mode 0: `$4000,
 $2000, $1000, $0800, $0400, $0200, $0100, $0080, $0040, $0020, $0010, $0008, $0004, $0002,
 $4001, $6000`; the first 16 bit-0 outputs are `0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0` (so the
 channel is audible, volume output, for the first 14 clocks). In mode 1 from 1 the first 16
@@ -521,8 +534,11 @@ constexpr uint16_t kNoisePeriodPal[16] = {
 Cross-checks: blargg lists NTSC as `$004,$008,$010,$020,$040,$060,$080,$0A0,$0CA,$0FE,
 $17C,$1FC,$2FA,$3F8,$7F2,$FE4` (identical in decimal). Brad Taylor / NESSOUND list
 `$002,$004,$008,$010,$020,$030,$040,$050,$065,$07F,$0BE,$0FE,$17D,$1FC,$3F9,$7F2`, i.e.
-exactly half of every value (his unit is the APU clock; `2 * value` reproduces the wiki
-table for all 16 entries, checked in `gen_nes.py`).
+exactly half of every value (`2 * value` reproduces the wiki table for all 16 entries).
+Correction 2026-09-28 (second verification pass): Brad Taylor's column is headed "CPU
+clock cycles (11-bit wavelength+1)" and his timers are stated to run "at the 2A03's
+internal 6502 speed (1.79 MHz)", so his table is not in APU clocks: taken literally it
+disagrees with the wiki and blargg by a factor of 2 (one octave). See A5.
 
 LFSR clock frequencies (`f_CPU / period`, `gen_nes.py`):
 
@@ -555,6 +571,13 @@ Verified 2026-09-28 against NESdev wiki "APU Noise" (rendered page and raw wikit
 31", output when bit 0 is clear) and blargg `apu_ref.txt` (NTSC hex table identical);
 Brad Taylor's table refetched (`002 ... 7F2`) and checked as exactly half of every wiki value
 in `verify_nes.py`. The LFSR clock-frequency table was recomputed (all 48 values identical).
+
+Verified 2026-09-28 (second pass) against NESdev wiki "APU Noise" raw wikitext (both 16-entry
+tables refetched, identical), blargg `apu_ref.txt` (NTSC hex table refetched, identical) and
+Brad Taylor "2A03 technical reference" / NESSOUND.txt (table and its "CPU clock cycles" heading
+refetched; factor-2 disagreement recorded in A5). LFSR periods (32767 / 93 / 31), the 352 x 93 +
+1 x 31 cycle split, the first-16-state lists, the 14739-clock distance to `$0737` and the 48
+clock frequencies were recomputed with an independent script (`v2.py`): all identical.
 
 ---
 
@@ -624,6 +647,13 @@ $4012/$4013 formulas; the "at least 2 / at most 125" clamp sentence; silence fla
 $8000 wrap sentences) and blargg `apu_ref.txt` (NTSC hex table identical). Brad Taylor's
 per-byte table refetched: entry D is printed `2A8`, so the index-13 discrepancy is real and
 stays in A6. Bit rates recomputed (all 32 values identical).
+
+Verified 2026-09-28 (second pass) against NESdev wiki "APU DMC" raw wikitext (both tables,
+$4012/$4013 formulas and the "leave the output level unchanged" clamp sentence refetched),
+blargg `apu_ref.txt` and Brad Taylor (refetched; `$D60 / 8 = 428` ... `$1B0 / 8 = 54`, only
+index 13 differs). All 32 bit rates recomputed independently: identical. Sanity check: the
+PAL/NTSC period ratio is 0.917..0.932 for every rate index except index 4 (276 / 286 =
+0.965); the wiki is the only source of the PAL table, so 276 is kept (see A19).
 
 Output unit, on every timer clock (quoted):
 
@@ -725,8 +755,12 @@ occurs during an APU cycle, the effects occur 3 CPU cycles after the $4017 write
 and if the write occurs between APU cycles, the effects occur 4 CPU cycles after the write
 cycle." "If the mode flag is set, then both quarter frame and half frame signals are also
 generated" (immediately, at that reset). With bit 7 clear only the sequence is reset
-without clocking anything. Brad Taylor agrees for the 5-step case: "both these counters
-are clocked once immediately after $4017.7 is written with a value of 1".
+without clocking anything. Brad Taylor only partly agrees: "both these counters are
+clocked once immediately after $4017.7 is written with a value of 1" refers to the linear
+and envelope counters (quarter-frame) only, and NESSOUND places the length/sweep clocks at
+"Count sequences 1 & 3" in both modes; this conflicts with the wiki and blargg for the
+5-step mode (see A17). Corrected 2026-09-28 (second pass); the earlier wording claimed full
+agreement.
 
 Writing $4017 with bit 7 set at every video frame is how commercial drivers synchronised
 the envelopes to the frame; the engine's driver runs once per video frame (60.0988 /
@@ -758,6 +792,15 @@ pattern `- - - f / - l - l / e e e e` and `- - - - - / l - l - - / e e e e -`, t
 starting with the immediate clock of the $4017 write) and Brad Taylor (14915 divider). All
 rates recomputed with `verify_nes.py` (identical to 6 decimals).
 
+Verified 2026-09-28 (second pass) against the NESdev wiki "APU Frame Counter" raw wikitext.
+The current wiki no longer writes `.5` fractions: it writes each position as an APU cycle
+plus a half-cycle tag, e.g. `3728, PUT`, `14914, GET`, `14914, PUT`, `0 (14915), GET`. Every
+step of both modes for NTSC and PAL is tagged `PUT` except the first and last rows of mode 0
+step 4 and the wrap row of mode 1 (`GET`). Reading `n, GET` as CPU cycle `2n` and `n, PUT` as
+`2n + 1` gives exactly the CPU-cycle columns and the `kFrame*` arrays above (all 24 positions
+recomputed, identical). The 29830-cycle sentence was refetched ("slightly (0.166%) slower than
+the 29780.5 CPU cycles per NTSC PPU frame").
+
 Clock counts per second for the required tests (exact CPU clocks): NTSC 4-step gives
 239.996 quarter and 119.998 half clocks per second; NTSC 5-step 192.025 / 96.013;
 PAL 4-step 199.989 / 99.994; PAL 5-step 159.997 / 79.998. Over one second of emulated
@@ -787,9 +830,11 @@ and `tnd_out = 0` when `triangle == noise == dmc == 0`.
 
 Output range: 0.0 (all silent) to 0.999999 (15, 15, 15, 15, 127) - see reference values.
 The channels interact: with `dmc = 127` a full-scale triangle adds only 0.107057 instead
-of 0.246412 (Brad Taylor: "When $4011 = 7F, the triangle & noise channel outputs operate
-at only 57% total volume"; 0.107057 / 0.246412 = 43 % of the standalone increment with
-this formula, which is the "crude volume control" games exploit).
+of 0.246412, i.e. 43.4 % of the standalone increment (noise: 42.7 %), which is the "crude
+volume control" games exploit. Brad Taylor: "When $4011 = 7F, the triangle & noise channel
+outputs operate at only 57% total volume" - read literally this is 57 % remaining, not
+43 %; the formula instead gives a 57 % reduction. See A18 (added 2026-09-28, second pass;
+the earlier wording presented the two figures as consistent).
 
 Lookup-table approximation (wiki, "numerators are adjusted slightly to preserve the
 normalized output range", tnd within 4 %):
@@ -806,10 +851,12 @@ pulse_out = 0.00752 * (pulse1 + pulse2)
 tnd_out   = 0.00851 * triangle + 0.00494 * noise + 0.00335 * dmc
 ```
 
-Decision: the engine implements the exact formula (two small tables, 31 and a
-16x16x128 or a per-call evaluation are both fine; the exact formula is cheap enough to
-tabulate as `pulseTable[31]` plus a direct evaluation of `tnd_out`). The linear and LUT
-variants are provided only as comparison values in tests.
+Decision: the engine implements the exact formula. Suggested implementation: a
+precomputed `pulseTable[31]` (index `pulse1 + pulse2`) and either a direct evaluation of
+`tnd_out` on each level change or a precomputed exact table `tndTable[16][16][128]`
+(32768 doubles, built in `prepare()`; the ultrasonic triangle value 7.5 of A2 is not an
+integer index, so that case needs the direct evaluation). The wiki's LUT and linear variants are
+approximations and are used only as comparison values in tests.
 
 Reference values (`gen_nes.py`, exact formula; 6 decimals):
 
@@ -892,6 +939,13 @@ table, the triangle/noise/DMC-alone rows and the 0.107057 increment were recompu
 `verify_nes.py` (every printed value identical). Extra value for A2: `tnd_out(7.5, 0, 0)
 = 0.133499`.
 
+Verified 2026-09-28 (second pass) against NESdev wiki "APU Mixer" raw wikitext and blargg
+`apu_ref.txt` (constants 95.88 / 8128 / 100, 159.79 / 8227 / 12241 / 22638 / 100, LUT 95.52 /
+8128 and 163.67 / 24329 with index `3 * triangle + 2 * noise + dmc`, linear 0.00752 / 0.00851 /
+0.00494 / 0.00335 all refetched). All 24 x 5 table values, the 31-entry pulse table, the
+triangle / noise / DMC-alone rows, 0.107057, 0.074507 and 0.133499 recomputed with an
+independent script: identical to 6 decimals.
+
 ---
 
 ## Output stage
@@ -913,7 +967,8 @@ filter at 37 Hz, followed by the unknown (and varying) properties of the RF modu
 demodulator."
 
 Engine decision (`ARCHITECTURE.md`): `console_filter` = NES-001 chain 90 Hz HP + 440 Hz HP
-+ 14 kHz LP, applied after the resampler and the DC-blocking stage; the Famicom variant
++ 14 kHz LP, applied after the resampler (the 90 Hz section is the coupling capacitor, so no
+separate DC blocker runs with it; `console_filter = 0` uses a 5 Hz DC blocker, A25); the Famicom variant
 (37 Hz HP only) is not exposed as a parameter (alternative: add a `console` choice).
 First-order coefficients at host rates, `k = exp(-2*pi*fc/fs)` (`gen_nes.py`):
 
@@ -980,12 +1035,25 @@ Pulse periods, MIDI 24..108 (`round(cpu / (16 f)) - 1`). Values above $7FF (2047
 not representable in 11 bits; the driver must clamp to $7FF or refuse the note:
 MIDI 24..32 on NTSC (MIDI 32 = 2154 > 2047, MIDI 33 = 2033 fits) but only MIDI 24..31 on
 PAL (MIDI 31 = 2120 > 2047, MIDI 32 = 2001 fits, because the PAL clock is 7 % slower and
-$7FF reaches 50.74 Hz, below G#1 = 51.91 Hz). The triangle tables are always representable.
+$7FF reaches 50.74 Hz, below G#1 = 51.91 Hz). The triangle tables are always representable
+for MIDI 24..108; below that range the triangle follows the same rule one octave lower
+(triangle MIDI n = pulse MIDI n + 12): NTSC MIDI <= 20 and PAL MIDI <= 19 exceed $7FF.
 
 Verified 2026-09-28: the four arrays were recomputed from the formula with `verify_nes.py`
 (85 x 4 values, no mismatch); the NESdev script formula (`ntscOctaveBase`, `palOctaveBase`,
 exact clocks) reproduces the same 80 values for both clocks; the 80 NTSC bytes of "APU
 basics" (`periodTableLo/Hi`, refetched) decode to the NTSC array from MIDI 33 to 112.
+
+Verified 2026-09-28 (second pass): the 80 + 80 bytes of `periodTableLo/Hi` were refetched from
+both "APU basics" and "APU period table" and decoded again (80 values, identical to the formula
+at 1789773 Hz); the "APU period table" script was re-run with its own `relFreqs` expression
+(`(1 << (i // 12)) * semitone ** (i % 12)`, not `2 ** (i / 12)`) for both `ntscOctaveBase` and
+`palOctaveBase`: identical to the NTSC and PAL arrays for all 80 notes. The four 85-entry arrays
+were recomputed at both the integer and the exact clocks: no mismatch. Rounding margins for
+tests (distance of `cpu / (16 f)` from a .5 tie, all others > 0.01): NTSC MIDI 71 pulse / MIDI
+59 triangle 226.4924 (-> 225), PAL MIDI 87 pulse / MIDI 75 triangle 83.4972 (-> 82), NTSC MIDI
+25 3228.5086 (unreachable). These are safe in double and float precision but must not be
+computed with a lower-precision frequency approximation.
 
 ```cpp
 namespace nes {
@@ -1086,7 +1154,7 @@ Pulse / triangle pitch (`f = cpu / (16 (t+1))`, triangle `/ 32`):
 17. NTSC t = 427 ($1AB, MIDI 60 C4) -> 261.357039 Hz pulse; PAL MIDI 60 t = 396 -> 261.745435 Hz (= 1662607 / (16 * 397)).
 18. Period table cross-check: NTSC MIDI 33 = 2033 ($07F1), MIDI 45 = 1016 ($03F8), MIDI 57 = 507, MIDI 69 = 253, MIDI 81 = 126, MIDI 93 = 63, MIDI 105 = 31, MIDI 112 = 20 (NESdev "APU basics" bytes; all 80 match the formula).
 19. PAL MIDI 33 = 1888, MIDI 45 = 944, MIDI 57 = 471, MIDI 69 = 235, MIDI 81 = 117, MIDI 93 = 58, MIDI 105 = 29 (NESdev PAL script formula).
-20. Unreachable pulse notes (period > 2047): NTSC MIDI 24..32 (3419..2154; MIDI 33 = 2033 fits); PAL MIDI 24..31 (3176..2120; MIDI 32 = 2001 fits and is the lowest PAL pulse note, 1662607 / (16 * 2002) = 51.912 Hz). Triangle: always representable (max 1709 NTSC / 1588 PAL at MIDI 24).
+20. Unreachable pulse notes (period > 2047): NTSC MIDI 24..32 (3419..2154; MIDI 33 = 2033 fits); PAL MIDI 24..31 (3176..2120; MIDI 32 = 2001 fits and is the lowest PAL pulse note, 1662607 / (16 * 2002) = 51.904564 Hz against the equal-tempered 51.913087 Hz; corrected 2026-09-28, the earlier text printed 51.912 Hz). Triangle: always representable (max 1709 NTSC / 1588 PAL at MIDI 24).
 
 Sweep (`target = period + (negate ? (p1 ? -(period>>s)-1 : -(period>>s)) : period>>s)`):
 
@@ -1105,7 +1173,7 @@ Noise:
 
 28. LFSR from 1, mode 0: period 32767 (visits every non-zero state); mode 1 from 1, $4000 or $7FFF: period 93; the 31-step cycle contains exactly 31 of the 32767 non-zero states; state 0 is a fixed point in both modes (the hardware power-up quirk "first clock shifts in a 1" avoids it).
 29. First 16 states after clocking 1 in mode 0: $4000, $2000, $1000, $0800, $0400, $0200, $0100, $0080, $0040, $0020, $0010, $0008, $0004, $0002, $4001, $6000; bit-0 outputs 0 x 14, 1, 0. Mode 1 from 1: $4000, $2000, $1000, $0800, $0400, $0200, $0100, $0080, $0040, $4020, $2010, $1008, $0804, $0402, $0201, $4100.
-29a. 31-step cycle start state: $0737 (mode 1, period 31; bit-0 outputs `1101100111000011010100100010111`); $0737 is reached after 14739 mode-0 clocks from 1.
+29a. 31-step cycle start state: $0737 (mode 1, period 31; bit-0 outputs after each clock `1101100111000011010100100010111`, i.e. starting with the state after the first clock); $0737 is reached after 14739 mode-0 clocks from 1.
 30. Noise NTSC idx 15: 4068 CPU cycles -> 439.963864 Hz LFSR clock; PAL idx 15: 3778 -> 440.075966 Hz; NTSC idx 0: 4 -> 447443.25 Hz; NTSC idx 8: 202 -> 8860.262376 Hz; PAL idx 8: 188 -> 8843.654255 Hz; PAL idx 2: 14 -> 118757.642857 Hz (PAL entry 2 is 14, not 16).
 31. Noise table cross-check: Brad Taylor's `$7F2 * 2 = 4068`, `$065 * 2 = 202`, `$3F9 * 2 = 2034`; full tables: NTSC {4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068}, PAL {4, 8, 14, 30, 60, 88, 118, 148, 188, 236, 354, 472, 708, 944, 1890, 3778}.
 
@@ -1132,8 +1200,41 @@ Output stage:
 
 43. One-pole coefficients at 48 kHz: 90 Hz -> 0.988288, 440 Hz -> 0.944031, 14 kHz -> 0.159998 (`exp(-2 pi fc / fs)`); at 44.1 kHz: 0.987259, 0.939235, 0.136060.
 
+Frame sequencer clock counts over one second (added 2026-09-28, second pass; required by
+`ENGINE_SPECS.md` "envelope and length clocks per second"). Sequencer reset at CPU cycle 0
+with bit 7 clear (no immediate clock), events counted in CPU cycles `0 .. f_CPU - 1` with the
+integer clocks, using the `kFrame*` arrays:
+
+44. NTSC 4-step, 1789773 cycles: 239 quarter-frame clocks (envelope / linear counter), 119
+    half-frame clocks (length / sweep). (59 full sequences = 1759970 cycles, then the events at
+    7457, 14913, 22371 of the 60th; 29829 falls after the end.)
+45. NTSC 5-step, 1789773 cycles: 192 quarter, 96 half (48 full sequences = 1789536 cycles, the
+    remaining 237 cycles contain no event).
+46. PAL 4-step, 1662607 cycles: 199 quarter, 99 half (49 full sequences = 1629446, then 8313,
+    16627, 24939).
+47. PAL 5-step, 1662607 cycles: 159 quarter, 79 half (39 full sequences = 1621074, then 8313,
+    16627, 24939).
+48. If the 5-step mode is entered by a $4017 write with bit 7 set at cycle 0, the immediate
+    quarter + half clock adds one of each: NTSC 193 / 97, PAL 160 / 80 (wiki / blargg
+    behaviour, see A17).
+
+Engine-level fundamentals (added 2026-09-28, second pass; `ENGINE_SPECS.md` "rendering a note
+produces the expected fundamental"):
+
+49. MIDI 69, pulse NTSC t = 253 -> 440.396900 Hz; pulse PAL t = 235 -> 1662607 / (16 * 236) =
+    440.309057 Hz (+1.22 cents); triangle NTSC t = 126 -> 1789773 / (32 * 127) = 440.396900 Hz;
+    triangle PAL t = 117 -> 1662607 / (32 * 118) = 440.309057 Hz.
+50. MIDI 108 NTSC pulse t = 26 -> 4142.993056 Hz (-17.88 cents vs 4186.009045 Hz).
+51. Noise `keyed` mapping (`ENGINE_SPECS.md`): note 36 -> period index 15 (NTSC 4068 cycles,
+    LFSR clock 439.963864 Hz); note 51 -> index 0 (4 cycles, 447443.25 Hz); notes below 36 clamp
+    to 15, above 51 clamp to 0.
+52. Rounding-margin notes for the period tables: NTSC MIDI 71 pulse = 225 (ratio 226.4924),
+    PAL MIDI 87 pulse = 82 (ratio 83.4972); see "Period reference table".
+
 All 43 items (and 29a, 42a, 42b) were recomputed on 2026-09-28 with `verify_nes.py`; no value
-of the original list needed correction except item 20 (PAL range).
+of the original list needed correction except item 20 (PAL range). Second verification pass
+(2026-09-28, independent script `v2.py` / `v3.py`): all 43 items recomputed again; item 20's
+PAL frequency corrected (51.912 -> 51.904564 Hz); items 44-52 added.
 
 ---
 
@@ -1169,10 +1270,17 @@ is loaded with the value 1." NESdev "CPU power up state": "$0000 (all 0s, first 
 shifts in a 1)". Decision: initialise to 1. Both descriptions produce the same state
 ($4000) after the first clock and therefore the same sequence.
 
-A5. **Noise period table units.** Wiki and blargg: CPU cycles (4..4068). Brad Taylor /
-NESSOUND: half of every value, in APU clocks. Decision: CPU cycles as in the wiki, the
-timer is clocked every APU cycle so the reload value is `period / 2 - 1` in APU cycles.
-No disagreement once the unit is taken into account.
+A5. **Noise period table: factor 2 between sources.** Wiki and blargg: CPU cycles
+(4..4068). Brad Taylor ("2A03 technical reference" and NESSOUND.txt): `$002..$7F2`, exactly
+half of every value, in a column headed "CPU clock cycles (11-bit wavelength+1)", with the
+timers stated to run "at the 2A03's internal 6502 speed (1.79 MHz)". Corrected 2026-09-28
+(second pass): an earlier version of this entry said Brad Taylor's unit was the APU clock
+and that there was no disagreement; his document says CPU cycles, so taken literally his
+noise is one octave higher than the wiki's. Decision: the wiki / blargg values in CPU cycles
+(two later sources, and the wiki's statement that all periods are even "because there are 2
+CPU cycles in an APU cycle" matches the APU-clocked timer); the timer reload value is
+`period / 2 - 1` in APU cycles. Alternative: Brad Taylor's values as CPU cycles (noise one
+octave higher); not used.
 
 A6. **DMC rate index 13 (NTSC).** Wiki: 84 CPU cycles (21306.8 Hz); blargg: $054 = 84;
 Brad Taylor: $2A8 = 680 clocks per byte = 85 per bit (refetched 2026-09-28: the document
@@ -1200,12 +1308,6 @@ script; the "APU basics" page ships NTSC bytes only). Decision: use the values p
 the NESdev script formula with 1662607 Hz (identical to the engine formula for all 80
 notes; re-verified 2026-09-28 with the script's exact `palOctaveBase`). Alternative: none
 needed; the formula is the documented one.
-
-A16. **Lowest PAL pulse note.** Added 2026-09-28. With $7FF = 50.74 Hz on PAL, MIDI 32
-(G#1, 51.91 Hz) is representable (t = 2001) while NTSC stops at MIDI 33 (A1, t = 2033).
-Decision: the driver's clamp/refuse rule uses the computed period (> 2047) rather than a
-fixed lowest MIDI note, so the PAL engine gains one extra low note. Alternative: refuse
-MIDI < 33 on both clocks for identical ranges (would discard a note the 2A07 can play).
 
 A10. **Output filter corner frequencies.** Wiki: 90 Hz, 440 Hz, 14 kHz. Forum thread
 p=44255: 442 Hz measured, 90 Hz derived from a 1700 us time constant (93.6 Hz), and the
@@ -1244,6 +1346,108 @@ tick. Decision: the driver writes $4017 = $40 at `prepare()`/`reset()` and the e
 starts the sequencer from 0 at that write. Alternative: $C0 (5-step, no IRQ) as many
 first-party titles used; exposed only if a "frame counter mode" parameter is added later.
 
+A16. **Lowest PAL pulse note.** Added 2026-09-28. With $7FF = 50.74 Hz on PAL, MIDI 32
+(G#1, 51.91 Hz) is representable (t = 2001) while NTSC stops at MIDI 33 (A1, t = 2033).
+Decision: the driver's clamp/refuse rule uses the computed period (> 2047) rather than a
+fixed lowest MIDI note, so the PAL engine gains one extra low note. Alternative: refuse
+MIDI < 33 on both clocks for identical ranges (would discard a note the 2A07 can play).
+
+A17. **5-step mode: which steps clock the half-frame units.** Added 2026-09-28 (second
+pass). NESdev wiki "APU Frame Counter": in mode 1 the half-frame clocks are at steps 2 and 5
+(14913 and 37281 CPU cycles) plus the immediate clock of the $4017 write ("both quarter frame
+and half frame signals are also generated"); blargg `apu_ref.txt` pattern `l - l - -` /
+`e e e e -` (starting at the write) agrees. Brad Taylor / NESSOUND: "Count sequences 1 & 3
+clock (update) the frequency sweep (square), and length (all channels) counters" and only the
+linear and envelope counters "are clocked once immediately after $4017.7 is written with a
+value of 1", i.e. the pattern after the write would be quarter / quarter+half / quarter /
+quarter+half / none instead of quarter+half / quarter / quarter+half / quarter / none.
+Decision: wiki + blargg (two later sources, test-ROM based). Alternative: Brad Taylor's
+ordering (same 96 / 192 Hz rates, half-frame clocks shifted by one step).
+
+A18. **DMC level vs triangle/noise volume.** Added 2026-09-28 (second pass). Brad Taylor:
+"When $4011 = 7F, the triangle & noise channel outputs operate at only 57% total volume".
+The wiki / blargg exact mixer formula gives, with `dmc = 127`, a full-scale triangle step of
+0.107057 instead of 0.246412 (43.4 % remaining) and a full-scale noise step of 0.074507
+instead of 0.174431 (42.7 % remaining), i.e. a 57 % reduction. Either Brad Taylor meant
+"reduced by 57 %" (then the sources agree) or the measurements differ (57 % vs 43 %
+remaining). Decision: the exact formula (wiki, blargg). Alternative: none implemented; the
+figure is only a qualitative cross-check.
+
+A19. **PAL DMC rate index 4 = 276.** Added 2026-09-28 (second pass). The PAL/NTSC period
+ratio is 0.917..0.932 for the fifteen other DMC indices but 276 / 286 = 0.965 for index 4
+(scaling by ~0.929 would give ~266); likewise the PAL noise entries 0-2 (4, 8, 14) are not
+scaled like the rest (ratio 1.0, 1.0, 0.875 vs ~0.93). The NESdev wiki is the only fetched
+source for both PAL tables (blargg and Brad Taylor give NTSC only). The wiki gives
+the tables as per-index values, not as a formula, so an irregular entry is not by itself
+evidence of a typo. Decision:
+keep the wiki values 276 and 4, 8, 14. Alternative: none sourced.
+
+A20. **Triangle sequencer phase at power-up.** Added 2026-09-28 (implementation). NESdev "CPU
+power up state" lists the APU registers and the noise LFSR but not the triangle's 32-step
+sequencer position, and no fetched source gives it. Because a halted triangle holds its step
+(A3), the power-up phase sets a constant triangle input to the mixer, which changes the loudness
+of noise and DMC through the non-linear `tnd_out` (e.g. noise 15 alone: 0.174431 with the
+triangle held at 0, 0.373329 - 0.246412 = 0.126917 with it held at 15). Decision: step 0 (value
+15), i.e. every counter cleared at power-up like the registers. Alternative: step 16 (value 0),
+which would give the "channel alone" loudness until the triangle first plays. After the first
+triangle note the held value is whatever phase the note stopped at, as on hardware.
+
+A21. **DMC encoder start level.** Added 2026-09-28 (implementation). The 1-bit delta format
+only encodes changes, so a converted sample is correct only if playback starts from the level
+the encoder assumed. The sources document the hardware counter (+/-2, skip at the bounds, $4011
+direct load) but no convention for the starting level of converted samples. Decision: the
+encoder assumes 64 (mid-scale; PCM -1..1 maps to 64 + 63 x) and `dmc_direct_level` defaults to
+64, so a default note plays exactly the encoded waveform. Alternative: start at 0 (the power-up
+level): no $4011 write needed, but every sample then begins with a ramp of up to 32 bits to
+reach the centre. Other `dmc_direct_level` values offset the whole sample and clip it at the
+bounds, which is the hardware behaviour and is left audible.
+
+A22. **Sweep register when the sweep is off.** Added 2026-09-28 (implementation). The sweep
+mutes the channel whenever the target period exceeds $7FF, "regardless of whether the sweep unit
+is disabled"; with `$4001 = $00` (negate 0, shift 0) the target is 2 x period, so every period
+>= $400 (NTSC below about MIDI 45) is silent. NESdev "APU basics" writes `$4001 = $08` (negate
+set) for this reason. Decision: with `sweep_enable = 0` the driver writes `$08` and ignores the
+sweep period/negate/shift parameters; with `sweep_enable = 1` it writes the parameters as given
+(the mute rules then apply, as on hardware). Alternative: always write the parameters verbatim
+(low notes silently muted when the sweep is off).
+
+A23. **DMC sample fetch latency.** Added 2026-09-28 (implementation). NESdev "APU DMC" says the
+reader fills the sample buffer whenever it is empty; on hardware the fetch is a DMA that takes
+1-4 CPU cycles. Decision: the fetch is immediate (same CPU cycle). Alternative: a 4-cycle delay;
+it cannot change the output because the byte is only used at the next output cycle (>= 50 CPU
+cycles later), except for the exact moment the IRQ flag is set.
+
+A24. **Timer rewrites after a hardware-envelope note-off.** Added 2026-09-28 (fidelity review).
+NESdev "APU Pulse" / "APU Envelope": every $4003 / $4007 write sets the envelope start flag
+(decay back to 15) and reloads the length counter. A driver that keeps rewriting the period
+after note-off (vibrato, pitch envelope, glide) and crosses a 256 boundary therefore restarts
+the decay, and a released note with vibrato never ends. The sources describe the register
+side effects only, not what a driver should do. Decision: after note-off with
+`*_env_enable = 1` the driver writes no more $4003 / $4007; vibrato, pitch envelope and pitch
+changes are clamped to the page of the last high bits written (low byte only), so the decay
+runs out as documented in "Note off". Alternative: stop all period rewrites at note-off
+(vibrato frozen during the release), or keep the restarts (a real driver bug some games have,
+but it makes `isChannelActive` never become false).
+
+A25. **DC blocker corner.** Added 2026-09-28 (fidelity review). `ARCHITECTURE.md` requires a
+DC-blocking one-pole high-pass after the resampler but gives no corner; research "Output
+stage" identifies the NES-001 output coupling (150 ohm / 10 uF) with the 90 Hz high-pass
+itself, and no source gives a separate coupling corner. Decision: with `console_filter = 1` the
+chain is exactly 90 Hz HP + 440 Hz HP + 14 kHz LP (the 90 Hz section is the coupling
+capacitor, no extra section); with `console_filter = 0` a 5 Hz one-pole DC blocker
+(`kDcBlockHz`, same value as the SNES and Genesis engines, not a hardware value) centres the
+unipolar DAC output. Alternative: no high-pass at all with `console_filter = 0` (the output then
+carries the unipolar mixer's DC level, e.g. a halted triangle's held step).
+
+A26. **$4017 IRQ inhibit timing.** Added 2026-09-28 (fidelity review). NESdev "APU Frame
+Counter" (raw wikitext refetched 2026-09-28): "Interrupt inhibit flag. If set, the frame
+interrupt flag is cleared, otherwise it is unaffected." and, separately, "After 3 or 4 CPU clock
+cycles*, the timer is reset." The page does not say whether the inhibit bit also waits for the
+delay. Decision: the inhibit bit (and the flag clear it causes) applies at the write; only the
+timer reset, the mode change and the immediate quarter/half clock of bit 7 are delayed 3 CPU
+cycles (A12). Alternative: delay the inhibit too (a frame IRQ could then still be set during the
+3 cycles). Not audible: the driver runs with IRQ inhibited.
+
 ---
 
 ## Sources
@@ -1271,7 +1475,8 @@ All consulted on 2026-09-28. No emulator source code was opened.
    tables, register formulas, output unit and memory reader procedures, $4011 note.
 10. NESdev wiki, "APU Frame Counter" - https://www.nesdev.org/wiki/APU_Frame_Counter -
     4-step and 5-step tables in APU cycles for NTSC and PAL, $4017 write behaviour,
-    29830-cycle statement.
+    29830-cycle statement; raw wikitext refetched 2026-09-28 for the interrupt inhibit
+    sentence (A26).
 11. NESdev wiki, "APU Mixer" - https://www.nesdev.org/wiki/APU_Mixer - full text: exact
     formula, zero-division rule, lookup-table and linear approximations, NES-001 filter
     list, Famicom 37 Hz note.
@@ -1296,7 +1501,8 @@ All consulted on 2026-09-28. No emulator source code was opened.
     complement difference.
 19. Brad Taylor, "2A03 technical reference" -
     https://www.nesdev.org/2A03%20technical%20reference.txt - cross-check of the frame
-    sequencer (14915 divider, 240 Hz), noise table (APU-clock units), DMC per-byte
+    sequencer (14915 divider, 240 Hz), noise table (headed "CPU clock cycles", half the
+    wiki values, see A5), DMC per-byte
     table, length table in frames, sweep NOT/NEG difference, envelope 240/(N+1), DMC
     influence on triangle/noise ("57% total volume").
 20. Brad Taylor, "2A03 sound channel hardware documentation" (NESSOUND.txt) -
@@ -1321,3 +1527,177 @@ Findings: one wrong statement (PAL unreachable range, fixed in "Period reference
 item 20 and A16), one misquotation (Brad Taylor's 14915 sentence, fixed in "Frame counter"),
 one imprecise wording (noise mode-1 cycle classes, reworded); A3 resolved; A6 confirmed as a
 real source discrepancy; A10 extended. No table value needed correction.
+
+Second adversarial verification pass, 2026-09-28: refetched the raw wikitext of "APU Noise",
+"APU DMC", "APU Frame Counter", "APU Length Counter", "APU Mixer", "APU Pulse", "APU basics"
+and "APU period table", plus blargg `apu_ref.txt`, Brad Taylor's "2A03 technical reference"
+and NESSOUND.txt. Every `constexpr` array was parsed out of this file and diffed against
+values recomputed from the formulas (independent scripts `v2.py` / `v3.py`, scratchpad); the
+80 published NTSC period bytes were decoded again. Findings: no table value was wrong. Fixed:
+item 20's PAL lowest-note frequency (51.912 -> 51.904564 Hz); the claim that Brad Taylor's
+noise table is in APU clocks (his heading says CPU clock cycles; A5 rewritten); the claim that
+Brad Taylor agrees with the wiki on the 5-step immediate clock (he does not for the half-frame
+units; A17); the presentation of the "57 %" figure as consistent with the formula (A18); the
+bit-0 string convention of the 31-step cycle (clarified). Added: A19 (irregular PAL DMC /
+noise entries), GET/PUT reading of the current frame-counter wikitext, rounding-margin notes,
+and reference items 44-52 (frame clock counts per second, engine fundamentals, noise keyed
+mapping).
+
+---
+
+## Implementation decisions
+
+Written 2026-09-28 with the first implementation (`dsp/include/chipdsp/nes/`, `dsp/src/nes/`,
+tests `dsp/tests/test_nes_*.cpp`). New open points are listed above as A20-A26 (A24-A26 from
+the fidelity review of 2026-09-28).
+
+### Layers: chip versus driver
+
+* **Chip behaviour** (`NesApu.h`: `PulseChannel`, `TriangleChannel`, `NoiseChannel`,
+  `DmcChannel`, `FrameSequencer`, `NesMixer`): exactly the procedures of the sections above,
+  driven only by register writes ($4000-$4017) and `NesApu::clock()`, which advances one CPU
+  cycle. Pulse, noise and DMC timers run on every second CPU cycle with reload values
+  `t` (pulse) and `period / 2 - 1` (noise, DMC tables in CPU cycles, A5); the triangle timer runs
+  every CPU cycle; the frame sequencer counts CPU cycles against the `kFrame*` tables. Includes
+  the sweep mute rules, the ones'/two's complement difference, length/linear counters, the
+  envelope start flag, the DMC clamp rule and silence flag, the $4015 semantics (DMC restart only
+  when bytes remaining is 0) and the 3-cycle $4017 delay (A12). The triangle keeps stepping at
+  t < 2 but reports "ultrasonic" to the mixer, which then evaluates `tnd_out(7.5, noise, dmc)`
+  directly (A2); halted, it holds its step (A3).
+* **Mixer**: exact formula through tables built in `prepare()` (`NesMixer::build`): 31 pulse
+  entries and 16 x 16 x 128 = 32768 tnd entries (float). Per-channel buses use the same tables
+  with the other inputs at 0.
+* **Output stage** (not chip behaviour, `NesOutputStage`): `console_filter = 1` is exactly the
+  NES-001 chain 90 Hz HP (the coupling capacitor), 440 Hz HP, 14 kHz LP with
+  `k = exp(-2 pi fc / fs)` as in "Output stage"; `console_filter = 0` is a 5 Hz one-pole DC
+  blocker only (A25). Revised 2026-09-28: the DC blocker used to run in front of the console
+  chain as a fourth section. The engine uses its own
+  one-pole sections instead of `util/Filters.h` because that file computes `rc / (rc + dt)`
+  rather than the documented `exp` coefficient (0.98835 vs 0.988288 at 90 Hz / 48 kHz).
+* **Software driver** (`NesDriver.h`), everything a game's sound code would do: MIDI note to
+  period conversion, per-frame period rewrites (vibrato, pitch envelope, glide), software ADSR
+  written as constant volume, triangle gating/attack delay, keyed noise/DMC mapping, DMC sample
+  triggering. It only ever acts through `NesApu::write()`.
+
+### Driver tick model
+
+* One driver tick per video frame: 29780.5 CPU cycles NTSC (60.0988 Hz), 33247.5 PAL
+  (50.0070 Hz), counted in half CPU cycles (59561 / 66495) inside the CPU-cycle loop, so the
+  tick lands on an exact CPU cycle and drifts against the APU frame counter (29830 / 33254
+  cycles) as on hardware.
+* The APU frame counter is started with $4017 = $40 (4-step, IRQ inhibited) at `reset()`,
+  after the NESdev "APU basics" initialisation writes (A15).
+* Note events (`noteOn`, `noteOff`) are applied when they are called, i.e. between blocks, which
+  is the start of the next `renderBlock()`: the note-on register writes happen immediately and
+  frame 0 of the software envelopes starts there; the following ticks stay on the frame grid.
+  Alternative: defer note-on to the next tick (authentic up-to-16.7 ms jitter); not chosen for
+  playability. `setChannelPitch` is picked up at the next tick, like a pitch slide.
+* Parameter changes update the driver settings at once; the driver writes them at the next tick.
+  `$4001` is written only at note-on or when its value changes (every write sets the sweep reload
+  flag); `$4003` / `$4007` / `$400B` only at note-on or when the timer high bits change, because
+  these writes restart the pulse phase and envelope (the audible "vibrato pop" of real drivers
+  is therefore limited to period crossings of a 256 boundary, as in games).
+
+### MIDI note to register conversion
+
+* Pulse: `t = round(cpu / (16 f)) - 1`; triangle: `t = round(cpu / (32 f)) - 1`, with
+  `f = 440 * 2^((note + transpose - 69) / 12)` and cpu = 1789773 / 1662607 Hz ("Period reference
+  table"; tests check all 85 x 4 values). The float MIDI note (glide, bend) goes through the same
+  formula, so pitch moves in 11-bit steps.
+* Vibrato and pitch envelope add period units to `t` before the write; the result is clamped to
+  0..$7FF (the register width). If the base period of a note is above $7FF the driver
+  refuses the note instead of clamping: pulses are written with volume 0, the triangle stays
+  halted ($4015 bit cleared, no $400B write). NTSC pulses stop at MIDI 33 and PAL pulses at
+  MIDI 32 (A16); NTSC triangle notes at MIDI 21 (t = 2033) and PAL at MIDI 20 (t = 2001), after
+  `tri_transpose`. A glide into the representable range starts the note at the next tick, a
+  glide out of it silences it. (Revised 2026-09-28: the triangle used to clamp to $7FF.)
+* Vibrato (`*_vibrato_rate` frames per half cycle, `*_vibrato_depth` period units,
+  `*_vibrato_delay` frames): triangle LFO sampled at mid-frame,
+  `offset = round(depth * tri((g + 0.5) / (2 rate)) / peak(rate))`, `g` = frames since the delay
+  ended, `peak = 1` for odd rates and `1 - 1 / rate` for even rates (the largest mid-frame sample
+  of the triangle), so that every rate swings exactly `+/- depth` as the parameter's unit says
+  (e.g. rate 2 gives +d, +d, -d, -d; rate 4 gives d/3, d, d, d/3, ...). Revised 2026-09-28: without
+  the scaling, even rates peaked at `depth * (1 - 1 / rate)` (half the depth at rate 2).
+* Pitch envelope (`*_pitch_env_depth` at note start, `*_pitch_env_speed` frames to reach 0):
+  `offset = depth * (speed - frame) / speed` (integer, toward zero), 0 when speed = 0. Positive
+  depth = larger period = lower pitch. For the noise the offset is in period-index steps.
+* Noise `nz_keyed = 1`: period index `15 - (round(note) - 36)`, clamped 0..15 (item 51);
+  otherwise `nz_period`. DMC `dmc_keyed = 1`: rate index `dmc_rate + round(note) - 60`, clamped.
+* Sweep: `sweep_enable = 1` writes `$4001 = 1PPP NSSS` from the parameters at note-on, and
+  while it is moving the period (shift > 0) the driver no longer rewrites the timer (vibrato,
+  pitch envelope and glide are then inactive on that channel). `sweep_enable = 0` writes $08
+  (A22).
+
+### Velocity mapping
+
+* Pulse and noise with the software envelope: peak volume = `round(velocity * volume)` (4-bit),
+  e.g. volume 15 -> `round(v * 15)` as in ENGINE_SPECS.md, volume 12 at velocity 0.5 -> 6.
+* Hardware envelope (`*_env_enable = 1`): `volume` is the envelope divider period V and the
+  decay always starts at 15, so velocity has no effect (the chip has no other volume control).
+* Triangle and DMC have no volume register: velocity is ignored. The DMC level can be changed
+  only through `dmc_direct_level` ($4011).
+
+### Note off
+
+* Pulse / noise, software envelope: enters the release stage (`sw_release` frames from the
+  current volume to 0, 0 = cut). Hardware envelope: the loop flag is cleared (so a looping
+  envelope decays out and stops), a non-looping one simply finishes its decay; the length
+  counter runs from index 1 (254 half frames, 2.1 s) whenever the halt flag is clear, which is
+  longer than the slowest decay (1 s). After this note-off the driver never writes $4003 /
+  $4007 again (that would restart the decay at 15): vibrato, pitch envelope and pitch changes
+  stay within the current 256-period page (A24).
+* Triangle: $4015 triangle bit cleared then set again in the same tick: the length counter is
+  forced to 0, the sequencer stops immediately and holds its step (A3). `tri_linear_length < 127`
+  makes notes self-terminating after R quarter frames (control flag clear); 127 sets the control
+  flag (hold until note off). `tri_gate_frames` rewrites $400B every N frames (reload flag,
+  retrigger of the linear counter; audible only with `tri_linear_length < 127`).
+  `tri_attack_frames` keeps the triangle halted for N frames before the note-on writes.
+* DMC: a looping sample is stopped ($4015 bit 4 cleared: it silences when the current byte is
+  done); a one-shot plays to its end. "Looping" is the loop flag the chip holds ($4010 written at
+  note-on), not the current `dmc_loop` parameter, which may have changed during the note. Every
+  $4015 write keeps the DMC bit at its current state (D = 1 only while bytes remain), so tone
+  note-offs never restart or cut a sample.
+* `isChannelActive` (ENGINE_SPECS "Conventions"), whether or not the key is held: the hardware
+  still sounding (pulse/noise: length > 0 and volume > 0, an envelope start pending, or a looping
+  hardware envelope; triangle running or its linear counter reload pending; DMC reader or output
+  unit busy), or the driver about to raise a silent channel by itself (software attack from 0,
+  triangle `attack_frames` delay, triangle `gate_frames` retrigger with the key held). A held
+  key on a decayed non-looping hardware envelope, a software sustain of 0, an expired triangle
+  linear counter, a refused note or a finished one-shot DMC sample is inactive. (Revised
+  2026-09-28: a held gate used to count as active whatever the hardware state.)
+
+### DMC samples
+
+* 16 slots of 4096 bytes in three pre-allocated banks. The DMC reads only the bank that was
+  active at its last note-on (like a mapper bank switch), published by the audio thread in an
+  atomic `mappedBank` and kept until the next DMC note-on, so reloading the slot that is playing
+  never changes the playing sample: the new data is heard from the next note-on. `loadSample()`
+  (one message thread) encodes into a bank that is neither the active nor the mapped one (with
+  three banks one always exists, so it never waits), copies the other slots from the active bank,
+  then flips the atomic `activeBank`. At note-on the audio thread publishes its claim and checks
+  that the bank is still active (at most 4 attempts, bounded; if all fail the note plays without
+  sample); no lock, no allocation. (Revised 2026-09-28: two banks, a per-block claim and a 1 s
+  timeout after which the loader overwrote the bank regardless.)
+* Encoding happens at the rate selected by `dmc_rate` (and the clock standard) at load time; a
+  later rate change plays the same bytes faster or slower, as on hardware. PCM is resampled to
+  the bit rate by linear interpolation (a tool step, not hardware), then encoded by counter
+  tracking from level 64 (A21): bit = 1 if the target `64 + 63 x` is above the modelled counter,
+  and the model follows the hardware rule, so playback reproduces the encoder's model bit for bit
+  (tested). The last partial byte and the padding up to the playable length `L * 16 + 1` are
+  filled with alternating bits ($55, net change 0). Samples needing more than 4081 bytes are
+  rejected (`loadSample` returns false).
+* The driver maps the selected slot at $C000 (like a mapper bank switch) and writes $4012 = 0,
+  $4013 = (length - 1) / 16, then restarts the channel through $4015.
+
+### Resampling
+
+* The APU is stepped one CPU cycle at a time in `renderBlock`; every change of the mixer output
+  (and of each channel's solo level when per-channel outputs are requested) is passed to
+  `BandLimitedStepSynth` at `clockIndex * hostSamplesPerClock`, with `hostSamplesPerClock =
+  host rate / cpu clock` computed by the engine. The synths are prepared once at the NTSC clock:
+  both clocks downsample, so the kernel (cutoff 0.45) is identical and switching NTSC/PAL on the
+  audio thread needs no re-allocation. The synths track changes only; after `reset()` the
+  power-up DC level (A20) is taken as the reference so a reset does not produce a thump.
+* While the triangle is ultrasonic (A2) its stepping sequencer value is left out of the level
+  comparison (the mixer uses 7.5 anyway), so the mixer is only evaluated when another channel
+  changes rather than on every CPU cycle.

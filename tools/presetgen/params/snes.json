@@ -1,7 +1,7 @@
 {
   "meta": {
     "chip": "snes",
-    "source": "ENGINE_SPECS.md (hand-transcribed; regenerate with chiptool dump-params once the engines exist)"
+    "source": "chiptool dump-params"
   },
   "params": [
     {

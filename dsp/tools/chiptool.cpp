@@ -9,11 +9,22 @@
 //       Applies the preset's "params" through the engine's parameterDescriptors() keys,
 //       plays the note for 60 % of the duration and writes a stereo 16-bit WAV.
 //
-//   chiptool features <bank.json> <features.json> [--jobs N]
-//       Renders every preset of the bank (1 s, C4, 48 kHz) and writes
-//       {name: {"mel": [40 log-energies in dB], "env": [20 RMS points]}}, computed with
-//       an inline radix-2 FFT and a 40-band mel filterbank. Presets are rendered in
-//       parallel with std::thread, one engine instance per thread.
+//   chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]
+//       Renders every preset of the bank twice at 48 kHz, each after a 0.4 s silent pre-roll
+//       (C4 for 2 s held 1.4 s, and C3 for 0.5 s held 80 ms) and writes
+//       {name: {"mel": [40 left + 40 right log-energies in dB], "env": [20 RMS points],
+//               "pitch": [per-frame f0, cents re A4 + 10000, 0 = unvoiced],
+//               "mel_short": [...], "env_short": [...], "pitch_short": [...]}}, computed
+//       with an inline radix-2 FFT and a 40-band mel filterbank. The hardware channel is the lowest bit of the
+//       preset's global.poly_channels. Presets are rendered in
+//       parallel with std::thread, with a fresh engine instance per preset so that sample
+//       memory (SNES APU RAM budget) never carries over from one preset to the next.
+//
+//   Samples: a preset's "samples" object maps a slot parameter key to a sample name
+//   ({"dmc_sample": "kick_short"}). The sample is looked up in <DIR>/index.json
+//   (default: <bank dir>/../samples, then ./assets/samples), loaded into the slot given by
+//   that parameter's value, and its root note / loop start are passed to setSampleInfo().
+//   A preset whose sample cannot be found or does not fit is an error, never a silent render.
 //
 // Tool code: exceptions and allocation are fine here (nothing runs on an audio thread).
 
@@ -29,7 +40,9 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <sstream>
@@ -51,7 +64,14 @@ constexpr int kEnvelopePoints = 20;
 constexpr int kFftSize = 2048;
 constexpr int kFftHop = 1024;
 constexpr double kMelFloorDb = -100.0;
-constexpr double kFeatureSeconds = 1.0;
+constexpr double kPreRollSeconds = 0.4;      // silent render between preset load and note-on
+constexpr double kFeatureSeconds = 2.0;      // long pass: held 1.4 s (> the 1 s maximum vibrato delay)
+constexpr double kFeatureHoldSeconds = 1.4;
+constexpr double kShortSeconds = 0.5;        // short pass: 80 ms hit, exposes release/choke variants
+constexpr double kShortHoldSeconds = 0.08;
+// C3 for the short pass: keyed variants differ away from C4, and C3 sits inside the useful
+// range of the NES keyed noise (notes 36..51 map to indexes 15..0; C4 and above clamp to 0).
+constexpr int kShortNote = 48;
 constexpr double kFeatureRate = 48000.0;
 constexpr int kFeatureNote = 60;
 constexpr int kFeatureVelocity = 100;
@@ -166,6 +186,17 @@ bool hasKeyWithPrefix(const Value::Object& params, const char* prefix)
 // without FM operator keys play on a PSG tone (or noise) channel or the DAC channel.
 int guessChannel(chipdsp::ChipId chip, const Value& preset)
 {
+    // Generated presets name their hardware channels in global.poly_channels (bit mask, as
+    // the plugin's voice allocator uses it): play on the lowest channel of the mask.
+    if (const Value* g = preset.find("global"); g != nullptr && g->isObject())
+        if (const Value* mask = g->find("poly_channels"); mask != nullptr && mask->isNumber())
+        {
+            const auto bits = static_cast<unsigned>(std::lround(mask->asNumber()));
+            for (int c = 0; c < chipdsp::kMaxHardwareChannels; ++c)
+                if ((bits >> c) & 1u)
+                    return c;
+        }
+
     const Value* p = preset.find("params");
     if (p == nullptr || !p->isObject())
         return 0;
@@ -198,6 +229,150 @@ int guessChannel(chipdsp::ChipId chip, const Value& preset)
     return 0;
 }
 
+// ----- samples ----------------------------------------------------------------------------------
+
+// Mono float PCM from a 16-bit PCM WAV (multi-channel files are averaged).
+std::vector<float> readWavMono(const std::string& path, double& rate)
+{
+    const std::string data = readFile(path);
+    auto byteAt = [&](size_t o) { return static_cast<uint32_t>(static_cast<uint8_t>(data[o])); };
+    auto u16 = [&](size_t o) { return byteAt(o) | (byteAt(o + 1) << 8); };
+    auto u32 = [&](size_t o) { return u16(o) | (u16(o + 2) << 16); };
+    if (data.size() < 12 || data.compare(0, 4, "RIFF") != 0 || data.compare(8, 4, "WAVE") != 0)
+        throw std::runtime_error(path + ": not a RIFF/WAVE file");
+
+    uint32_t format = 0, channels = 0, bits = 0;
+    rate = 0.0;
+    std::vector<float> mono;
+    size_t pos = 12;
+    while (pos + 8 <= data.size())
+    {
+        const std::string id = data.substr(pos, 4);
+        const size_t size = u32(pos + 4);
+        const size_t body = pos + 8;
+        if (body + size > data.size())
+            throw std::runtime_error(path + ": truncated chunk " + id);
+        if (id == "fmt " && size >= 16)
+        {
+            format = u16(body);
+            channels = u16(body + 2);
+            rate = static_cast<double>(u32(body + 4));
+            bits = u16(body + 14);
+        }
+        else if (id == "data")
+        {
+            if (format != 1 || bits != 16 || channels == 0)
+                throw std::runtime_error(path + ": only 16-bit PCM WAV is supported");
+            const size_t frames = size / (2u * channels);
+            mono.resize(frames);
+            for (size_t f = 0; f < frames; ++f)
+            {
+                double sum = 0.0;
+                for (uint32_t c = 0; c < channels; ++c)
+                    sum += static_cast<int16_t>(u16(body + 2 * (f * channels + c)));
+                mono[f] = static_cast<float>(sum / channels / 32768.0);
+            }
+        }
+        pos = body + size + (size & 1u);
+    }
+    if (mono.empty() || rate <= 0.0)
+        throw std::runtime_error(path + ": no audio data");
+    return mono;
+}
+
+struct SampleEntry
+{
+    std::vector<float> pcm;
+    double rate = 0.0;
+    float rootNote = 60.0f;
+    int loopStart = -1;
+};
+
+// Read-only after load(); shared by the render threads.
+class SampleLibrary
+{
+public:
+    // Loads <dir>/index.json and every WAV it lists. Returns false when the index is missing.
+    bool load(const std::filesystem::path& dir)
+    {
+        const auto indexPath = dir / "index.json";
+        if (!std::filesystem::exists(indexPath))
+            return false;
+        const Value index = minijson::parse(readFile(indexPath.string()));
+        if (!index.isArray())
+            throw std::runtime_error(indexPath.string() + ": expected a JSON array");
+        for (const auto& e : index.asArray())
+        {
+            const Value* chip = e.find("chip");
+            const Value* name = e.find("name");
+            const Value* file = e.find("file");
+            if (chip == nullptr || name == nullptr || file == nullptr || !chip->isString() || !name->isString() ||
+                !file->isString())
+                throw std::runtime_error(indexPath.string() + ": entry without chip/name/file");
+            SampleEntry s;
+            s.pcm = readWavMono((dir / file->asString()).string(), s.rate);
+            if (const Value* root = e.find("root_note"); root != nullptr && root->isNumber())
+                s.rootNote = static_cast<float>(root->asNumber());
+            if (const Value* loop = e.find("loop_start"); loop != nullptr && loop->isNumber())
+                s.loopStart = static_cast<int>(std::lround(loop->asNumber()));
+            entries[chip->asString() + "/" + name->asString()] = std::move(s);
+        }
+        return true;
+    }
+
+    const SampleEntry* find(const std::string& chip, const std::string& name) const
+    {
+        const auto it = entries.find(chip + "/" + name);
+        return it != entries.end() ? &it->second : nullptr;
+    }
+
+    size_t size() const { return entries.size(); }
+
+private:
+    std::map<std::string, SampleEntry> entries;
+};
+
+// Explicit --samples dir, else <hint dir>/../samples, else ./assets/samples.
+std::filesystem::path resolveSamplesDir(const std::string& explicitDir, const std::string& hintFile)
+{
+    if (!explicitDir.empty())
+        return explicitDir;
+    const auto fromHint = std::filesystem::absolute(hintFile).parent_path().parent_path() / "samples";
+    if (std::filesystem::exists(fromHint / "index.json"))
+        return fromHint;
+    return std::filesystem::path("assets") / "samples";
+}
+
+// Loads the preset's samples into the slots named by its parameters. Must run after
+// applyPreset(): the SNES budget depends on echo_delay.
+void loadPresetSamples(chipdsp::IChipEngine& engine, const Value& preset, const SampleLibrary* library)
+{
+    const Value* samples = preset.find("samples");
+    if (samples == nullptr || !samples->isObject() || samples->asObject().empty())
+        return;
+    if (library == nullptr || library->size() == 0)
+        throw std::runtime_error("preset uses samples but no samples/index.json was found (use --samples DIR)");
+
+    const Value* params = preset.find("params");
+    const std::string chip = chipdsp::chipKey(engine.chipId());
+    for (const auto& [slotKey, nameValue] : samples->asObject())
+    {
+        if (!nameValue.isString())
+            throw std::runtime_error("samples." + slotKey + " is not a string");
+        int slot = 0;
+        if (params != nullptr && params->isObject())
+            if (const Value* v = params->find(slotKey); v != nullptr && v->isNumber())
+                slot = static_cast<int>(std::lround(v->asNumber()));
+        const SampleEntry* s = library->find(chip, nameValue.asString());
+        if (s == nullptr)
+            throw std::runtime_error("unknown sample " + chip + "/" + nameValue.asString());
+        if (!engine.loadSample(slot, s->pcm.data(), static_cast<int>(s->pcm.size()), s->rate))
+            throw std::runtime_error("loadSample failed for " + nameValue.asString() + " in slot " +
+                                     std::to_string(slot) + " (invalid slot or memory budget exceeded)");
+        engine.setSampleInfo(slot, s->rootNote, s->loopStart, s->rate); // false = no metadata on this chip
+    }
+}
+
 // ----- rendering --------------------------------------------------------------------------------
 
 struct RenderOptions
@@ -207,19 +382,33 @@ struct RenderOptions
     double rate = 48000.0;
     int velocity = 100; // MIDI 0..127
     int channel = -1;   // -1: guess from the preset
+    double holdSeconds = -1.0; // note-off time; < 0: kNoteOnFraction of 'seconds'
 };
 
 // Engine must already be prepared at opts.rate.
 void renderPreset(chipdsp::IChipEngine& engine, const Value& preset, const RenderOptions& opts, bool warn,
-                  std::vector<float>& left, std::vector<float>& right)
+                  const SampleLibrary* library, std::vector<float>& left, std::vector<float>& right)
 {
     const int total = std::max(1, static_cast<int>(std::lround(opts.seconds * opts.rate)));
-    const int noteOffAt = static_cast<int>(std::lround(static_cast<double>(total) * kNoteOnFraction));
+    const int noteOffAt = opts.holdSeconds >= 0.0
+                              ? static_cast<int>(std::lround(opts.holdSeconds * opts.rate))
+                              : static_cast<int>(std::lround(static_cast<double>(total) * kNoteOnFraction));
     left.assign(static_cast<size_t>(total), 0.0f);
     right.assign(static_cast<size_t>(total), 0.0f);
 
     engine.reset();
     applyPreset(engine, preset, warn);
+    loadPresetSamples(engine, preset, library);
+
+    // Pre-roll (discarded): a preset is loaded before it is played. This lets the drivers
+    // finish their set-up, e.g. the SNES driver keeps echo writes off for 240 ms after it
+    // programs EDL (research "Echo"), which would otherwise hide the echo of short notes.
+    {
+        std::vector<float> scratchL(static_cast<size_t>(kBlockSize)), scratchR(static_cast<size_t>(kBlockSize));
+        const int preRoll = static_cast<int>(std::lround(kPreRollSeconds * opts.rate));
+        for (int pos = 0; pos < preRoll; pos += kBlockSize)
+            engine.renderBlock(scratchL.data(), scratchR.data(), nullptr, nullptr, std::min(kBlockSize, preRoll - pos));
+    }
 
     int channel = opts.channel >= 0 ? opts.channel : guessChannel(engine.chipId(), preset);
     channel = std::clamp(channel, 0, engine.numChannels() - 1);
@@ -320,10 +509,13 @@ void fft(std::vector<std::complex<double>>& a)
 double hzToMel(double hz) { return 2595.0 * std::log10(1.0 + hz / 700.0); }
 double melToHz(double mel) { return 700.0 * (std::pow(10.0, mel / 2595.0) - 1.0); }
 
-// 40 log-mel band energies (dB, floored at kMelFloorDb) of the averaged power spectrum
-// over Hann-windowed frames of kFftSize with hop kFftHop.
+// 40 log-mel band energies (dB, floored at kMelFloorDb) of the power spectrum averaged over
+// the active Hann-windowed frames (kFftSize, hop kFftHop): frames within kActiveFrameDb of
+// the loudest frame. Averaging only active frames keeps a 30 ms drum hit from being
+// flattened into the silence that follows it.
 std::vector<double> melFeatures(const std::vector<float>& mono, double rate)
 {
+    constexpr double kActiveFrameDb = 30.0;
     const size_t bins = static_cast<size_t>(kFftSize / 2 + 1);
     std::vector<double> power(bins, 0.0);
     std::vector<double> window(static_cast<size_t>(kFftSize));
@@ -336,15 +528,33 @@ std::vector<double> melFeatures(const std::vector<float>& mono, double rate)
     }
     const double norm = 1.0 / (windowSum * windowSum);
 
-    int frames = 0;
+    std::vector<std::vector<double>> framePower;
+    std::vector<double> frameEnergy;
     std::vector<std::complex<double>> buffer(static_cast<size_t>(kFftSize));
     for (size_t start = 0; start + static_cast<size_t>(kFftSize) <= mono.size(); start += static_cast<size_t>(kFftHop))
     {
         for (size_t i = 0; i < static_cast<size_t>(kFftSize); ++i)
             buffer[i] = std::complex<double>(static_cast<double>(mono[start + i]) * window[i], 0.0);
         fft(buffer);
+        std::vector<double> p(bins);
+        double e = 0.0;
         for (size_t b = 0; b < bins; ++b)
-            power[b] += std::norm(buffer[b]) * norm;
+        {
+            p[b] = std::norm(buffer[b]) * norm;
+            e += p[b];
+        }
+        framePower.push_back(std::move(p));
+        frameEnergy.push_back(e);
+    }
+    const double loudest = frameEnergy.empty() ? 0.0 : *std::max_element(frameEnergy.begin(), frameEnergy.end());
+    const double gate = loudest * std::pow(10.0, -kActiveFrameDb / 10.0);
+    int frames = 0;
+    for (size_t f = 0; f < framePower.size(); ++f)
+    {
+        if (loudest <= 0.0 || frameEnergy[f] < gate)
+            continue;
+        for (size_t b = 0; b < bins; ++b)
+            power[b] += framePower[f][b];
         ++frames;
     }
     if (frames > 0)
@@ -377,15 +587,104 @@ std::vector<double> melFeatures(const std::vector<float>& mono, double rate)
     return out;
 }
 
-// 20 RMS points over equal segments (linear amplitude).
+// Per-frame fundamental in cents relative to A4, 0 for unvoiced/silent frames (frames of
+// kFftSize, hop kFftHop). Autocorrelation through the FFT (Wiener-Khinchin) of a Hann-
+// windowed frame, normalised by the window's own autocorrelation; the smallest lag whose
+// value reaches 90 % of the best peak above kVoicedThreshold wins (avoids sub-octave
+// picks), refined by parabolic interpolation. Used to tell vibrato/pitch-envelope variants
+// apart, which an averaged spectrum cannot.
+std::vector<double> pitchTrack(const std::vector<float>& mono, double rate)
+{
+    constexpr int kPadded = 2 * kFftSize;
+    constexpr double kVoicedThreshold = 0.6;
+    const int minLag = std::max(2, static_cast<int>(rate / 2000.0));
+    const int maxLag = std::min(kFftSize / 2, static_cast<int>(rate / 50.0));
+    constexpr double pi = 3.14159265358979323846;
+
+    // Autocorrelation of the window itself, for the normalisation.
+    std::vector<std::complex<double>> w(kPadded);
+    std::vector<double> window(static_cast<size_t>(kFftSize));
+    for (int i = 0; i < kFftSize; ++i)
+    {
+        window[static_cast<size_t>(i)] = 0.5 - 0.5 * std::cos(2.0 * pi * i / (kFftSize - 1));
+        w[static_cast<size_t>(i)] = window[static_cast<size_t>(i)];
+    }
+    fft(w);
+    for (auto& c : w)
+        c = std::norm(c);
+    fft(w);
+    const double w0 = w[0].real();
+
+    std::vector<double> out;
+    std::vector<std::complex<double>> a(kPadded);
+    for (size_t start = 0; start + static_cast<size_t>(kFftSize) <= mono.size(); start += static_cast<size_t>(kFftHop))
+    {
+        double energy = 0.0;
+        for (int i = 0; i < kPadded; ++i)
+        {
+            const double x = i < kFftSize ? static_cast<double>(mono[start + static_cast<size_t>(i)]) * window[static_cast<size_t>(i)] : 0.0;
+            a[static_cast<size_t>(i)] = x;
+            energy += x * x;
+        }
+        if (energy < 1e-7)
+        {
+            out.push_back(0.0);
+            continue;
+        }
+        fft(a);
+        for (auto& c : a)
+            c = std::norm(c);
+        fft(a); // real, symmetric: forward FFT = kPadded * autocorrelation
+        const double r0 = a[0].real();
+        auto norm = [&](int lag) {
+            const double wl = w[static_cast<size_t>(lag)].real() / w0;
+            return wl > 1e-6 ? (a[static_cast<size_t>(lag)].real() / r0) / wl : 0.0;
+        };
+        double best = 0.0;
+        for (int lag = minLag; lag <= maxLag; ++lag)
+            best = std::max(best, norm(lag));
+        if (best < kVoicedThreshold)
+        {
+            out.push_back(0.0);
+            continue;
+        }
+        int pick = -1;
+        for (int lag = minLag + 1; lag < maxLag; ++lag)
+        {
+            const double v = norm(lag);
+            if (v >= 0.9 * best && v >= norm(lag - 1) && v >= norm(lag + 1))
+            {
+                pick = lag;
+                break;
+            }
+        }
+        if (pick < 0)
+        {
+            out.push_back(0.0);
+            continue;
+        }
+        const double ym = norm(pick - 1), y0 = norm(pick), yp = norm(pick + 1);
+        const double denom = ym - 2.0 * y0 + yp;
+        const double shift = std::abs(denom) > 1e-12 ? 0.5 * (ym - yp) / denom : 0.0;
+        const double f0 = rate / (static_cast<double>(pick) + std::clamp(shift, -0.5, 0.5));
+        out.push_back(1200.0 * std::log2(f0 / 440.0) + 10000.0); // +10000 keeps voiced frames non-zero
+    }
+    return out;
+}
+
+// RMS envelope in consecutive 10 ms windows (linear amplitude): 120 points for the long
+// pass, 50 for the short one. 10 ms resolves the 1-frame (16.7 ms) steps of the software
+// envelopes the NES and PSG drivers run.
 std::vector<double> envelopeFeatures(const std::vector<float>& mono)
 {
-    std::vector<double> out(static_cast<size_t>(kEnvelopePoints), 0.0);
+    const size_t window = static_cast<size_t>(kFeatureRate * 0.010);
     const size_t n = mono.size();
-    for (size_t k = 0; k < static_cast<size_t>(kEnvelopePoints); ++k)
+    const size_t points = std::max<size_t>(1, n / window);
+    std::vector<double> out(points, 0.0);
+    for (size_t k = 0; k < points; ++k)
     {
-        const size_t begin = n * k / static_cast<size_t>(kEnvelopePoints);
-        const size_t end = n * (k + 1) / static_cast<size_t>(kEnvelopePoints);
+        const size_t begin = k * window;
+        const size_t end = std::min(n, begin + window);
         double sum = 0.0;
         for (size_t i = begin; i < end; ++i)
             sum += static_cast<double>(mono[i]) * static_cast<double>(mono[i]);
@@ -411,8 +710,8 @@ int usage()
                  "usage:\n"
                  "  chiptool dump-params <nes|snes|genesis>\n"
                  "  chiptool render <preset.json> <out.wav> [--note 60] [--seconds 2] [--rate 48000]\n"
-                 "                  [--velocity 100] [--channel N]\n"
-                 "  chiptool features <bank.json> <features.json> [--jobs N]\n");
+                 "                  [--velocity 100] [--channel N] [--samples DIR]\n"
+                 "  chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]\n");
     return 1;
 }
 
@@ -444,6 +743,7 @@ int cmdRender(int argc, char** argv)
     const std::string presetPath = argv[2];
     const std::string wavPath = argv[3];
     RenderOptions opts;
+    std::string samplesDir;
     for (int i = 4; i < argc; ++i)
     {
         std::string v;
@@ -452,6 +752,7 @@ int cmdRender(int argc, char** argv)
         else if (optionValue(argc, argv, i, "--rate", v))     opts.rate = std::stod(v);
         else if (optionValue(argc, argv, i, "--velocity", v)) opts.velocity = std::stoi(v);
         else if (optionValue(argc, argv, i, "--channel", v))  opts.channel = std::stoi(v);
+        else if (optionValue(argc, argv, i, "--samples", v))  samplesDir = v;
         else throw std::runtime_error(std::string("unknown option ") + argv[i]);
     }
     if (opts.seconds <= 0.0 || opts.rate < 8000.0)
@@ -465,10 +766,13 @@ int cmdRender(int argc, char** argv)
     if (!chipFromKey(chipValue->asString(), chip))
         throw std::runtime_error("unknown chip " + chipValue->asString());
 
+    SampleLibrary library;
+    library.load(resolveSamplesDir(samplesDir, presetPath));
+
     auto engine = chipdsp::createEngine(chip);
     engine->prepare(opts.rate, kBlockSize);
     std::vector<float> left, right;
-    renderPreset(*engine, preset, opts, true, left, right);
+    renderPreset(*engine, preset, opts, true, &library, left, right);
     writeFile(wavPath, wavStereo16(left, right, static_cast<int>(std::lround(opts.rate))));
     return 0;
 }
@@ -480,13 +784,18 @@ int cmdFeatures(int argc, char** argv)
     const std::string bankPath = argv[2];
     const std::string outPath = argv[3];
     int jobs = static_cast<int>(std::thread::hardware_concurrency()) - 1;
+    std::string samplesDir;
     for (int i = 4; i < argc; ++i)
     {
         std::string v;
         if (optionValue(argc, argv, i, "--jobs", v)) jobs = std::stoi(v);
+        else if (optionValue(argc, argv, i, "--samples", v)) samplesDir = v;
         else throw std::runtime_error(std::string("unknown option ") + argv[i]);
     }
     jobs = std::max(1, jobs);
+
+    SampleLibrary library;
+    library.load(resolveSamplesDir(samplesDir, bankPath));
 
     const Value bank = minijson::parse(readFile(bankPath));
     if (!bank.isArray())
@@ -501,11 +810,11 @@ int cmdFeatures(int argc, char** argv)
     std::atomic<size_t> next{0};
 
     auto worker = [&]() {
-        std::unique_ptr<chipdsp::IChipEngine> engines[3];
         std::vector<float> left, right, mono;
         RenderOptions opts;
         opts.note = kFeatureNote;
         opts.seconds = kFeatureSeconds;
+        opts.holdSeconds = kFeatureHoldSeconds;
         opts.rate = kFeatureRate;
         opts.velocity = kFeatureVelocity;
         for (;;)
@@ -525,20 +834,32 @@ int cmdFeatures(int argc, char** argv)
                 chipdsp::ChipId chip;
                 if (!chipFromKey(chipValue->asString(), chip))
                     throw std::runtime_error("unknown chip " + chipValue->asString());
-                auto& engine = engines[static_cast<int>(chip)];
-                if (engine == nullptr)
-                {
-                    engine = chipdsp::createEngine(chip);
-                    engine->prepare(kFeatureRate, kBlockSize);
-                }
-                renderPreset(*engine, preset, opts, false, left, right);
-                mono.resize(left.size());
-                for (size_t i = 0; i < left.size(); ++i)
-                    mono[i] = 0.5f * (left[i] + right[i]);
-
+                // Two passes, each with a fresh engine: "mel" holds 40 bands of the left
+                // channel then 40 of the right (so pan and stereo echo count), "env" the
+                // 20-point RMS envelope of the mid signal.
                 Value entry{Value::Object{}};
-                entry["mel"] = toArray(melFeatures(mono, kFeatureRate));
-                entry["env"] = toArray(envelopeFeatures(mono));
+                for (int pass = 0; pass < 2; ++pass)
+                {
+                    RenderOptions passOpts = opts;
+                    if (pass == 1)
+                    {
+                        passOpts.seconds = kShortSeconds;
+                        passOpts.holdSeconds = kShortHoldSeconds;
+                        passOpts.note = kShortNote;
+                    }
+                    auto engine = chipdsp::createEngine(chip);
+                    engine->prepare(kFeatureRate, kBlockSize);
+                    renderPreset(*engine, preset, passOpts, false, &library, left, right);
+                    mono.resize(left.size());
+                    for (size_t i = 0; i < left.size(); ++i)
+                        mono[i] = 0.5f * (left[i] + right[i]);
+                    std::vector<double> mel = melFeatures(left, kFeatureRate);
+                    const std::vector<double> melRight = melFeatures(right, kFeatureRate);
+                    mel.insert(mel.end(), melRight.begin(), melRight.end());
+                    entry[pass == 0 ? "mel" : "mel_short"] = toArray(mel);
+                    entry[pass == 0 ? "env" : "env_short"] = toArray(envelopeFeatures(mono));
+                    entry[pass == 0 ? "pitch" : "pitch_short"] = toArray(pitchTrack(mono, kFeatureRate));
+                }
                 names[index] = nameValue->asString();
                 results[index] = std::move(entry);
             }

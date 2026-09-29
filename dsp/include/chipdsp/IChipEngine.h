@@ -53,6 +53,18 @@ public:
     virtual bool loadSample(int slot, const float* mono, int numFrames, double sourceSampleRate) = 0;
     virtual int numSampleSlots() const noexcept = 0;
 
+    // Optional playback metadata for a slot filled by loadSample() (message thread).
+    // rootNote: MIDI note that plays the sample at its source pitch. loopStartFrame: first
+    // frame of the loop in the PCM passed to loadSample() (the loop runs to the end), or -1
+    // for a one-shot. sourceSampleRate: the rate given to loadSample(). Engines whose
+    // hardware has no such notion (DMC, YM2612 DAC: pitch comes from the rate parameter)
+    // keep the default and return false.
+    virtual bool setSampleInfo(int slot, float rootNote, int loopStartFrame, double sourceSampleRate)
+    {
+        (void) slot; (void) rootNote; (void) loopStartFrame; (void) sourceSampleRate;
+        return false;
+    }
+
     // ----- audio thread ----------------------------------------------------------------------
     virtual void reset() noexcept = 0;   // silence everything, clear delay lines, keep parameters
 
