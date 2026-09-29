@@ -32,8 +32,21 @@ assets/   Generated preset banks (JSON) and samples (WAV), embedded in the binar
 * `renderBlock()` receives blocks already split at MIDI event boundaries by the plugin
   layer. Events therefore land on sample boundaries; the engine applies them at the
   start of the next block.
-* Sample slots (`loadSample`) are message-thread only. Engines keep two pre-allocated
-  banks and flip an atomic index; the audio thread reads the active bank at block start.
+* Sample slots (`loadSample`, `setSampleInfo`, `clearSample`) are message-thread only.
+  Engines keep two pre-allocated banks (three on the NES) and flip an atomic index; the
+  audio thread reads the active bank at block start. `clearSample` empties one slot
+  through the same flip, so its memory stops counting against the hardware budget.
+* The encoders depend on parameters (NES `dmc_rate`/`clock`, Genesis `dac_rate`, SNES
+  `echo_delay` budget) that the audio thread forwards only at its next block. Before a
+  load the plugin hands the current values to `stageParameter()` (message thread): it
+  stores the parameter atomic without touching the running chip; the audio thread still
+  delivers the same value through `setParameter()`.
+* Plugin sample-slot policy (PresetManager): a preset's sample goes into the slot its
+  slot parameter value names; every other slot of that chip holding a factory sample is
+  cleared first (user-imported samples stay unless the preset writes their slot), so any
+  sequence of presets stays within the SNES APU RAM budget. Root note, loop start and
+  source rate from `assets/samples/index.json` go to `setSampleInfo()` after each load.
+  Failed loads are logged and shown in the editor (`PresetManager::sampleStatus()`).
 
 ## Timing and resampling
 

@@ -96,6 +96,19 @@ chipdsp::ChipId RetroChipProcessor::selectedChip() const noexcept
 void RetroChipProcessor::prepareToPlay (double sampleRate, int samplesPerBlock)
 {
     host.prepare (sampleRate, samplesPerBlock);
+    testMidi.ensureSize (2048);
+}
+
+void RetroChipProcessor::queueTestNotes (std::initializer_list<int> notes, int velocity)
+{
+    if (numTestNotes.load (std::memory_order_acquire) != 0)
+        return;
+    int n = 0;
+    for (int note : notes)
+        if (n < kMaxTestNotes)
+            testNotes[static_cast<size_t> (n++)].store (juce::jlimit (0, 127, note), std::memory_order_relaxed);
+    testVelocity.store (juce::jlimit (1, 127, velocity), std::memory_order_relaxed);
+    numTestNotes.store (n, std::memory_order_release);
 }
 
 void RetroChipProcessor::releaseResources()
@@ -160,8 +173,21 @@ void RetroChipProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         buses.right[static_cast<size_t> (b - 1)] = busBuffer.getWritePointer (1);
     }
 
+    // Development hook only (queueTestNotes): the host's events plus the queued note-ons.
+    juce::MidiBuffer* events = &midi;
+    if (const int n = numTestNotes.load (std::memory_order_acquire); n > 0)
+    {
+        testMidi.clear();
+        testMidi.addEvents (midi, 0, -1, 0);
+        const auto velocity = static_cast<juce::uint8> (testVelocity.load (std::memory_order_relaxed));
+        for (int i = 0; i < n; ++i)
+            testMidi.addEvent (juce::MidiMessage::noteOn (1, testNotes[static_cast<size_t> (i)].load (std::memory_order_relaxed), velocity), 0);
+        numTestNotes.store (0, std::memory_order_release);
+        events = &testMidi;
+    }
+
     auto mainBus = getBusBuffer (buffer, false, 0);
-    host.process (mainBus, midi, transport, buses);
+    host.process (mainBus, *events, transport, buses);
 }
 
 juce::AudioProcessorEditor* RetroChipProcessor::createEditor()

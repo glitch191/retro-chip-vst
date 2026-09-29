@@ -99,6 +99,9 @@ public:
 
     bool loadSample(int slot, const float* mono, int numFrames, double sourceSampleRate) override;
     int numSampleSlots() const noexcept override { return genesis::kDacSlots; }
+    bool clearSample(int slot) override;
+    // dac_rate drives the encoder; setParameter() only stores atomics, so staging is the same.
+    void stageParameter(int id, float value) noexcept override { setParameter(id, value); }
 
     void reset() noexcept override;
     void setParameter(int id, float value) noexcept override;

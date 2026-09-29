@@ -71,6 +71,8 @@ public:
     std::span<const ParamDesc> parameterDescriptors() const noexcept override;
     bool loadSample(int slot, const float* mono, int numFrames, double sourceSampleRate) override;
     int numSampleSlots() const noexcept override { return kNumSampleSlots; }
+    bool clearSample(int slot) override;
+    void stageParameter(int id, float value) noexcept override;   // dmc_rate and clock drive the encoder
 
     void reset() noexcept override;
     void setParameter(int id, float value) noexcept override;

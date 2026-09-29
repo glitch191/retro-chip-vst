@@ -15,6 +15,7 @@ namespace
 {
     constexpr int kScreenshotFrames = 3;
     constexpr double kScreenshotDiagnosticsDelayMs = 2500.0;   // let the 2 s statistics fill
+    constexpr double kScreenshotNotesDelayMs = 500.0;          // let the chord reach the scopes
 
     juce::String env (const char* name)
     {
@@ -285,6 +286,22 @@ void RetroChipEditor::readScreenshotSettings()
         if (auto* chipParam = rcvProcessor.parameters().getParameter (ParamIds::chip))
             chipParam->setValueNotifyingHost (chipParam->convertTo0to1 (static_cast<float> (chipIndex)));
 
+    // RCV_SCREENSHOT_PRESET: a factory preset of the selected chip, by name.
+    auto& pm = rcvProcessor.presetManager();
+    if (const auto presetName = env ("RCV_SCREENSHOT_PRESET"); presetName.isNotEmpty())
+    {
+        if (const auto* preset = pm.findByName (rcvProcessor.selectedChip(), presetName))
+            pm.apply (*preset);
+        else
+            juce::Logger::writeToLog ("RCV_SCREENSHOT_PRESET: no preset '" + presetName + "'");
+    }
+
+    // RCV_SCREENSHOT_NOTES=1: a held four-note chord, so the channel scopes show the chip's
+    // real waveforms in the snapshot (the audio device must be running).
+    screenshotNotes = env ("RCV_SCREENSHOT_NOTES") == "1";
+    if (screenshotNotes)
+        rcvProcessor.queueTestNotes ({ 48, 60, 64, 67 }, 100);
+
     if (env ("RCV_SCREENSHOT_DIAGNOSTICS") == "1")
         setDiagnostics (true);
 }
@@ -331,6 +348,8 @@ void RetroChipEditor::takeScreenshotIfRequested()
     if (shownFrames < kScreenshotFrames)
         return;
     if (diagnostics.isActive() && now - shownSinceMs < kScreenshotDiagnosticsDelayMs)
+        return;
+    if (screenshotNotes && now - shownSinceMs < kScreenshotNotesDelayMs)
         return;
 
     const juce::File file (screenshotPath);

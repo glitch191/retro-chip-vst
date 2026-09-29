@@ -271,9 +271,13 @@ void PresetManager::loadSampleIndex()
         {
             e.name = obj->getProperty ("name").toString().trim();
             e.file = obj->getProperty ("file").toString().trim();
-            const auto root = obj->getProperty ("root_note");
-            if (root.isInt() || root.isInt64() || root.isDouble())
-                e.rootNote = static_cast<int> (root);
+            auto isNumber = [] (const juce::var& v) { return v.isInt() || v.isInt64() || v.isDouble(); };
+            if (const auto root = obj->getProperty ("root_note"); isNumber (root))
+                e.rootNote = static_cast<float> (static_cast<double> (root));
+            if (const auto loop = obj->getProperty ("loop_start"); isNumber (loop))   // null: one-shot
+                e.loopStart = std::max (-1, static_cast<int> (loop));
+            if (const auto rate = obj->getProperty ("sample_rate"); isNumber (rate))
+                e.sampleRate = std::max (0.0, static_cast<double> (rate));
         }
         return e.name.isNotEmpty();
     };
@@ -327,11 +331,12 @@ int PresetManager::sampleIndexSlot (chipdsp::ChipId chip, const juce::String& na
 
 bool PresetManager::loadFactorySampleIntoSlot (chipdsp::ChipId chip, int slot, const juce::String& name)
 {
+    const juce::String chipName (chipdsp::chipName (chip));
     int size = 0;
     const char* data = findSampleResource (chip, name, size);
     if (data == nullptr)
     {
-        logLine ("sample '" + name + "' not found in the embedded assets");
+        reportSampleError (chipName + " sample '" + name + "' is missing from the embedded assets");
         return false;
     }
 
@@ -339,15 +344,77 @@ bool PresetManager::loadFactorySampleIntoSlot (chipdsp::ChipId chip, int slot, c
     double sampleRate = 0.0;
     if (! decodeWav (data, static_cast<size_t> (size), audio, sampleRate))
     {
-        logLine ("sample '" + name + "': cannot decode WAV");
+        reportSampleError (chipName + " sample '" + name + "' cannot be decoded");
         return false;
     }
     if (! host.loadUserSample (chip, slot, audio, sampleRate))
     {
-        logLine ("sample '" + name + "': engine refused slot " + juce::String (slot));
+        reportSampleError (chipName + " sample '" + name + "' does not fit slot " + juce::String (slot)
+                           + " (hardware sample memory or length limit)");
         return false;
     }
+
+    // Metadata from assets/samples/index.json (false: this chip has no such notion).
+    float rootNote = 60.0f;
+    int loopStart = -1;
+    double infoRate = sampleRate;
+    if (const auto* entry = sampleEntry (chip, name))
+    {
+        rootNote = entry->rootNote;
+        loopStart = entry->loopStart;
+        if (entry->sampleRate > 0.0)
+        {
+            if (std::abs (entry->sampleRate - sampleRate) > 0.5)
+                logLine ("sample '" + name + "': index sample_rate " + juce::String (entry->sampleRate)
+                         + " differs from the WAV (" + juce::String (sampleRate) + "), index value used");
+            infoRate = entry->sampleRate;
+        }
+    }
+    host.engine (chip).setSampleInfo (slot, rootNote, loopStart, infoRate);
+
+    forgetUserSample (chip, slot);   // no-op unless a user sample was there
+    factorySlotName (chip, slot) = name;
     return true;
+}
+
+juce::String PresetManager::factorySampleInSlot (chipdsp::ChipId chip, int slot) const
+{
+    const auto& names = factorySlots[static_cast<size_t> (chip)];
+    return juce::isPositiveAndBelow (slot, static_cast<int> (names.size())) ? names[static_cast<size_t> (slot)] : juce::String();
+}
+
+juce::String& PresetManager::factorySlotName (chipdsp::ChipId chip, int slot)
+{
+    auto& names = factorySlots[static_cast<size_t> (chip)];
+    const int numSlots = std::max (1, host.engine (chip).numSampleSlots());
+    if (static_cast<int> (names.size()) < numSlots)
+        names.resize (static_cast<size_t> (numSlots));
+    return names[static_cast<size_t> (juce::jlimit (0, numSlots - 1, slot))];
+}
+
+void PresetManager::clearSlot (chipdsp::ChipId chip, int slot)
+{
+    factorySlotName (chip, slot) = {};
+    if (host.engine (chip).clearSample (slot))
+        return;
+    // Engines without clearSample(): a short silence takes the slot's memory instead.
+    juce::AudioBuffer<float> silence (1, kSilenceFrames);
+    silence.clear();
+    host.loadUserSample (chip, slot, silence, kSilenceRate);
+}
+
+void PresetManager::releaseFactorySamples (chipdsp::ChipId chip, const std::vector<int>& keep)
+{
+    const int numSlots = host.engine (chip).numSampleSlots();
+    for (int slot = 0; slot < numSlots; ++slot)
+        if (factorySampleInSlot (chip, slot).isNotEmpty() && std::find (keep.begin(), keep.end(), slot) == keep.end())
+            clearSlot (chip, slot);
+}
+
+void PresetManager::reportSampleError (const juce::String& text)
+{
+    logLine (text);
+    sampleError = text;
 }
 
 const char* PresetManager::findSampleResource (chipdsp::ChipId chip, const juce::String& name, int& numBytes) const
@@ -382,13 +449,18 @@ int PresetManager::slotForSample (chipdsp::ChipId chip, const juce::String& name
     return -1;
 }
 
+const PresetManager::SampleEntry* PresetManager::sampleEntry (chipdsp::ChipId chip, const juce::String& name) const
+{
+    for (const auto& e : sampleIndex[static_cast<size_t> (chip)])
+        if (e.name.equalsIgnoreCase (name))
+            return &e;
+    return nullptr;
+}
+
 juce::String PresetManager::fileForSample (chipdsp::ChipId chip, const juce::String& name) const
 {
-    const auto& list = sampleIndex[static_cast<size_t> (chip)];
-    for (const auto& e : list)
-        if (e.name.equalsIgnoreCase (name) && e.file.isNotEmpty())
-            return e.file;
-    return {};
+    const auto* e = sampleEntry (chip, name);
+    return e != nullptr ? e->file : juce::String();
 }
 
 int PresetManager::numPresets (chipdsp::ChipId chip) const noexcept
@@ -506,6 +578,7 @@ bool PresetManager::isPresetManagedGlobal (const juce::String& id)
 void PresetManager::apply (const Preset& preset)
 {
     ++applies;
+    sampleError = {};
 
     // Order: engine parameters, preset-managed globals, samples, and the chip last. The
     // engine host keeps all three engines in sync, so when the audio thread sees the chip
@@ -541,6 +614,12 @@ void PresetManager::apply (const Preset& preset)
 
 void PresetManager::loadPresetSamples (const Preset& preset, bool writeSlotParams)
 {
+    std::vector<int> used;
+    for (const auto& [slotKey, sampleName] : preset.samples)
+        if (const int slot = presetSampleSlot (preset.chip, slotKey, sampleName, preset, writeSlotParams); slot >= 0)
+            used.push_back (slot);
+    releaseFactorySamples (preset.chip, used);
+
     for (const auto& [slotKey, sampleName] : preset.samples)
         loadFactorySample (preset.chip, slotKey, sampleName, preset, writeSlotParams);
 }
@@ -575,17 +654,20 @@ bool PresetManager::loadFactorySample (chipdsp::ChipId chip, const juce::String&
     const auto* info = registry.findByKey (chip, slotKey);
     if (info == nullptr)
     {
-        logLine ("preset '" + preset.name + "': unknown sample slot parameter '" + slotKey + "'");
+        reportSampleError ("Preset '" + preset.name + "': unknown sample slot parameter '" + slotKey + "'");
         return false;
     }
 
     const int slot = presetSampleSlot (chip, slotKey, name, preset, writeSlotParam);
     if (slot < 0)
+    {
+        reportSampleError ("Preset '" + preset.name + "': " + juce::String (chipdsp::chipName (chip)) + " has no sample slots");
         return false;
+    }
 
     if (! loadFactorySampleIntoSlot (chip, slot, name))
     {
-        logLine ("preset '" + preset.name + "': sample '" + name + "' not loaded");
+        reportSampleError ("Preset '" + preset.name + "': " + sampleError);
         return false;
     }
 
@@ -669,6 +751,7 @@ void PresetManager::previous()
 
 void PresetManager::restoreCurrent (const juce::String& name, const juce::String& category)
 {
+    sampleError = {};
     if (name.isEmpty())
     {
         hasCurrent = false;
@@ -830,23 +913,45 @@ bool PresetManager::importUserSample (chipdsp::ChipId chip, int slot, const juce
 {
     juce::MemoryBlock fileData;
     if (! wavFile.existsAsFile() || ! wavFile.loadFileAsData (fileData))
+    {
+        reportSampleError ("Cannot read " + wavFile.getFileName());
+        sendChangeMessage();
         return false;
+    }
+    sampleError = {};
     return setUserSample (chip, slot, fileData);
 }
 
 bool PresetManager::setUserSample (chipdsp::ChipId chip, int slot, const juce::MemoryBlock& wavData)
 {
     auto& engine = host.engine (chip);
+    const juce::String chipName (chipdsp::chipName (chip));
     if (slot < 0 || slot >= engine.numSampleSlots())
+    {
+        reportSampleError (chipName + " has no sample slot " + juce::String (slot));
+        sendChangeMessage();
         return false;
+    }
 
     juce::AudioBuffer<float> audio;
     double sampleRate = 0.0;
     if (! decodeWav (wavData.getData(), wavData.getSize(), audio, sampleRate))
+    {
+        reportSampleError ("User sample for " + chipName + " slot " + juce::String (slot) + " is not a readable WAV");
+        sendChangeMessage();
         return false;
+    }
 
     if (! host.loadUserSample (chip, slot, audio, sampleRate))
+    {
+        reportSampleError ("User sample does not fit " + chipName + " slot " + juce::String (slot)
+                           + " (hardware sample memory or length limit)");
+        sendChangeMessage();
         return false;
+    }
+    // No metadata for user WAVs: root note 60, one-shot (the slot's previous values go).
+    engine.setSampleInfo (slot, 60.0f, -1, sampleRate);
+    factorySlotName (chip, slot) = {};
 
     // Keep a compact 16-bit mono copy for the plugin state.
     std::vector<float> mono (static_cast<size_t> (audio.getNumSamples()), 0.0f);
@@ -861,24 +966,37 @@ bool PresetManager::setUserSample (chipdsp::ChipId chip, int slot, const juce::M
     if (encoded.getSize() == 0)
         return false;
 
-    removeUserSample (chip, slot);
+    forgetUserSample (chip, slot);
     samples.push_back ({ chip, slot, std::move (encoded) });
     publishSamples();
     sendChangeMessage();
     return true;
 }
 
-void PresetManager::removeUserSample (chipdsp::ChipId chip, int slot)
+bool PresetManager::forgetUserSample (chipdsp::ChipId chip, int slot)
 {
+    const auto before = samples.size();
     samples.erase (std::remove_if (samples.begin(), samples.end(),
                                    [&] (const UserSample& s) { return s.chip == chip && s.slot == slot; }),
                    samples.end());
     publishSamples();
+    return samples.size() != before;
+}
+
+void PresetManager::removeUserSample (chipdsp::ChipId chip, int slot)
+{
+    // The slot's memory is released too, so a removed sample never counts against the budget.
+    if (forgetUserSample (chip, slot))
+        resetSlotToDefault (chip, slot);
+    sendChangeMessage();
 }
 
 void PresetManager::clearUserSamples()
 {
+    const auto previous = samples;
     samples.clear();
+    for (const auto& s : previous)
+        resetSlotToDefault (s.chip, s.slot);
     publishSamples();
     sendChangeMessage();
 }
@@ -902,20 +1020,13 @@ int PresetManager::currentSampleSlot (chipdsp::ChipId chip) const
 
 void PresetManager::resetSlotToDefault (chipdsp::ChipId chip, int slot)
 {
-    // 1. The current preset's sample for that slot, 2. the factory sample indexed at that
-    // slot, 3. a short silence (the engines have no "empty slot" call).
+    // The current preset's sample for that slot, otherwise an empty slot (no factory sample
+    // outside the current preset, see releaseFactorySamples()).
     if (hasCurrent && currentPreset.chip == chip)
         for (const auto& [slotKey, name] : currentPreset.samples)
             if (presetSampleSlot (chip, slotKey, name, currentPreset, false) == slot && loadFactorySampleIntoSlot (chip, slot, name))
                 return;
-
-    const auto& index = sampleIndex[static_cast<size_t> (chip)];
-    if (juce::isPositiveAndBelow (slot, static_cast<int> (index.size())) && loadFactorySampleIntoSlot (chip, slot, index[static_cast<size_t> (slot)].name))
-        return;
-
-    juce::AudioBuffer<float> silence (1, kSilenceFrames);
-    silence.clear();
-    host.loadUserSample (chip, slot, silence, kSilenceRate);
+    clearSlot (chip, slot);
 }
 
 juce::ValueTree PresetManager::userSamplesToValueTree() const

@@ -64,6 +64,14 @@ struct UserSample
 // own change gesture. Unknown keys are logged and ignored. Other globals (raw output,
 // voice mode, master gain, UI scale) are left alone.
 //
+// Sample slots: a preset's sample goes into the slot its slot parameter value names (the
+// value presets always write next to "samples"; the index position, then the parameter
+// default, only when the value is missing). Before loading, every other slot of that chip
+// holding a factory sample is emptied (IChipEngine::clearSample), so browsing any sequence
+// of presets never accumulates samples against the hardware budget (SNES APU RAM); slots
+// holding user-imported samples are kept unless the preset writes that slot. A load that
+// fails is logged and reported through sampleStatus().
+//
 // Navigation: presets() and search() also become the "current filtered list" used by
 // next()/previous(); filtered() returns it. Pointers returned by the queries stay valid
 // until the next loadBanks()/importFile().
@@ -123,11 +131,12 @@ public:
     // ----- user samples ------------------------------------------------------------------
     bool importUserSample (chipdsp::ChipId chip, int slot, const juce::File& wavFile);
     bool setUserSample (chipdsp::ChipId chip, int slot, const juce::MemoryBlock& wavData);
+    // Both return the slots to their default content (the current preset's sample, else empty).
     void removeUserSample (chipdsp::ChipId chip, int slot);
     const std::vector<UserSample>& userSamples() const noexcept { return samples; }
     juce::ValueTree userSamplesToValueTree() const;     // <UserSamples> <Sample chip slot wav/> </UserSamples>
-    // Slots that held a user sample return to their default content (current preset's
-    // sample, factory sample indexed at that slot, or silence), then the tree's samples load.
+    // Slots that held a user sample return to their default content (the current preset's
+    // sample for that slot, otherwise empty), then the tree's samples load.
     void restoreUserSamples (const juce::ValueTree& tree);
     void clearUserSamples();
 
@@ -139,7 +148,16 @@ public:
     // ----- factory samples ---------------------------------------------------------------
     juce::StringArray sampleNames (chipdsp::ChipId chip) const;                  // index order
     int sampleIndexSlot (chipdsp::ChipId chip, const juce::String& name) const;  // -1 if unknown
+    // Loads the WAV, then passes root_note / loop_start / sample_rate from the index to
+    // IChipEngine::setSampleInfo(). A user sample in that slot is dropped from the state.
     bool loadFactorySampleIntoSlot (chipdsp::ChipId chip, int slot, const juce::String& name);
+    // Name of the factory sample loaded in the slot, empty when the slot is empty or holds a user sample.
+    juce::String factorySampleInSlot (chipdsp::ChipId chip, int slot) const;
+
+    // Last sample load failure (preset sample, user sample or restore), empty when the latest
+    // apply()/restore/import loaded everything. Also written to the log. A change message is
+    // sent whenever it changes, so the editor can show it.
+    juce::String sampleStatus() const { return sampleError; }
 
     // Incremented by every apply(); lets the processor tell a preset's chip change apart
     // from a chip change made through the parameter alone.
@@ -151,17 +169,28 @@ public:
     static const char* findResource (const juce::String& originalFilename, int& numBytes);
 
 private:
+    // One entry of assets/samples/index.json; the metadata goes to IChipEngine::setSampleInfo().
     struct SampleEntry
     {
         juce::String name;
-        juce::String file;      // "<chip>/<name>.wav" relative to assets/samples, may be empty
-        int rootNote = 60;      // informational: IChipEngine has no root-note API
+        juce::String file;          // "<chip>/<name>.wav" relative to assets/samples, may be empty
+        float rootNote = 60.0f;     // root_note
+        int loopStart = -1;         // loop_start in source frames; null / absent = one-shot
+        double sampleRate = 0.0;    // sample_rate; 0 = absent (the decoded WAV rate is used)
     };
 
     void loadSampleIndex();
     const char* findSampleResource (chipdsp::ChipId chip, const juce::String& name, int& numBytes) const;
     int slotForSample (chipdsp::ChipId chip, const juce::String& name) const;
+    const SampleEntry* sampleEntry (chipdsp::ChipId chip, const juce::String& name) const;
     juce::String fileForSample (chipdsp::ChipId chip, const juce::String& name) const;
+    // Empties every slot of 'chip' that holds a factory sample and is not in 'keep'
+    // (user samples stay), so the samples of earlier presets never count against the budget.
+    void releaseFactorySamples (chipdsp::ChipId chip, const std::vector<int>& keep);
+    void clearSlot (chipdsp::ChipId chip, int slot);
+    bool forgetUserSample (chipdsp::ChipId chip, int slot);   // state list only; true if one was there
+    juce::String& factorySlotName (chipdsp::ChipId chip, int slot);
+    void reportSampleError (const juce::String& text);
     // writeSlotParam: applying a preset (slot from the preset document, then written to the
     // slot parameter); otherwise restoring (slot read from the parameter, nothing written).
     bool loadFactorySample (chipdsp::ChipId chip, const juce::String& slotKey, const juce::String& name,
@@ -191,6 +220,9 @@ private:
     std::deque<Preset> user;
     std::vector<const Preset*> filteredList;
     std::array<std::vector<SampleEntry>, ParamRegistry::kNumChips> sampleIndex;
+    // Per chip and slot: the factory sample loaded there, empty for an empty or user slot.
+    std::array<std::vector<juce::String>, ParamRegistry::kNumChips> factorySlots;
+    juce::String sampleError;
 
     Preset currentPreset;
     bool hasCurrent = false;

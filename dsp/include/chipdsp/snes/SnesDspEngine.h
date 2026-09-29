@@ -92,6 +92,10 @@ public:
     // the echo buffer of the current echo_delay. Resets the slot's loop point, keeps its root.
     bool loadSample(int slot, const float* mono, int numFrames, double sourceSampleRate) override;
     int numSampleSlots() const noexcept override { return kNumSampleSlots; }
+    // Frees the slot's BRR bytes (the slot's directory entries point at the silent loop block).
+    bool clearSample(int slot) override;
+    // echo_delay sets the budget; setParameter() only stores atomics, so staging is the same.
+    void stageParameter(int id, float value) noexcept override { setParameter(id, value); }
 
     // ----- SNES sample API (message thread) ---------------------------------------------------
     // Loop from block 'loopStartBlock' (0..numBlocks-1) to the end, or -1 for a one-shot. The

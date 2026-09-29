@@ -48,11 +48,14 @@ if (-not $Plugin) {
 $outDir = Join-Path $root "build-reports\pluginval"
 New-Item -ItemType Directory -Force $outDir | Out-Null
 
-$args = @("--strictness-level", $Strictness, "--validate-in-process", "--timeout-ms", $TimeoutMs, "--output-dir", $outDir, "--validate", $Plugin)
-if ($SkipGuiTests) { $args = @("--skip-gui-tests") + $args }
+$pvArgs = @("--strictness-level", $Strictness, "--validate-in-process", "--timeout-ms", $TimeoutMs,
+            "--output-dir", "`"$outDir`"", "--validate", "`"$Plugin`"")
+if ($SkipGuiTests) { $pvArgs = @("--skip-gui-tests") + $pvArgs }
 
-Write-Host "pluginval $($args -join ' ')"
-& $exe @args
-$code = $LASTEXITCODE
+Write-Host "pluginval $($pvArgs -join ' ')"
+# pluginval.exe is a GUI-subsystem program: '&' would return before it finishes and leave
+# $LASTEXITCODE empty, so wait for the process and read its exit code.
+$process = Start-Process -FilePath $exe -ArgumentList $pvArgs -Wait -PassThru -NoNewWindow
+$code = $process.ExitCode
 Write-Host "pluginval exit code: $code (0 = all tests passed)"
 exit $code

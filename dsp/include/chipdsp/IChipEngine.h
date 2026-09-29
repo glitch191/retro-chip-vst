@@ -10,7 +10,8 @@ namespace chipdsp
 // Common contract implemented by Nes2A03Engine, SnesDspEngine and GenesisEngine.
 //
 // Threading model
-//   prepare()/loadSample()/parameterDescriptors(): message thread, may allocate.
+//   prepare()/loadSample()/setSampleInfo()/clearSample()/stageParameter()/
+//   parameterDescriptors(): message thread, may allocate.
 //   Everything else: audio thread. No allocation, no locks, no I/O, no exceptions.
 //
 // Timing model
@@ -63,6 +64,26 @@ public:
     {
         (void) slot; (void) rootNote; (void) loopStartFrame; (void) sourceSampleRate;
         return false;
+    }
+
+    // Empty 'slot' so its memory counts against the hardware budget no more (message thread,
+    // same threading rules as loadSample()). Notes that use the slot afterwards play silence.
+    // Returns false if the slot is invalid or the engine has no sample memory.
+    virtual bool clearSample(int slot)
+    {
+        (void) slot;
+        return false;
+    }
+
+    // Message thread: record a parameter value for the sample functions above without touching
+    // the running chip, so that loadSample() encodes for it (NES dmc_rate and clock, Genesis
+    // dac_rate, SNES echo_delay budget) before the audio thread has delivered it. The audio
+    // thread must still deliver the same value through setParameter(); getParameter() returns
+    // the staged value until then. Engines whose sample functions ignore the parameters keep
+    // the default (nothing).
+    virtual void stageParameter(int id, float value) noexcept
+    {
+        (void) id; (void) value;
     }
 
     // ----- audio thread ----------------------------------------------------------------------

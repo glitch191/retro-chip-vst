@@ -303,6 +303,18 @@ bool SnesDspEngine::loadSample(int slot, const float* mono, int numFrames, doubl
     return true;
 }
 
+bool SnesDspEngine::clearSample(int slot)
+{
+    if (slot < 0 || slot >= kNumSampleSlots)
+        return false;
+    auto candidate = master;
+    candidate[static_cast<size_t>(slot)] = MasterSlot{};   // directory entries -> silent loop block
+    if (!publish(candidate))
+        return false;
+    master = std::move(candidate);
+    return true;
+}
+
 bool SnesDspEngine::setSampleLoop(int slot, int loopStartBlock)
 {
     if (slot < 0 || slot >= kNumSampleSlots)

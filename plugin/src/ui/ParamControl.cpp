@@ -22,22 +22,38 @@ juce::String formatNativeValue (const ParamInfo& info, float native)
     if (info.kind == ParamKind::Bool)
         return native > 0.5f ? "On" : "Off";
 
+    // Hardware units that read better converted (keyed by the ParamDesc unit string; the
+    // engine value and range stay the register value).
+    const juce::String unit (d.unit != nullptr ? d.unit : "");
+    const int steps = static_cast<int> (std::lround (native));
+    if (unit == "x2 dB")   // SN76489 attenuation: 2 dB per step, 15 = off
+        return steps >= 15 ? juce::String ("Off") : (steps <= 0 ? juce::String ("0 dB") : "-" + juce::String (2 * steps) + " dB");
+    if (unit == "TL")      // YM2612 total level: 0.75 dB per step
+        return steps <= 0 ? juce::String ("0 dB") : "-" + juce::String (0.75 * steps, 2).trimCharactersAtEnd ("0").trimCharactersAtEnd (".") + " dB";
+
     juce::String text;
     if (d.isInteger)
     {
-        text = juce::String (static_cast<int> (std::lround (native)));
+        text = juce::String (steps);
     }
     else
     {
         const float range = d.maxValue - d.minValue;
-        const int decimals = range >= 100.0f ? 0 : (range >= 10.0f ? 1 : 2);
+        const int decimals = (range >= 100.0f || unit == "%") ? 0 : (range >= 10.0f ? 1 : 2);
         text = juce::String (native, decimals);
     }
+    if (d.minValue < 0.0f && native > 0.0f && unit.isNotEmpty())   // signed offsets: "+12 st", "+5 cents"
+        text = "+" + text;
 
-    const juce::String unit (d.unit != nullptr ? d.unit : "");
-    if (unit.isNotEmpty() && unit != "x")
-        text << " " << unit;
-    return text;
+    if (unit.isEmpty() || unit == "x")
+        return text;
+    // Register steps (YM2612 F-number, SN76489 tone period): "3 steps" reads better than "3 fnum".
+    if (unit == "fnum" || unit == "period")
+        return text + (std::abs (steps) == 1 ? " step" : " steps");
+    // Counted units read in the singular for one: "1 frame", "1 tick", "1 cent".
+    if (d.isInteger && std::abs (steps) == 1 && (unit == "frames" || unit == "ticks" || unit == "cents"))
+        return text + " " + unit.dropLastCharacters (1);
+    return text + " " + unit;
 }
 
 bool isToggleParam (const ParamInfo& info)

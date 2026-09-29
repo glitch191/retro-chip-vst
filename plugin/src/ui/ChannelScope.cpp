@@ -88,6 +88,13 @@ bool ChannelScope::readTile (Tile& tile)
         }
     }
 
+    // Display gain: the window's peak fills the tile, up to kMaxDisplayGain (chip channels
+    // often peak around 0.1, two pixels at unity). Only the drawing is scaled.
+    float peak = 0.0f;
+    for (int s = start; s < start + kWindow; ++s)
+        peak = juce::jmax (peak, std::abs (0.5f * (left[static_cast<size_t> (s)] + right[static_cast<size_t> (s)])));
+    const float gain = 1.0f / juce::jmax (peak, 1.0f / kMaxDisplayGain);
+
     const float halfPixel = 1.0f / juce::jmax (1.0f, static_cast<float> (tile.wave.getHeight()));   // in +/-1 units
     bool changed = false;
     bool flat = true;
@@ -98,7 +105,7 @@ bool ChannelScope::readTile (Tile& tile)
         float lo = 1.0f, hi = -1.0f;
         for (int s = s0; s < s1; ++s)
         {
-            const float v = juce::jlimit (-1.0f, 1.0f, 0.5f * (left[static_cast<size_t> (s)] + right[static_cast<size_t> (s)]));
+            const float v = juce::jlimit (-1.0f, 1.0f, gain * 0.5f * (left[static_cast<size_t> (s)] + right[static_cast<size_t> (s)]));
             lo = juce::jmin (lo, v);
             hi = juce::jmax (hi, v);
         }

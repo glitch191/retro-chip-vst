@@ -148,7 +148,18 @@ bool EngineHost::loadUserSample (chipdsp::ChipId chip, int slot, const juce::Aud
         for (int i = 0; i < numFrames; ++i)
             mono[static_cast<size_t> (i)] += src[i] * scale;
     }
+    stageParameters (chip);
     return engine (chip).loadSample (slot, mono.data(), numFrames, sourceSampleRate);
+}
+
+void EngineHost::stageParameters (chipdsp::ChipId chip)
+{
+    // The encoders read parameters (NES dmc_rate, Genesis dac_rate, SNES echo_delay budget)
+    // that the audio thread only forwards at its next block: a preset or a restored state
+    // must be encoded for its own values, not for the previous ones.
+    auto& e = engine (chip);
+    for (const auto& link : links[static_cast<size_t> (chipIndex (chip))])
+        e.stageParameter (link.engineId, link.raw->load (std::memory_order_relaxed) + link.offset);
 }
 
 // ----- audio thread --------------------------------------------------------------------------

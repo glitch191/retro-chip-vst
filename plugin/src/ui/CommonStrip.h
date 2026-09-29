@@ -129,6 +129,8 @@ private:
     ParamControl* arpDivision = nullptr;
     ParamControl* arpFreeRate = nullptr;
     std::unique_ptr<juce::ParameterAttachment> rateModeAttachment;
+    juce::Label sampleStatus;   // PresetManager::sampleStatus() under the sidebar forms, hidden when empty
+    void refreshSampleStatus();
 
     // browsing state (what Previous/Next walk through)
     juce::String browseCategory, browseSubcategory;
