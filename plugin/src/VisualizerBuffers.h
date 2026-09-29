@@ -61,12 +61,18 @@ public:
                 right += numSamples - kCapacity;
             numSamples = kCapacity;
         }
+        bool silent = true;
         for (int i = 0; i < numSamples; ++i)
         {
-            ring.left[static_cast<size_t> (w)] = left[i];
-            ring.right[static_cast<size_t> (w)] = right != nullptr ? right[i] : left[i];
+            const float l = left[i];
+            const float r = right != nullptr ? right[i] : l;
+            silent = silent && l == 0.0f && r == 0.0f;
+            ring.left[static_cast<size_t> (w)] = l;
+            ring.right[static_cast<size_t> (w)] = r;
             w = (w + 1) % kCapacity;
         }
+        const int run = ring.silentRun.load (std::memory_order_relaxed);
+        ring.silentRun.store (silent ? std::min (kCapacity, run + numSamples) : 0, std::memory_order_relaxed);
         ring.writeIndex.store (w, std::memory_order_release);
         ring.generation.fetch_add (1u, std::memory_order_release);
     }
@@ -93,6 +99,15 @@ public:
         return gen;
     }
 
+    // Number of newest samples of a slot known to be exact zeros (whole silent blocks, up to
+    // kCapacity). Lets the UI skip reading a ring that only received silence.
+    int trailingSilence (int slot) const noexcept
+    {
+        if (slot < 0 || slot >= kNumSlots)
+            return 0;
+        return rings[static_cast<size_t> (slot)].silentRun.load (std::memory_order_acquire);
+    }
+
     // Generation counter of a slot without copying; the UI compares it with the last one it
     // consumed to decide whether a repaint is needed.
     uint32_t generation (int slot) const noexcept
@@ -109,6 +124,7 @@ private:
         std::array<float, kCapacity> right {};
         std::atomic<int> writeIndex { 0 };
         std::atomic<uint32_t> generation { 0 };
+        std::atomic<int> silentRun { 0 };
     };
 
     std::array<Ring, kNumSlots> rings;

@@ -260,32 +260,117 @@ void PresetManager::loadSampleIndex()
         return;
 
     const auto parsed = juce::JSON::parse (juce::String::fromUTF8 (data, size));
-    auto* root = parsed.getDynamicObject();
-    if (root == nullptr)
-        return;
 
-    for (int c = 0; c < ParamRegistry::kNumChips; ++c)
+    auto readEntry = [] (const juce::var& entry, SampleEntry& e)
     {
-        const auto chip = static_cast<chipdsp::ChipId> (c);
-        auto* array = root->getProperty (juce::Identifier (chipdsp::chipKey (chip))).getArray();
-        if (array == nullptr)
-            continue;
+        if (entry.isString())
+        {
+            e.name = entry.toString().trim();
+        }
+        else if (auto* obj = entry.getDynamicObject())
+        {
+            e.name = obj->getProperty ("name").toString().trim();
+            e.file = obj->getProperty ("file").toString().trim();
+            const auto root = obj->getProperty ("root_note");
+            if (root.isInt() || root.isInt64() || root.isDouble())
+                e.rootNote = static_cast<int> (root);
+        }
+        return e.name.isNotEmpty();
+    };
+
+    // Format written by tools/gen_samples.py: a flat array of { chip, name, file, ... }
+    // sorted by chip then name. The slot order of a chip is the order of its entries.
+    if (auto* array = parsed.getArray())
+    {
         for (const auto& entry : *array)
         {
+            auto* obj = entry.getDynamicObject();
+            if (obj == nullptr)
+                continue;
+            const auto chip = Preset::parseChip (obj->getProperty ("chip"));
             SampleEntry e;
-            if (entry.isString())
-            {
-                e.name = entry.toString();
-            }
-            else if (auto* obj = entry.getDynamicObject())
-            {
-                e.name = obj->getProperty ("name").toString();
-                e.file = obj->getProperty ("file").toString();
-            }
-            if (e.name.isNotEmpty())
-                sampleIndex[static_cast<size_t> (c)].push_back (e);
+            if (chip.has_value() && readEntry (entry, e))
+                sampleIndex[static_cast<size_t> (*chip)].push_back (e);
+        }
+        return;
+    }
+
+    // Also accepted: { "nes": ["kick", ...] } or { "nes": [{ "name": ..., "file": ... }] }.
+    if (auto* root = parsed.getDynamicObject())
+    {
+        for (int c = 0; c < ParamRegistry::kNumChips; ++c)
+        {
+            const auto chip = static_cast<chipdsp::ChipId> (c);
+            if (auto* list = root->getProperty (juce::Identifier (chipdsp::chipKey (chip))).getArray())
+                for (const auto& entry : *list)
+                {
+                    SampleEntry e;
+                    if (readEntry (entry, e))
+                        sampleIndex[static_cast<size_t> (c)].push_back (e);
+                }
         }
     }
+}
+
+juce::StringArray PresetManager::sampleNames (chipdsp::ChipId chip) const
+{
+    juce::StringArray names;
+    for (const auto& e : sampleIndex[static_cast<size_t> (chip)])
+        names.add (e.name);
+    return names;
+}
+
+int PresetManager::sampleIndexSlot (chipdsp::ChipId chip, const juce::String& name) const
+{
+    return slotForSample (chip, name);
+}
+
+bool PresetManager::loadFactorySampleIntoSlot (chipdsp::ChipId chip, int slot, const juce::String& name)
+{
+    int size = 0;
+    const char* data = findSampleResource (chip, name, size);
+    if (data == nullptr)
+    {
+        logLine ("sample '" + name + "' not found in the embedded assets");
+        return false;
+    }
+
+    juce::AudioBuffer<float> audio;
+    double sampleRate = 0.0;
+    if (! decodeWav (data, static_cast<size_t> (size), audio, sampleRate))
+    {
+        logLine ("sample '" + name + "': cannot decode WAV");
+        return false;
+    }
+    if (! host.loadUserSample (chip, slot, audio, sampleRate))
+    {
+        logLine ("sample '" + name + "': engine refused slot " + juce::String (slot));
+        return false;
+    }
+    return true;
+}
+
+const char* PresetManager::findSampleResource (chipdsp::ChipId chip, const juce::String& name, int& numBytes) const
+{
+    // Embedded WAVs are staged as "<chip>_<file name>" (plugin/CMakeLists.txt).
+    const juce::String prefix = juce::String (chipdsp::chipKey (chip)) + "_";
+    juce::StringArray candidates;
+    const auto indexedFile = fileForSample (chip, name);
+    if (indexedFile.isNotEmpty())
+    {
+        const auto fileName = indexedFile.fromLastOccurrenceOf ("/", false, false).fromLastOccurrenceOf ("\\", false, false);
+        candidates.add (prefix + fileName);
+    }
+    candidates.addIfNotAlreadyThere (prefix + name + ".wav");
+
+    for (const auto& file : candidates)
+    {
+        const char* data = findResource (file, numBytes);
+        if (data != nullptr && numBytes > 0)
+            return data;
+    }
+    numBytes = 0;
+    return nullptr;
 }
 
 int PresetManager::slotForSample (chipdsp::ChipId chip, const juce::String& name) const
@@ -397,7 +482,13 @@ void PresetManager::setNative (const ParamInfo& info, float native)
     if (param == nullptr)
         return;
     const float raw = info.rawFromNative (info.clampNative (native));
-    param->setValueNotifyingHost (param->convertTo0to1 (raw));
+    const float normalised = param->convertTo0to1 (raw);
+    if (param->getValue() == normalised)
+        return;
+    // One gesture per parameter, so a host in automation-write mode sees a user edit.
+    param->beginChangeGesture();
+    param->setValueNotifyingHost (normalised);
+    param->endChangeGesture();
 }
 
 float PresetManager::nativeValue (const ParamInfo& info) const
@@ -414,9 +505,11 @@ bool PresetManager::isPresetManagedGlobal (const juce::String& id)
 
 void PresetManager::apply (const Preset& preset)
 {
-    if (const auto* chipInfo = registry.find (ParamIds::chip))
-        setNative (*chipInfo, static_cast<float> (static_cast<int> (preset.chip)));
+    ++applies;
 
+    // Order: engine parameters, preset-managed globals, samples, and the chip last. The
+    // engine host keeps all three engines in sync, so when the audio thread sees the chip
+    // change the incoming engine already has the preset's values and samples.
     for (const auto* info : registry.engineParams (preset.chip))
     {
         const float* value = preset.param (info->engineKey());
@@ -431,27 +524,53 @@ void PresetManager::apply (const Preset& preset)
         if (! isPresetManagedGlobal (info->id))
             continue;
         const float* value = preset.globalValue (info->id);
-        float def = info->desc.defaultValue;
-        if (info->id == juce::String (ParamIds::polyChannels))
-            def = static_cast<float> (ParamRegistry::defaultPolyMask (preset.chip));
-        setNative (*info, value != nullptr ? *value : def);
+        setNative (*info, value != nullptr ? *value : info->desc.defaultValue);   // poly_channels 0 = chip default
     }
     for (const auto& [id, value] : preset.global)
         if (registry.find (id) == nullptr || ! isPresetManagedGlobal (id))
             logLine ("preset '" + preset.name + "': global '" + id + "' is not preset-managed, ignored");
 
-    loadPresetSamples (preset);
+    loadPresetSamples (preset, true);
+
+    if (const auto* chipInfo = registry.find (ParamIds::chip))
+        setNative (*chipInfo, static_cast<float> (static_cast<int> (preset.chip)));
+
     setCurrent (preset);
     sendChangeMessage();
 }
 
-void PresetManager::loadPresetSamples (const Preset& preset)
+void PresetManager::loadPresetSamples (const Preset& preset, bool writeSlotParams)
 {
     for (const auto& [slotKey, sampleName] : preset.samples)
-        loadFactorySample (preset.chip, slotKey, sampleName, preset);
+        loadFactorySample (preset.chip, slotKey, sampleName, preset, writeSlotParams);
 }
 
-bool PresetManager::loadFactorySample (chipdsp::ChipId chip, const juce::String& slotKey, const juce::String& name, const Preset& preset)
+int PresetManager::presetSampleSlot (chipdsp::ChipId chip, const juce::String& slotKey, const juce::String& name,
+                                     const Preset& preset, bool fromPresetDocument) const
+{
+    const auto* info = registry.findByKey (chip, slotKey);
+    const int numSlots = host.engine (chip).numSampleSlots();
+    if (info == nullptr || numSlots <= 0)
+        return -1;
+
+    // Applying: the value the preset gives the slot parameter; otherwise the sample's
+    // position in assets/samples/index.json for that chip (when it fits the engine's slot
+    // count); otherwise the parameter default. Restoring: the slot the (restored) parameter
+    // references now.
+    int slot = -1;
+    if (! fromPresetDocument)
+        slot = static_cast<int> (std::lround (nativeValue (*info)));
+    else if (const float* v = preset.param (slotKey))
+        slot = static_cast<int> (std::lround (*v));
+    else if (const int indexed = slotForSample (chip, name); indexed >= 0 && indexed < numSlots)
+        slot = indexed;
+    else
+        slot = static_cast<int> (std::lround (info->desc.defaultValue));
+    return juce::jlimit (0, numSlots - 1, slot);
+}
+
+bool PresetManager::loadFactorySample (chipdsp::ChipId chip, const juce::String& slotKey, const juce::String& name,
+                                       const Preset& preset, bool writeSlotParam)
 {
     const auto* info = registry.findByKey (chip, slotKey);
     if (info == nullptr)
@@ -460,56 +579,18 @@ bool PresetManager::loadFactorySample (chipdsp::ChipId chip, const juce::String&
         return false;
     }
 
-    auto& engine = host.engine (chip);
-    const int numSlots = engine.numSampleSlots();
-    if (numSlots <= 0)
+    const int slot = presetSampleSlot (chip, slotKey, name, preset, writeSlotParam);
+    if (slot < 0)
         return false;
 
-    int slot = -1;
-    if (const float* v = preset.param (slotKey))
-        slot = static_cast<int> (std::lround (*v));
-    else if (const int indexed = slotForSample (chip, name); indexed >= 0)
-        slot = indexed;
-    else
-        slot = static_cast<int> (std::lround (info->desc.defaultValue));
-    slot = juce::jlimit (0, numSlots - 1, slot);
-
-    juce::StringArray candidates;
-    const auto indexedFile = fileForSample (chip, name);
-    if (indexedFile.isNotEmpty())
-        candidates.add (indexedFile);
-    candidates.add (juce::String (chipdsp::chipKey (chip)) + "_" + name + ".wav");
-    candidates.add (name + ".wav");
-
-    const char* data = nullptr;
-    int size = 0;
-    for (const auto& file : candidates)
+    if (! loadFactorySampleIntoSlot (chip, slot, name))
     {
-        data = findResource (file, size);
-        if (data != nullptr && size > 0)
-            break;
-    }
-    if (data == nullptr || size <= 0)
-    {
-        logLine ("preset '" + preset.name + "': sample '" + name + "' not found in the embedded assets");
+        logLine ("preset '" + preset.name + "': sample '" + name + "' not loaded");
         return false;
     }
 
-    juce::AudioBuffer<float> audio;
-    double sampleRate = 0.0;
-    if (! decodeWav (data, static_cast<size_t> (size), audio, sampleRate))
-    {
-        logLine ("sample '" + name + "': cannot decode WAV");
-        return false;
-    }
-
-    if (! host.loadUserSample (chip, slot, audio, sampleRate))
-    {
-        logLine ("sample '" + name + "': engine refused slot " + juce::String (slot));
-        return false;
-    }
-
-    setNative (*info, static_cast<float> (slot));
+    if (writeSlotParam)
+        setNative (*info, static_cast<float> (slot));
     return true;
 }
 
@@ -517,6 +598,34 @@ void PresetManager::setCurrent (const Preset& preset)
 {
     currentPreset = preset;
     hasCurrent = true;
+    publishCurrent();
+}
+
+void PresetManager::publishCurrent()
+{
+    const juce::ScopedLock sl (snapshotLock);
+    snapshot.presetName = currentName();
+    snapshot.presetCategory = currentCategory();
+}
+
+void PresetManager::publishSamples()
+{
+    auto tree = userSamplesToValueTree();
+    const juce::ScopedLock sl (snapshotLock);
+    snapshot.samples = tree;
+}
+
+PresetManager::StateSnapshot PresetManager::stateSnapshot() const
+{
+    const juce::ScopedLock sl (snapshotLock);
+    return snapshot;
+}
+
+chipdsp::ChipId PresetManager::selectedChip() const
+{
+    if (const auto* chipInfo = registry.find (ParamIds::chip))
+        return static_cast<chipdsp::ChipId> (juce::jlimit (0, ParamRegistry::kNumChips - 1, static_cast<int> (std::lround (nativeValue (*chipInfo)))));
+    return host.activeChip();
 }
 
 int PresetManager::indexOfCurrentInFiltered() const
@@ -537,7 +646,7 @@ void PresetManager::ensureFiltered (chipdsp::ChipId chip)
 
 void PresetManager::next()
 {
-    const auto chip = hasCurrent ? currentPreset.chip : host.activeChip();
+    const auto chip = hasCurrent ? currentPreset.chip : selectedChip();
     ensureFiltered (chip);
     if (filteredList.empty())
         return;
@@ -548,7 +657,7 @@ void PresetManager::next()
 
 void PresetManager::previous()
 {
-    const auto chip = hasCurrent ? currentPreset.chip : host.activeChip();
+    const auto chip = hasCurrent ? currentPreset.chip : selectedChip();
     ensureFiltered (chip);
     if (filteredList.empty())
         return;
@@ -563,28 +672,34 @@ void PresetManager::restoreCurrent (const juce::String& name, const juce::String
     if (name.isEmpty())
     {
         hasCurrent = false;
+        publishCurrent();
         sendChangeMessage();
         return;
     }
 
-    const Preset* found = nullptr;
-    for (int c = 0; c < ParamRegistry::kNumChips && found == nullptr; ++c)
-        found = findByName (static_cast<chipdsp::ChipId> (c), name);
-
-    if (found != nullptr)
+    // The preset is looked up on the restored chip only; its samples go into the slots the
+    // restored parameters reference, and no parameter is written.
+    const auto chip = selectedChip();
+    if (const auto* found = findByName (chip, name))
     {
         setCurrent (*found);
-        loadPresetSamples (*found);
+        loadPresetSamples (*found, false);
     }
     else
     {
         Preset p;
         p.name = name;
         p.category = category;
-        p.chip = host.activeChip();
+        p.chip = chip;
         setCurrent (p);
     }
     sendChangeMessage();
+}
+
+void PresetManager::restoreState (const juce::String& name, const juce::String& category, const juce::ValueTree& userSampleTree)
+{
+    restoreCurrent (name, category);
+    restoreUserSamples (userSampleTree);
 }
 
 // ----- files ----------------------------------------------------------------------------------
@@ -592,9 +707,7 @@ void PresetManager::restoreCurrent (const juce::String& name, const juce::String
 Preset PresetManager::captureCurrent() const
 {
     Preset p;
-    const auto* chipInfo = registry.find (ParamIds::chip);
-    p.chip = chipInfo != nullptr ? static_cast<chipdsp::ChipId> (juce::jlimit (0, ParamRegistry::kNumChips - 1, static_cast<int> (nativeValue (*chipInfo))))
-                                 : host.activeChip();
+    p.chip = selectedChip();
     if (hasCurrent)
     {
         p.name = currentPreset.name;
@@ -750,6 +863,7 @@ bool PresetManager::setUserSample (chipdsp::ChipId chip, int slot, const juce::M
 
     removeUserSample (chip, slot);
     samples.push_back ({ chip, slot, std::move (encoded) });
+    publishSamples();
     sendChangeMessage();
     return true;
 }
@@ -759,12 +873,49 @@ void PresetManager::removeUserSample (chipdsp::ChipId chip, int slot)
     samples.erase (std::remove_if (samples.begin(), samples.end(),
                                    [&] (const UserSample& s) { return s.chip == chip && s.slot == slot; }),
                    samples.end());
+    publishSamples();
 }
 
 void PresetManager::clearUserSamples()
 {
     samples.clear();
+    publishSamples();
     sendChangeMessage();
+}
+
+const ParamInfo* PresetManager::sampleSlotParam (chipdsp::ChipId chip) const
+{
+    for (const auto* info : registry.engineParams (chip))
+        if (info->engineKey() == "sample" || info->engineKey().endsWith ("_sample"))
+            return info;
+    return nullptr;
+}
+
+int PresetManager::currentSampleSlot (chipdsp::ChipId chip) const
+{
+    const auto* info = sampleSlotParam (chip);
+    const int numSlots = host.engine (chip).numSampleSlots();
+    if (info == nullptr || numSlots <= 0)
+        return -1;
+    return juce::jlimit (0, numSlots - 1, static_cast<int> (std::lround (nativeValue (*info))));
+}
+
+void PresetManager::resetSlotToDefault (chipdsp::ChipId chip, int slot)
+{
+    // 1. The current preset's sample for that slot, 2. the factory sample indexed at that
+    // slot, 3. a short silence (the engines have no "empty slot" call).
+    if (hasCurrent && currentPreset.chip == chip)
+        for (const auto& [slotKey, name] : currentPreset.samples)
+            if (presetSampleSlot (chip, slotKey, name, currentPreset, false) == slot && loadFactorySampleIntoSlot (chip, slot, name))
+                return;
+
+    const auto& index = sampleIndex[static_cast<size_t> (chip)];
+    if (juce::isPositiveAndBelow (slot, static_cast<int> (index.size())) && loadFactorySampleIntoSlot (chip, slot, index[static_cast<size_t> (slot)].name))
+        return;
+
+    juce::AudioBuffer<float> silence (1, kSilenceFrames);
+    silence.clear();
+    host.loadUserSample (chip, slot, silence, kSilenceRate);
 }
 
 juce::ValueTree PresetManager::userSamplesToValueTree() const
@@ -783,9 +934,16 @@ juce::ValueTree PresetManager::userSamplesToValueTree() const
 
 void PresetManager::restoreUserSamples (const juce::ValueTree& tree)
 {
+    // Slots that held a user sample go back to their default content first, so the engines
+    // end up exactly as the restored state describes.
+    const auto previous = samples;
     samples.clear();
+    for (const auto& s : previous)
+        resetSlotToDefault (s.chip, s.slot);
+
     if (! tree.isValid() || ! tree.hasType (kSamplesTree))
     {
+        publishSamples();
         sendChangeMessage();
         return;
     }
@@ -806,6 +964,7 @@ void PresetManager::restoreUserSamples (const juce::ValueTree& tree)
         juce::MemoryBlock block (decoded.getData(), decoded.getDataSize());
         setUserSample (*chip, slot, block);
     }
+    publishSamples();
     sendChangeMessage();
 }
 

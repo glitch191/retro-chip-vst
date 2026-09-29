@@ -14,25 +14,30 @@ namespace rcv
 // Threads
 //   * Message thread: learn()/cancelLearn(), setMapping()/clearMapping()/clearAll(),
 //     queries, serialization, drain().
-//   * Audio thread: handleController(cc, value) only. It reads the map (atomics), pushes
-//     (parameter, normalised value) pairs into a lock-free FIFO and triggers an
-//     AsyncUpdater; the message thread drains the FIFO and calls setValueNotifyingHost()
-//     wrapped in beginChangeGesture()/endChangeGesture(), so the host is notified from the
-//     message thread as JUCE requires. drain() may also be called from the editor's vblank
-//     callback to lower latency; it is idempotent.
+//   * Audio thread: handleController(cc, value) only. It reads the map (atomics) and stores
+//     the normalised value in the target parameter's latest-value slot (one atomic value
+//     plus a dirty flag per parameter, allocated at construction); a learn completion is
+//     published through one atomic. Nothing is queued, so nothing can overflow: a burst of
+//     CC messages collapses to the newest value per parameter, and the final controller
+//     position always arrives. A message-thread juce::Timer (kDrainIntervalMs) drains the
+//     slots and calls setValueNotifyingHost() wrapped in beginChangeGesture()/
+//     endChangeGesture(), so the host is notified from the message thread as JUCE
+//     requires. drain() may also be called from the editor's vblank callback to lower
+//     latency; it is idempotent.
 //
 // Mapping rules: one CC number maps to one parameter id; a CC already in use is reassigned;
 // while learning, the first CC received on any channel binds the armed parameter.
 // Listeners (juce::ChangeBroadcaster) are notified on the message thread when the map changes.
 //
-// State: toValueTree() -> <MidiLearn> <Map cc="" param=""/> ... </MidiLearn>.
+// State: toValueTree() -> <MidiLearn> <Map cc="" param=""/> ... </MidiLearn> (a child of
+// <RetroChipState>, see PluginProcessor.h).
 class MidiLearn final : public juce::ChangeBroadcaster,
-                        private juce::AsyncUpdater
+                        private juce::Timer
 {
 public:
     static constexpr int kNumControllers = 128;
-    static constexpr int kFifoSize = 512;
     static constexpr int kSustainPedal = 64;
+    static constexpr int kDrainIntervalMs = 15;
 
     explicit MidiLearn (juce::AudioProcessorValueTreeState& apvts);
     ~MidiLearn() override;
@@ -62,18 +67,10 @@ public:
     void handleController (int cc, int value) noexcept;
 
 private:
-    struct Event
-    {
-        enum class Type : int { Value = 0, Learned = 1 };
-        Type type = Type::Value;
-        int paramIndex = -1;
-        int cc = -1;
-        float normalised = 0.0f;
-    };
-
-    void handleAsyncUpdate() override { drain(); }
+    void timerCallback() override { drain(); }
     int indexForId (const juce::String& paramId) const;
     juce::String idForIndex (int index) const;
+    void bind (int cc, int paramIndex);   // message thread: one CC per parameter
 
     juce::AudioProcessorValueTreeState& apvts;
     std::vector<juce::AudioProcessorParameterWithID*> params;   // by processor parameter index
@@ -81,8 +78,11 @@ private:
     std::array<std::atomic<int>, kNumControllers> ccToParam;   // parameter index or -1
     std::atomic<int> armedParam { -1 };
 
-    juce::AbstractFifo fifo { kFifoSize };
-    std::array<Event, kFifoSize> events {};
+    // Audio thread -> message thread (sized once in the constructor)
+    std::vector<std::atomic<float>> latestValue;   // normalised, per parameter index
+    std::vector<std::atomic<bool>> dirty;          // latestValue not yet applied
+    std::atomic<bool> anyDirty { false };
+    std::atomic<int> pendingLearn { -1 };          // (paramIndex << 8) | cc, or -1
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (MidiLearn)
 };

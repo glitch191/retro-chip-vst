@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 
 namespace rcv
 {
@@ -58,6 +59,7 @@ void EngineHost::attachParameters (const ParamRegistry& registry, juce::AudioPro
             link.raw = apvts.getRawParameterValue (info->id);
             link.engineId = info->engineParamId;
             link.offset = info->isChoice() ? info->desc.minValue : 0.0f;
+            link.isClock = info->engineKey() == "clock";
             if (link.raw != nullptr)
                 list.push_back (link);
         }
@@ -123,6 +125,10 @@ void EngineHost::prepare (double newSampleRate, int maxBlockSize)
     glideParamsValid = false;
     rawOutputValid = false;
 
+    // Start at the current master gain: reset() copies targetGain into gain, and without this
+    // the first block after prepare() would ramp from unity to the stored gain.
+    targetGain = juce::Decibels::decibelsToGain (readRaw (masterGainParam, 0.0f), -60.0f);
+
     prepared = true;
     reset();
 }
@@ -185,11 +191,14 @@ void EngineHost::process (juce::AudioBuffer<float>& mainBus, juce::MidiBuffer& m
     float* outL = mainBus.getWritePointer (0);
     float* outR = mainBus.getNumChannels() > 1 ? mainBus.getWritePointer (1) : nullptr;
 
-    // Hosts normally respect the prepared block size; longer blocks are cut into slices.
+    // Hosts normally respect the prepared block size; longer blocks are cut into slices. A
+    // slice also ends early when its event lists are full, so no event is ever dropped.
+    auto midiIt = midi.cbegin();
+    const auto midiEnd = midi.cend();
     int start = 0;
     while (start < numSamples)
     {
-        const int len = std::min (maxBlock, numSamples - start);
+        const int len = collectMidi (midiIt, midiEnd, start, std::min (maxBlock, numSamples - start), numSamples);
 
         chipdsp::TransportInfo sliceTransport = transport;
         if (start > 0 && transport.isPlaying)
@@ -203,20 +212,25 @@ void EngineHost::process (juce::AudioBuffer<float>& mainBus, juce::MidiBuffer& m
             sliceBuses.right[i] = buses.right[i] != nullptr ? buses.right[i] + start : nullptr;
         }
 
-        processSlice (outL + start, outR != nullptr ? outR + start : spareR.data(), len, midi, start, sliceTransport, sliceBuses);
+        processSlice (outL + start, outR != nullptr ? outR + start : spareR.data(), len, sliceTransport, sliceBuses);
         start += len;
     }
 }
 
-void EngineHost::processSlice (float* outL, float* outR, int numSamples, const juce::MidiBuffer& midi, int sliceStart,
+void EngineHost::processSlice (float* outL, float* outR, int numSamples,
                                const chipdsp::TransportInfo& transport, const BusMap& buses) noexcept
 {
     updateChipSelection();
     pushParameters();
-    collectMidi (midi, sliceStart, numSamples);
 
+    // With the arpeggiator disabled and idle its output is its input, so the notes are taken
+    // from the input list, whose position relative to the control events is known: events
+    // at one sample offset then apply in MidiBuffer order. Arpeggiator output only carries
+    // offsets; there, controls at an offset apply before the notes at that offset.
+    const bool arpIdle = ! lastArpParams.enabled && arp.numHeldNotes() == 0 && arp.numPendingNoteOffs() == 0;
     noteOut.clear();
     arp.process (transport, sampleRate, numSamples, noteIn.view(), noteOut);
+    const chipdsp::NoteEventBuffer& notes = arpIdle ? noteIn : noteOut;
 
     const bool wantChannels = buses.anyEnabled() || scopes.isEnabled();
     const int inCount = activeEngine().numChannels();
@@ -232,20 +246,42 @@ void EngineHost::processSlice (float* outL, float* outR, int numSamples, const j
     int cursor = 0;
     int ctrlIdx = 0;
     int noteIdx = 0;
-    const int numNotes = noteOut.size();
+    const int numNotes = notes.size();
+
+    // Applies every event at or before 'limit', merging controls and notes.
+    auto applyEventsUpTo = [&] (int limit)
+    {
+        for (;;)
+        {
+            const bool haveControl = ctrlIdx < numControls && controls[static_cast<size_t> (ctrlIdx)].offset <= limit;
+            const bool haveNote = noteIdx < numNotes && notes[noteIdx].sampleOffset <= limit;
+            if (! haveControl && ! haveNote)
+                return;
+
+            bool takeControl = haveControl;
+            if (haveControl && haveNote)
+            {
+                const auto& c = controls[static_cast<size_t> (ctrlIdx)];
+                const int noteOffset = notes[noteIdx].sampleOffset;
+                takeControl = c.offset != noteOffset ? c.offset < noteOffset
+                                                     : (! arpIdle || c.notesBefore <= noteIdx);
+            }
+            if (takeControl)
+                applyControl (controls[static_cast<size_t> (ctrlIdx++)]);
+            else
+                applyNote (notes[noteIdx++], ! arpIdle);
+        }
+    };
 
     while (cursor < numSamples)
     {
-        while (ctrlIdx < numControls && controls[static_cast<size_t> (ctrlIdx)].offset <= cursor)
-            applyControl (controls[static_cast<size_t> (ctrlIdx++)]);
-        while (noteIdx < numNotes && noteOut[noteIdx].sampleOffset <= cursor)
-            applyNote (noteOut[noteIdx++]);
+        applyEventsUpTo (cursor);
 
         int next = numSamples;
         if (ctrlIdx < numControls)
             next = std::min (next, controls[static_cast<size_t> (ctrlIdx)].offset);
         if (noteIdx < numNotes)
-            next = std::min (next, noteOut[noteIdx].sampleOffset);
+            next = std::min (next, notes[noteIdx].sampleOffset);
 
         int len = std::max (1, next - cursor);
         if (fading || anyGlideActive())
@@ -258,11 +294,9 @@ void EngineHost::processSlice (float* outL, float* outR, int numSamples, const j
         cursor += len;
     }
 
-    // Events placed at or past the end of the slice take effect now (next block start).
-    while (ctrlIdx < numControls)
-        applyControl (controls[static_cast<size_t> (ctrlIdx++)]);
-    while (noteIdx < numNotes)
-        applyNote (noteOut[noteIdx++]);
+    // Events at the slice end (the first sample of the next slice, when the slice was cut
+    // because its event lists filled up) and arpeggiator events past it take effect now.
+    applyEventsUpTo (std::numeric_limits<int>::max());
 
     applyMasterGain (outL, outR, numSamples, wantChannels);
     deliverBuses (buses, numSamples, wantChannels);
@@ -271,6 +305,10 @@ void EngineHost::processSlice (float* outL, float* outR, int numSamples, const j
 
 void EngineHost::updateChipSelection() noexcept
 {
+    // A switch requested while a fade runs waits for that fade to end (at most 20 ms plus
+    // one slice), so every engine fades out along its own curve and nothing is cut.
+    if (fading)
+        return;
     const int idx = juce::jlimit (0, kNumChips - 1, static_cast<int> (readRaw (chipParam, static_cast<float> (chipIndex (current)))));
     const auto requested = static_cast<chipdsp::ChipId> (idx);
     if (requested != current)
@@ -279,13 +317,7 @@ void EngineHost::updateChipSelection() noexcept
 
 void EngineHost::beginSwitch (chipdsp::ChipId target) noexcept
 {
-    if (fading)
-    {
-        // Finish the running fade at once: the previous outgoing engine falls silent.
-        engine (outgoing).reset();
-        fading = false;
-    }
-
+    jassert (! fading);
     outgoing = current;
     current = target;
 
@@ -317,7 +349,10 @@ void EngineHost::pushParameters() noexcept
             const float v = link.raw->load (std::memory_order_relaxed);
             if (! link.pushed || v != link.last)
             {
-                e.setParameter (link.engineId, v + link.offset);
+                const float native = v + link.offset;
+                e.setParameter (link.engineId, native);
+                if (link.isClock)
+                    e.setClockStandard (native > 0.5f ? chipdsp::ClockStandard::Pal : chipdsp::ClockStandard::Ntsc);
                 link.last = v;
                 link.pushed = true;
             }
@@ -424,28 +459,25 @@ void EngineHost::silenceAll() noexcept
     sustained.fill (false);
 }
 
-void EngineHost::collectMidi (const juce::MidiBuffer& midi, int sliceStart, int numSamples) noexcept
+int EngineHost::collectMidi (juce::MidiBufferIterator& it, const juce::MidiBufferIterator& end, int sliceStart,
+                             int maxLength, int blockLength) noexcept
 {
     noteIn.clear();
     numControls = 0;
+    int lastOffset = -1;   // offset of the last collected event
 
-    auto addControl = [this] (ControlEvent::Kind kind, int offset, int channel, int a, int b)
+    for (; it != end; ++it)
     {
-        if (numControls >= kMaxControlEvents)
-            return;
-        auto& e = controls[static_cast<size_t> (numControls++)];
-        e.kind = kind;
-        e.offset = offset;
-        e.midiChannel = static_cast<uint8_t> (juce::jlimit (1, 16, channel));
-        e.a = a;
-        e.b = b;
-    };
+        const auto meta = *it;
 
-    for (const auto meta : midi)
-    {
-        const int position = meta.samplePosition - sliceStart;
-        if (position < 0 || position >= numSamples)
-            continue;
+        // Events outside the block are clamped into it: before the start -> first sample,
+        // at or past the end -> last sample. An event carried over from a slice that filled
+        // up lands on this slice's first sample.
+        const int position = juce::jlimit (0, blockLength - 1, meta.samplePosition) - sliceStart;
+        if (position >= maxLength)
+            break;   // belongs to a later slice
+        const int offset = std::max (0, position);
+
         const auto* d = meta.data;
         const int n = meta.numBytes;
         if (n < 2 || d == nullptr)
@@ -456,37 +488,51 @@ void EngineHost::collectMidi (const juce::MidiBuffer& midi, int sliceStart, int 
         const int data1 = d[1] & 0x7F;
         const int data2 = n >= 3 ? (d[2] & 0x7F) : 0;
 
-        switch (status)
+        const bool isNote = status == 0x80 || status == 0x90;
+        const bool isControl = (status == 0xE0 || status == 0xB0) && n >= 3;
+        if (! isNote && ! isControl)
+            continue;
+
+        // A full list ends the slice at this event, which starts the next slice. Every
+        // collected event stays strictly inside the slice (the arpeggiator reads offsets
+        // below the slice length), so when events already collected share this offset the
+        // slice ends one sample later and the remaining events move one sample later.
+        if ((isNote && noteIn.size() >= kMaxNoteInputsPerSlice) || (isControl && numControls >= kMaxControlEvents))
+            return lastOffset < offset ? offset : offset + 1;
+        lastOffset = offset;
+
+        if (isNote)
         {
-            case 0x90:
-                if (n >= 3 && data2 > 0)
-                    noteIn.push (chipdsp::NoteEvent::on (data1, static_cast<float> (data2) / 127.0f, channel, position));
-                else
-                    noteIn.push (chipdsp::NoteEvent::off (data1, channel, position));
-                break;
-            case 0x80:
-                noteIn.push (chipdsp::NoteEvent::off (data1, channel, position));
-                break;
-            case 0xE0:
-                if (n >= 3)
-                    addControl (ControlEvent::Kind::PitchBend, position, channel, data1 | (data2 << 7), 0);
-                break;
-            case 0xB0:
-                if (n < 3)
-                    break;
-                if (data1 == 64)
-                    addControl (data2 >= 64 ? ControlEvent::Kind::SustainOn : ControlEvent::Kind::SustainOff, position, channel, data1, data2);
-                else if (data1 == 120 || data1 == 123)
-                    addControl (ControlEvent::Kind::AllNotesOff, position, channel, data1, data2);
-                else if (data1 == 121)
-                    addControl (ControlEvent::Kind::ResetControllers, position, channel, data1, data2);
-                else
-                    addControl (ControlEvent::Kind::Controller, position, channel, data1, data2);
-                break;
-            default:
-                break;
+            if (status == 0x90 && n >= 3 && data2 > 0)
+                noteIn.push (chipdsp::NoteEvent::on (data1, static_cast<float> (data2) / 127.0f, channel, offset));
+            else
+                noteIn.push (chipdsp::NoteEvent::off (data1, channel, offset));
+            continue;
         }
+
+        auto& e = controls[static_cast<size_t> (numControls++)];
+        e.offset = offset;
+        e.midiChannel = static_cast<uint8_t> (juce::jlimit (1, 16, channel));
+        e.notesBefore = noteIn.size();
+        e.a = data1;
+        e.b = data2;
+        if (status == 0xE0)
+        {
+            e.kind = ControlEvent::Kind::PitchBend;
+            e.a = data1 | (data2 << 7);
+        }
+        else if (data1 == 64)
+            e.kind = data2 >= 64 ? ControlEvent::Kind::SustainOn : ControlEvent::Kind::SustainOff;
+        else if (data1 == 120)
+            e.kind = ControlEvent::Kind::AllSoundOff;
+        else if (data1 == 123)
+            e.kind = ControlEvent::Kind::AllNotesOff;
+        else if (data1 == 121)
+            e.kind = ControlEvent::Kind::ResetControllers;
+        else
+            e.kind = ControlEvent::Kind::Controller;
     }
+    return maxLength;
 }
 
 void EngineHost::applyControl (const ControlEvent& e) noexcept
@@ -509,17 +555,63 @@ void EngineHost::applyControl (const ControlEvent& e) noexcept
                 midiLearn->handleController (e.a, e.b);
             break;
         case ControlEvent::Kind::AllNotesOff:
-            silenceAll();
-            arp.reset();
+            releaseMidiChannel (e.midiChannel, false);
+            break;
+        case ControlEvent::Kind::AllSoundOff:
+            releaseMidiChannel (e.midiChannel, true);
             break;
         case ControlEvent::Kind::ResetControllers:
-            bend.fill (0.0f);
-            for (int ch = 1; ch <= 16; ++ch)
-            {
-                sustain[static_cast<size_t> (ch - 1)] = false;
-                releaseSustained (ch);
-            }
+            bend[mc] = 0.0f;
+            sustain[mc] = false;
+            releaseSustained (e.midiChannel);
             break;
+    }
+}
+
+void EngineHost::releaseMidiChannel (int midiChannel, bool cutSound) noexcept
+{
+    auto& e = activeEngine();
+    const auto mc = static_cast<size_t> (juce::jlimit (1, 16, midiChannel) - 1);
+    sustain[mc] = false;
+
+    bool otherChannelSounding = false;
+    for (int c = 0; c < e.numChannels(); ++c)
+    {
+        const auto i = static_cast<size_t> (c);
+        if (allocator.channelMidiChannel (c) != midiChannel)
+        {
+            // Key down or held by the pedal; a release tail does not count.
+            otherChannelSounding = otherChannelSounding || allocator.isChannelHeld (c) || sustained[i];
+            continue;
+        }
+        const bool wasHeld = allocator.isChannelHeld (c);
+        // noteOff() releases the oldest key-down instance of a note, which may sit on another
+        // channel; repeat until this channel is released (bounded by the channel count).
+        for (int guard = 0; allocator.isChannelHeld (c) && guard < kMaxChannels; ++guard)
+            allocator.noteOff (allocator.channelNote (c), midiChannel);
+        if (wasHeld || sustained[i])
+            e.noteOff (c);
+        sustained[i] = false;
+    }
+
+    // The arpeggiator collects the keys of every MIDI channel: it restarts on any channel's
+    // All Notes Off / All Sound Off.
+    arp.reset();
+
+    // All Sound Off also silences at once. The engines have no per-channel hard cut, so the
+    // engine is reset only when no other MIDI channel holds a note (key or pedal; release
+    // tails are cut with it); otherwise the addressed channel's notes release normally. A
+    // running fade-out is cut as well.
+    if (cutSound && ! otherChannelSounding)
+    {
+        e.reset();
+        if (fading)
+        {
+            engine (outgoing).reset();
+            fading = false;
+            crossfading.store (false, std::memory_order_relaxed);
+        }
+        pitchValid.fill (false);
     }
 }
 
@@ -537,7 +629,7 @@ void EngineHost::releaseSustained (int midiChannel) noexcept
     }
 }
 
-void EngineHost::applyNote (const chipdsp::NoteEvent& e) noexcept
+void EngineHost::applyNote (const chipdsp::NoteEvent& e, bool fromArp) noexcept
 {
     auto& eng = activeEngine();
     const int midiChannel = e.midiChannel;
@@ -560,7 +652,9 @@ void EngineHost::applyNote (const chipdsp::NoteEvent& e) noexcept
     const int ch = allocator.noteOff (e.note, midiChannel);
     if (ch < 0 || ch >= eng.numChannels())
         return;
-    if (sustain[static_cast<size_t> (juce::jlimit (1, 16, midiChannel) - 1)])
+    // The pedal holds played notes, not the arpeggiator's steps: with the arpeggiator running
+    // its note-offs always apply (its own Hold keeps released keys in the pattern).
+    if (! fromArp && sustain[static_cast<size_t> (juce::jlimit (1, 16, midiChannel) - 1)])
         sustained[static_cast<size_t> (ch)] = true;
     else
         eng.noteOff (ch);

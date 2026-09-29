@@ -31,31 +31,42 @@ class MidiLearn;
 // How a block is processed (process(), audio thread, no allocation)
 //
 //   0. Blocks longer than the prepared maximum are cut into slices; every step below runs
-//      per slice. MIDI is read straight from the MidiBuffer bytes, so no MidiMessage is
-//      built.
+//      per slice. A slice also ends early when its event lists are full
+//      (kMaxNoteInputsPerSlice notes, kMaxControlEvents controls): the remaining events
+//      start the next slice, so no event is ever dropped (events beyond the capacity at a
+//      single sample offset move one sample later). Events outside the block are clamped
+//      into it (first / last sample). MIDI is read straight from the MidiBuffer bytes, so
+//      no MidiMessage is built.
 //   1. Chip selection: the `chip` parameter is read (atomic). When it differs from the
 //      running engine a 20 ms equal-power crossfade starts: the outgoing engine receives
 //      noteOff on every channel and keeps rendering while its gain follows cos, the
 //      incoming engine is reset (silent) and rises with sin. Once the fade has completed
 //      the outgoing engine is reset. The allocator is reconfigured for the new chip and
 //      the glide state is cleared; the arpeggiator keeps its held keys so it continues
-//      on the new chip. A second switch during a fade finishes the running fade first.
+//      on the new chip. A switch requested during a fade waits until that fade has ended
+//      (checked at the start of every slice), so no engine is ever cut.
 //   2. Parameters: every engine parameter is compared with the value forwarded last time
 //      (cached raw APVTS value) and only changed values reach IChipEngine::setParameter,
 //      converted from the APVTS raw value to the native value (choice index + minValue).
-//      All three engines are kept in sync so a switch never needs a bulk update. Global
-//      parameters update the arpeggiator, the glide, the allocator (voice mode, poly mask
-//      intersected with the chip's channels, chip default when empty), raw output and the
+//      All three engines are kept in sync so a switch never needs a bulk update. The
+//      engine `clock` parameter (NTSC/PAL) is also forwarded through setClockStandard().
+//      Global parameters update the arpeggiator, the glide, the allocator (voice mode, poly
+//      mask intersected with the chip's channels; 0, the default, or an empty intersection
+//      means the chip's default mask), raw output (setRawOutput on every engine) and the
 //      master gain target.
 //   3. MIDI: note on/off go to the arpeggiator (pass-through when disabled), whose output
-//      carries sample offsets. Pitch bend, sustain (CC 64), all notes/sound off, reset
-//      controllers and other CCs are kept as control events with their offsets; other CCs
-//      are handed to MidiLearn (lock-free).
+//      carries sample offsets. Pitch bend, sustain (CC 64), All Sound Off (120), Reset All
+//      Controllers (121), All Notes Off (123) and other CCs are kept as control events with
+//      their offsets; other CCs are handed to MidiLearn (lock-free). Channel-mode messages
+//      act on their own MIDI channel; All Sound Off also resets the engine when no other
+//      MIDI channel is sounding (the engines have no per-channel hard cut).
 //   4. Sub-blocks: the slice is split at every event offset. Before each sub-block the
-//      events at its start are applied: notes through the VoiceAllocator (Poly round-robin
+//      events at its start are applied in MidiBuffer order (arpeggiator running: controls
+//      before notes at the same offset): notes through the VoiceAllocator (Poly round-robin
 //      with oldest stealing, or MIDI channel N -> hardware channel N-1), then Glide
 //      targets, then IChipEngine::noteOn/noteOff; sustain holds note-offs per MIDI channel
-//      until the pedal is released. Every channel whose pitch (glide position + bend of
+//      until the pedal is released (not the arpeggiator's own step note-offs). Every
+//      channel whose pitch (glide position + bend of
 //      its MIDI channel, +/-2 semitones) changed gets setChannelPitch. While a glide or a
 //      fade is running, sub-blocks are capped at kControlIntervalSamples so pitch and gain
 //      keep moving between MIDI events. The active engine renders the main pair and, when
@@ -73,7 +84,10 @@ public:
     static constexpr float kBendRangeSemitones = 2.0f;      // fixed pitch bend range
     static constexpr double kCrossfadeSeconds = 0.020;       // chip switch crossfade
     static constexpr int kControlIntervalSamples = 32;       // sub-block cap while gliding/fading
-    static constexpr int kMaxControlEvents = 256;
+    static constexpr int kMaxControlEvents = 256;                // control events per slice
+    // Note events per slice fed to the arpeggiator; the headroom below its 64-event output
+    // capacity leaves room for the steps and note-offs it adds.
+    static constexpr int kMaxNoteInputsPerSlice = chipdsp::kMaxEventsPerBlock - 16;
     static constexpr int kNumChips = 3;
 
     // Host output pointers for each hardware channel bus of the current block, or nullptr
@@ -138,30 +152,37 @@ private:
         float offset = 0.0f;   // added to the raw value (choice parameters: minValue)
         float last = 0.0f;
         bool pushed = false;
+        bool isClock = false;  // engine key "clock": also forwarded via setClockStandard()
     };
 
     struct ControlEvent
     {
-        enum class Kind : uint8_t { PitchBend, SustainOn, SustainOff, Controller, AllNotesOff, ResetControllers };
+        enum class Kind : uint8_t { PitchBend, SustainOn, SustainOff, Controller, AllNotesOff, AllSoundOff, ResetControllers };
         Kind kind = Kind::Controller;
         uint8_t midiChannel = 1;   // 1..16
         int offset = 0;
+        int notesBefore = 0;       // note events that precede it in MidiBuffer order (same slice)
         int a = 0;                 // CC number / bend value
         int b = 0;                 // CC value
     };
 
     static constexpr int kMaxChannels = chipdsp::kMaxHardwareChannels;
 
-    void processSlice (float* outL, float* outR, int numSamples, const juce::MidiBuffer& midi, int sliceStart,
+    void processSlice (float* outL, float* outR, int numSamples,
                        const chipdsp::TransportInfo& transport, const BusMap& buses) noexcept;
     void updateChipSelection() noexcept;
     void beginSwitch (chipdsp::ChipId target) noexcept;
     void pushParameters() noexcept;
     void configureAllocator (bool force) noexcept;
     void silenceAll() noexcept;
-    void collectMidi (const juce::MidiBuffer& midi, int sliceStart, int numSamples) noexcept;
+    // Fills noteIn/controls with the events of the slice starting at sliceStart (at most
+    // maxLength samples) and advances 'it'. Returns the slice length: maxLength, or less when
+    // a list filled up (the remaining events then start the next slice).
+    int collectMidi (juce::MidiBufferIterator& it, const juce::MidiBufferIterator& end, int sliceStart,
+                     int maxLength, int blockLength) noexcept;
     void applyControl (const ControlEvent& e) noexcept;
-    void applyNote (const chipdsp::NoteEvent& e) noexcept;
+    void applyNote (const chipdsp::NoteEvent& e, bool fromArp) noexcept;
+    void releaseMidiChannel (int midiChannel, bool cutSound) noexcept;
     void releaseSustained (int midiChannel) noexcept;
     void updatePitches() noexcept;
     bool anyGlideActive() const noexcept;

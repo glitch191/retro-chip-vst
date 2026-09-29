@@ -23,7 +23,7 @@ Global parameters (ids fixed):
 | `chip` | choice | NES, SNES, Genesis | NES |
 | `raw_output` | bool | | off |
 | `voice_mode` | choice | MIDI channel, Poly | Poly |
-| `poly_channels` | int | bit mask of hardware channels usable by Poly/arp, 10 bits | chip default (NES: pulses+triangle, SNES: all, Genesis: FM 1..6) |
+| `poly_channels` | int | bit mask of hardware channels usable by Poly/arp, 10 bits; 0 = chip default | 0 = chip default (NES: pulses+triangle, SNES: all, Genesis: FM 1..6) |
 | `master_gain` | float dB | -24..+12 | 0 |
 | `arp_enabled` | bool | | off |
 | `arp_pattern` | choice | Up, Down, Up-Down, As played, Random | Up |
@@ -59,10 +59,23 @@ and the crossfade.
   4. Feed the visualiser ring buffers with the main and per-channel signals.
 * MIDI CC/pitch bend: pitch bend (+/- 2 semitones default, `bend_range` fixed constant)
   goes through `setChannelPitch`; sustain pedal (CC 64) holds note-offs; all other CCs go
-  to `MidiLearn`.
+  to `MidiLearn`. All Sound Off (120), Reset All Controllers (121) and All Notes Off (123)
+  act on their own MIDI channel; All Sound Off also resets the engine at once when no
+  other MIDI channel holds a note.
+* Events: no MIDI event is ever dropped. A slice ends early when its note (48) or control
+  (256) list is full and the remaining events start the next slice; events beyond the
+  capacity at one sample offset move one sample later. Events outside the block are
+  clamped into it. Events at one offset apply in MidiBuffer order (arpeggiator running:
+  controls first). The pedal holds played notes, not the arpeggiator's step note-offs.
+* Chip switches: a switch requested during a running crossfade waits until it ends.
+* `poly_channels` 0 (the default) or a mask with no channel of the current chip selects
+  the chip's default mask, resolved on the audio thread at each switch; the plugin never
+  writes `poly_channels` itself.
 * `activeEngine()`, `engine(ChipId)`, `activeChip()`.
 * Sample loading for the user WAV import: `loadUserSample(ChipId, slot, AudioBuffer, sampleRate)`
-  is message-thread only and forwards to `IChipEngine::loadSample`.
+  is message-thread only and forwards to `IChipEngine::loadSample`. The editor reaches it
+  through the preset menu entry "Import sample into slot N..." (N = the chip's sample
+  parameter value; disabled when the engine has no sample slots).
 
 ## Bus layout (`PluginProcessor`)
 
@@ -77,9 +90,14 @@ enabled; the README records what was observed.
 ## State
 
 `getStateInformation` writes a `ValueTree` "RetroChipState" containing the APVTS tree,
-`presetName`, `presetCategory`, the MIDI learn map (`<Map cc="" param=""/>` children),
-and `UserSamples` (chip, slot, base64 WAV). `setStateInformation` restores all of it and
-re-encodes user samples through the engines.
+`presetName`, `presetCategory`, the MIDI learn map (a `<MidiLearn>` child holding
+`<Map cc="" param=""/>` children), and `UserSamples` (chip, slot, base64 WAV).
+`setStateInformation` restores all of it and re-encodes user samples through the engines
+without writing any parameter: the preset is looked up on the restored chip and its
+samples go into the slots the restored parameters reference; slots that held a user
+sample before return to their default content. When the host restores off the message
+thread, the preset part is queued; `getStateInformation` (any thread) then writes the
+queued values.
 
 ## Presets (`PresetManager.h/.cpp`)
 
@@ -108,7 +126,9 @@ API: `loadBanks()`, `categories(chip)`, `subcategories(chip, category)`,
 `presets(chip, category, subcategory)`, `search(chip, text)` (case-insensitive
 substring over name and tags), `apply(const Preset&)` (sets parameters through the
 APVTS on the message thread, then loads samples), `current()`, `exportCurrent(File)`,
-`importFile(File)`, and `next()/previous()` inside the current filtered list.
+`importFile(File)`, and `next()/previous()` inside the current filtered list. `apply` writes
+the engine parameters, the preset-managed globals and the samples first and the `chip`
+last, each write in its own change gesture.
 
 ## Randomizer (`Randomizer.h/.cpp`)
 
@@ -116,9 +136,11 @@ APVTS on the message thread, then loads samples), `current()`, `exportCurrent(Fi
 the active chip shown on the panel, draw a new value uniformly inside
 `[max(min, v - amount * range), min(max, v + amount * range)]` where `range =
 max - min`, rounded for integers; enumerated parameters (with `choiceLabels`) are
-re-drawn with probability `amount`. Parameters never leave `[minValue, maxValue]`; the
-`sample`/`dac_sample` slot parameters, `clock`, `chip_revision`, `console_filter` and
-`main_volume`/`master_gain` are excluded. Global performance parameters are untouched.
+re-drawn with probability `amount`, and so are integer 0..1 switches without labels.
+Parameters never leave `[minValue, maxValue]`; the `sample`/`dac_sample` slot parameters,
+`clock`, `chip_revision`, `console_filter`, `model1_lowpass` (the Genesis console output
+filter, the counterpart of `console_filter`) and `main_volume`/`master_gain` are excluded.
+Global performance parameters are untouched.
 The UI exposes `amount` (default 0.3) and a `Randomize` button.
 
 ## MIDI learn (`MidiLearn.h/.cpp`)
@@ -129,8 +151,9 @@ The UI exposes `amount` (default 0.3) and a `Randomize` button.
   Mapping = one CC number -> one parameter id; a CC already used is reassigned.
 * Incoming CC values map linearly to the parameter's normalised range on the audio
   thread through `AudioProcessorParameter::setValueNotifyingHost` deferred to the message
-  thread (use a lock-free FIFO of (paramIndex, value) drained by a timer or the
-  editor's vblank callback; the host is notified from the message thread).
+  thread (lock-free latest-value slot per parameter, drained by a timer or the editor's
+  vblank callback; the host is notified from the message thread). Nothing is queued, so
+  a dense CC stream can neither overflow nor lose the final controller position.
 * Map is saved in the state (see above).
 
 ## Visualiser buffers (`VisualizerBuffers.h`)
@@ -160,10 +183,23 @@ write indices, read by the UI. No locks.
   reading `VisualizerBuffers`; repaints only when new samples arrived.
 * `DiagnosticsOverlay`: toggled from the strip (button "Diagnostics"): detected refresh
   rate (from `VBlankAttachment` timestamps), mean frame time, worst 1 % frame time over
-  the last 2 s, repaint count per second. Off by default, costs nothing when off.
+  the last 2 s, repaint count per second. Frame time = the editor's work per frame (the
+  vblank callback plus the paints since the previous vblank), not the interval between
+  frames. Off by default, costs nothing when off. The overlay takes the clicks on its area.
 * Rendering: `juce::VBlankAttachment` on the editor drives scope updates and any
   transition; no `juce::Timer` for painting; nothing repaints when nothing changed
-  (verify with the diagnostics repaint counter at rest = 0).
+  (verify with the diagnostics repaint counter at rest = 0). The text caret does not
+  blink, so a focused search field is at rest too. Scopes read their rings at most at
+  about 60 Hz and skip rings that only received silence.
+* Keyboard: only the preset search field takes keyboard focus (Up/Down choose a match,
+  Return loads it, Escape clears); a click elsewhere never moves focus to another control,
+  so the host keeps Space and the arrow keys.
+* Text that can be cut with an ellipsis (preset name, search results, scope names, group
+  titles, cluster captions, combo values in the operator grid) has a tooltip with the
+  full text.
 * Sizing: default 1280 x 720 logical px at scale 1.0; resizable with fixed aspect ratio
   through `ui_scale` 1.0..2.0 (the editor uses `setScaleFactor` / transform); every text
-  13 px or larger at scale 1.0. Checked at 2560 x 1440, 1920 x 1080 and 1707 x 960.
+  13 px or larger at scale 1.0. Checked at 2560 x 1440, 1920 x 1080 and 1707 x 960. The
+  UI scale box offers 100, 150 and 200 % (125 % and 175 % put 1 px lines on fractional
+  device pixels); entries and corner sizes larger than the display's work area are not
+  offered. A corner drag writes `ui_scale` once, when the drag ends.
