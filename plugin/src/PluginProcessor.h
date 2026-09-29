@@ -11,6 +11,9 @@
 
 #include "chipdsp/ChipTypes.h"
 
+#include <atomic>
+#include <optional>
+
 namespace rcv
 {
 
@@ -25,12 +28,24 @@ namespace rcv
 // State: <RetroChipState version="1" presetName="" presetCategory="">
 //          <Parameters .../> (APVTS)  <MidiLearn> <Map cc param/> </MidiLearn>
 //          <UserSamples> <Sample chip slot wav="base64 WAV"/> </UserSamples>
-//        </RetroChipState>, stored as XML through copyXmlToBinary().
-class RetroChipProcessor final : public juce::AudioProcessor
+//        </RetroChipState>, stored as XML through copyXmlToBinary(). Parameters and the
+//        MIDI learn map are restored synchronously; the preset name and the samples go
+//        through the engines' message-thread API, so when the host restores from another
+//        thread they are queued and applied by the processor's message-thread timer.
+//        getStateInformation() may run on any thread: while a restore is queued it writes
+//        the queued preset name and samples, otherwise PresetManager::stateSnapshot().
+//        Restoring never writes a parameter.
+//
+// poly_channels: 0 (the default) means the chip's default mask (NES pulses + triangle, SNES
+// all voices, Genesis FM 1..6), resolved by the engine host on the audio thread at every
+// chip switch; any other mask is kept across chips (intersected with the chip's channels).
+class RetroChipProcessor final : public juce::AudioProcessor,
+                                 private juce::Timer
 {
 public:
     static constexpr int kNumChannelBuses = chipdsp::kMaxHardwareChannels;
     static constexpr int kStateVersion = 1;
+    static constexpr int kServiceIntervalMs = 50;
 
     RetroChipProcessor();
     ~RetroChipProcessor() override;
@@ -77,7 +92,17 @@ public:
     static juce::String channelBusName (int busIndex);   // 1..10 -> "Out 1".."Out 10"
 
 private:
+    struct PendingRestore
+    {
+        juce::String presetName;
+        juce::String presetCategory;
+        juce::ValueTree samples;   // never modified after setStateInformation() created it
+        int serial = 0;
+    };
+
     static BusesProperties makeBuses();
+    void timerCallback() override;
+    void applyPendingRestore();
 
     EngineHost host;                             // creates the engines first
     ParamRegistry registry;                      // reads their descriptors
@@ -85,6 +110,11 @@ private:
     MidiLearn learn;
     PresetManager presets;
     Randomizer randomizerImpl;
+
+    // Message-thread services (timer)
+    juce::CriticalSection pendingLock;           // message thread vs. the host's state thread; never the audio thread
+    std::optional<PendingRestore> pendingRestore;
+    int restoreSerial = 0;                       // guarded by pendingLock
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (RetroChipProcessor)
 };

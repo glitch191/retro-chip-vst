@@ -15,11 +15,13 @@ namespace rcv
 // "Randomizer"). Message thread only: values go through the APVTS parameters.
 //
 // For every engine parameter of the chip that is shown on the panel and not excluded:
-//   * enumerated parameters (choiceLabels) are re-drawn uniformly with probability amount;
+//   * enumerated parameters (choiceLabels) and integer 0..1 switches are re-drawn uniformly
+//     with probability amount;
 //   * others draw uniformly inside [max(min, v - amount * range), min(max, v + amount * range)],
 //     rounded for integers, so no value ever leaves [minValue, maxValue].
 // Excluded: sample slot parameters (`sample`, `*_sample`), `clock`, `chip_revision`,
-// `console_filter`, `model1_lowpass`, `main_volume`. Global parameters are untouched.
+// `console_filter`, `model1_lowpass` (the Genesis counterpart of console_filter: the
+// console's output filter), `main_volume`. Global parameters are untouched.
 class Randomizer
 {
 public:

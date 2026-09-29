@@ -44,7 +44,11 @@ void Randomizer::randomize (chipdsp::ChipId chip, float amount, juce::uint32 see
         const float current = info->nativeFromRaw (raw->load (std::memory_order_relaxed));
         float next = current;
 
-        if (info->isChoice())
+        // Integer 0..1 parameters without labels (loop, v1_echo, adsr_enable...) are switches:
+        // like enumerations they flip with probability amount (the range formula would round
+        // them back to their current value for every amount below 0.5).
+        const bool isSwitch = info->desc.isInteger && minValue == 0.0f && maxValue == 1.0f;
+        if (info->isChoice() || isSwitch)
         {
             if (unit (rng) >= amount)
                 continue;

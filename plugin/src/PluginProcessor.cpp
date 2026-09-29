@@ -1,4 +1,4 @@
-#include "PluginProcessor.h"
+﻿#include "PluginProcessor.h"
 
 #include "PluginEditor.h"
 
@@ -49,9 +49,40 @@ RetroChipProcessor::RetroChipProcessor()
     host.attachParameters (registry, apvts);
     host.setMidiLearn (&learn);
     presets.loadBanks();
+
+    startTimer (kServiceIntervalMs);
 }
 
-RetroChipProcessor::~RetroChipProcessor() = default;
+RetroChipProcessor::~RetroChipProcessor()
+{
+    stopTimer();
+}
+
+// ----- message-thread services ----------------------------------------------------------------
+
+void RetroChipProcessor::timerCallback()
+{
+    applyPendingRestore();
+}
+
+void RetroChipProcessor::applyPendingRestore()
+{
+    // The queued state stays visible to getStateInformation() until it has been applied, so
+    // a getState that races the restore still writes the restored preset and samples.
+    std::optional<PendingRestore> state;
+    {
+        const juce::ScopedLock sl (pendingLock);
+        state = pendingRestore;
+    }
+    if (! state.has_value())
+        return;
+
+    presets.restoreState (state->presetName, state->presetCategory, state->samples);
+
+    const juce::ScopedLock sl (pendingLock);
+    if (pendingRestore.has_value() && pendingRestore->serial == state->serial)
+        pendingRestore.reset();
+}
 
 chipdsp::ChipId RetroChipProcessor::selectedChip() const noexcept
 {
@@ -104,9 +135,9 @@ void RetroChipProcessor::processBlock (juce::AudioBuffer<float>& buffer, juce::M
         return;
 
     chipdsp::TransportInfo transport;
-    if (auto* playHead = getPlayHead())
+    if (auto* hostPlayHead = getPlayHead())
     {
-        if (const auto position = playHead->getPosition())
+        if (const auto position = hostPlayHead->getPosition())
         {
             if (const auto bpm = position->getBpm())
                 transport.bpm = *bpm > 0.0 ? *bpm : 120.0;
@@ -142,13 +173,31 @@ juce::AudioProcessorEditor* RetroChipProcessor::createEditor()
 
 void RetroChipProcessor::getStateInformation (juce::MemoryBlock& destData)
 {
+    // Hosts may call this from any thread: the preset name and the user samples come from
+    // the latest setStateInformation() when its restore is still queued, otherwise from the
+    // preset manager's thread-safe snapshot.
+    PresetManager::StateSnapshot nonParams;
+    {
+        const juce::ScopedLock sl (pendingLock);
+        if (pendingRestore.has_value())
+        {
+            nonParams.presetName = pendingRestore->presetName;
+            nonParams.presetCategory = pendingRestore->presetCategory;
+            nonParams.samples = pendingRestore->samples;
+        }
+        else
+        {
+            nonParams = presets.stateSnapshot();
+        }
+    }
+
     juce::ValueTree root (kStateType);
     root.setProperty (kVersionProp, kStateVersion, nullptr);
-    root.setProperty (kPresetNameProp, presets.currentName(), nullptr);
-    root.setProperty (kPresetCategoryProp, presets.currentCategory(), nullptr);
+    root.setProperty (kPresetNameProp, nonParams.presetName, nullptr);
+    root.setProperty (kPresetCategoryProp, nonParams.presetCategory, nullptr);
     root.addChild (apvts.copyState(), -1, nullptr);
     root.addChild (learn.toValueTree(), -1, nullptr);
-    root.addChild (presets.userSamplesToValueTree(), -1, nullptr);
+    root.addChild (nonParams.samples.isValid() ? nonParams.samples.createCopy() : juce::ValueTree (kUserSamplesType), -1, nullptr);
 
     if (auto xml = root.createXml())
         copyXmlToBinary (*xml, destData);
@@ -169,24 +218,23 @@ void RetroChipProcessor::setStateInformation (const void* data, int sizeInBytes)
 
     learn.restoreFromValueTree (root.getChildWithName (kMidiLearnType));
 
-    const auto presetName = root.getProperty (kPresetNameProp).toString();
-    const auto presetCategory = root.getProperty (kPresetCategoryProp).toString();
-    const auto samples = root.getChildWithName (kUserSamplesType).createCopy();
+    PendingRestore state;
+    state.presetName = root.getProperty (kPresetNameProp).toString();
+    state.presetCategory = root.getProperty (kPresetCategoryProp).toString();
+    state.samples = root.getChildWithName (kUserSamplesType).createCopy();
+    if (! state.samples.isValid())
+        state.samples = juce::ValueTree (kUserSamplesType);
+    {
+        // A newer state supersedes a queued one.
+        const juce::ScopedLock sl (pendingLock);
+        state.serial = ++restoreSerial;
+        pendingRestore = std::move (state);
+    }
 
-    // Sample loading talks to the engines' message-thread API.
+    // Sample loading talks to the engines' message-thread API: applied now on the message
+    // thread, otherwise by the service timer.
     if (juce::MessageManager::existsAndIsCurrentThread())
-    {
-        presets.restoreCurrent (presetName, presetCategory);
-        presets.restoreUserSamples (samples);
-    }
-    else
-    {
-        juce::MessageManager::callAsync ([this, presetName, presetCategory, samples]
-        {
-            presets.restoreCurrent (presetName, presetCategory);
-            presets.restoreUserSamples (samples);
-        });
-    }
+        applyPendingRestore();
 }
 
 } // namespace rcv
