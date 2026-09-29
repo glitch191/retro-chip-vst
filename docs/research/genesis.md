@@ -36,7 +36,16 @@ constexpr double kPsgClockNtsc   = 53693175.0 / 15.0;        // 3579545.0000 Hz
 constexpr double kPsgClockPal    = 53203424.0 / 15.0;        // 3546894.9333 Hz
 constexpr double kPsgCounterNtsc = kPsgClockNtsc / 16.0;     // 223721.5625 Hz
 constexpr double kPsgCounterPal  = kPsgClockPal  / 16.0;     // 221680.9333 Hz
+// Video frame (driver tick): 3420 master clocks per line, 262 lines NTSC / 313 lines PAL
+constexpr double kFrameRateNtsc = 53693175.0 / (3420.0 * 262.0);   // 59.92274 Hz
+constexpr double kFrameRatePal  = 53203424.0 / (3420.0 * 313.0);   // 49.70146 Hz
 ```
+
+Verified 2026-09-28: every value above recomputed in Python from the two master clocks.
+The frame rates match the published 59.92274 Hz / 49.701459 Hz (Sega Retro technical
+specifications) and the 3420 master clocks per line (RadDad772, "Genesis VDP internals,
+part three"). They are not the NES rates 60.0988 / 50.0070 Hz that `docs/ENGINE_SPECS.md`
+lists for the driver tick; see Ambiguities 28.
 
 Derivation of the 144: the YM2612 prescaler divides the input clock by 6 (fixed on the
 YM2612; the OPNA manual Table 2-1 lists 1/6 as the default FM prescaler) and one output
@@ -100,6 +109,10 @@ constexpr uint8_t kOpRegOffset[3][4] = {
 };
 // Equivalent decode: channel = addr & 3 (3 invalid); operator = ((addr>>3)&1) | ((addr>>1)&2)
 ```
+
+Verified 2026-09-28 against plutiedev (channel 3 special-mode table: S1 $A9/$AD, S2
+$AA/$AE, S3 $A8/$AC, S4 $A2/$A6; $28 upper nibble = S1..S4 in bit order 4..7; $27 layout)
+and the decode above checked in Python for all 16 offsets.
 
 Register $28 (key on/off), OPNA manual p.18 and plutiedev:
 
@@ -176,6 +189,11 @@ Truth table of the low two bits (generated from the formula):
 constexpr uint8_t kKeyCodeLow[16] = { 0,0,0,0, 0,0,0,1, 2,3,3,3, 3,3,3,3 };
 ```
 
+Naming note: the key-code formula uses the OPNA manual's 1-based names, F11 = fnum bit 10
+(MSB) ... F8 = fnum bit 7; the register table above uses 0-based names (F10..F8 = fnum
+bits 10..8). Verified 2026-09-28 against the OPNA manual p.25 formula and Table 2-4 (the
+N4/N3 columns of C#..C5 at 8 MHz: 0,0,0,0,0,0,1,1,2,2,3,3 are reproduced by the table).
+
 Multiplier (OPNA manual Table 2-5):
 
 ```cpp
@@ -204,6 +222,10 @@ constexpr uint8_t kDetuneTable[32][4] = {
 // DT register 4..7: subtract kDetuneTable[kc][dt-4]; DT 0 and 4: no detune.
 ```
 
+Verified 2026-09-28 against the OPNA manual Table 2-6 (text extracted from the translated
+PDF; every "up arrow" resolved and every Hz value converted with Python: all 19 distinct
+Hz values land within 0.035 unit of an integer, so the rounding is unambiguous).
+
 The OPNA Hz table as printed (block, note, FD=1, FD=2, FD=3; FD=0 is always 0.000):
 
 ```
@@ -216,7 +238,7 @@ The OPNA Hz table as printed (block, note, FD=1, FD=2, FD=3; FD=0 is always 0.00
 7,0-3: 0.423 0.846 1.164                                                     [Unit: Hz, phiM = 8 MHz]
 ```
 
-Maximum detune 22 units = 22 * 7670453.57 / 144 / 2^20 = 1.1175 Hz at NTSC.
+Maximum detune 22 units = 22 * 7670453.57 / 144 / 2^20 = 1.1176 Hz at NTSC (with MUL 1).
 
 ### Reference F-number table and MIDI mapping
 
@@ -243,9 +265,14 @@ constexpr uint16_t kFnumOctavePal[12]  = { 650, 688, 729, 773, 819, 867, 919, 97
 constexpr uint16_t kFnumOctave8MHz[12] = { 617, 654, 693, 734, 778, 824, 873, 925, 980, 1038, 1100, 1165 };
 ```
 
-The Echo table differs from the rounded NTSC values by 0 or -1 in ten entries and by -2 at
-A (1081 vs 1082.69); it is an "approximate" table by its own description. See
-Ambiguities; the recommended rule is the formula with round-to-nearest.
+Verified 2026-09-28: the three rounded tables and the exact values recomputed in Python
+(identical); the Echo table re-read on plutiedev (identical); the 8 MHz values agree with
+the OPNA manual Table 2-4 (C# 654.0 ... A 1038.1 ... C5 1234.5) and its worked example
+"F-Number(A4) = 1038.1".
+
+The Echo table differs from the rounded NTSC values by 0 in two entries (C, F#), by -1 in
+nine entries and by -2 at A (1081 vs 1082.69); it is an "approximate" table by its own
+description. See Ambiguities; the recommended rule is the formula with round-to-nearest.
 
 MIDI note to (block, fnum) rule (from the formula; one block per octave, fnum stays in
 644..1215 for MIDI 12..107):
@@ -259,9 +286,10 @@ fnum  = clamp(round(144 * f * 2^20 / clock * 2 / 2^block), 0, 2047)
 Sample results (NTSC clock 7670453.57; frequency produced = fnum*2^block/2/2^20*fs):
 note 12 -> (0, 644) 16.357 Hz; 24 -> (1, 644); 48 -> (3, 644); 57 -> (3, 1083) 220.063 Hz;
 60 -> (4, 644) 261.719 Hz; 69 -> (4, 1083) 440.126 Hz; 72 -> (5, 644); 96 -> (7, 644)
-2093.748 Hz; 107 -> (7, 1215) 3950.162 Hz; 108 -> (7, 1288); 119 and above -> (7, 2047)
-6655.129 Hz (the hardware maximum, jsgroth part 2 gives 6654.7 Hz with 7.67e6). Notes above
-119 clamp. PAL: 60 -> (4, 650), 69 -> (4, 1093). Frequency resolution is one fnum unit =
+2093.748 Hz; 107 -> (7, 1215) 3950.162 Hz; 108 -> (7, 1288); 115 -> (7, 1929); 116 ->
+(7, 2044) 6645.375 Hz; 117 and above -> (7, 2047) 6655.129 Hz (the hardware maximum,
+jsgroth part 2 gives 6654.7 Hz with 7.67e6). Notes 117 (A8, exact fnum 2165.4) and above
+clamp to 2047. (Corrected 2026-09-28: the earlier text said 119; recomputed in Python.) PAL: 60 -> (4, 650), 69 -> (4, 1093). Frequency resolution is one fnum unit =
 fs/2^20*2^(block-1): 0.0508 Hz at block 1, 3.25 Hz at block 7 (fine tune of 1 fnum at C4 =
 1200*log2(645/644) = 2.7 cents). Fractional MIDI notes (glide, vibrato) go through the
 same rounding, which is the audible grid required by `docs/ARCHITECTURE.md`.
@@ -303,7 +331,10 @@ SL10 = (SL == 15) ? 0x3E0 : SL << 5  // SL 0..14 -> 0, 32, ..., 448 (3 dB per st
 OPNA Table 2-7 weights SL bits as 24, 12, 6, 3 dB and says "when D7-D4 is entire 1 it
 becomes 93 dB", i.e. 0x3E0. Sega's document says "D1L ... should be multiplied by 8 if one
 wishes to compare it to TL", which is the same 32-per-step scale (8 x 0.75 dB/TL... see
-Ambiguities for the 1023 vs 992 question).
+Ambiguities for the 1023 vs 992 question). Verified 2026-09-28 against the OPNA manual
+p.28 (Table 2-7: 24, 12, 6, 3 dB; "When D7-D4 is entire 1, it becomes 93dB") and plutiedev
+("every step is 0.75dB quieter" for TL); TL 127 -> 1016 = 95.25 dB nominal / 95.58 dB
+exact.
 
 ### Rate calculation
 
@@ -315,11 +346,17 @@ Rks  = keycode5 >> (3 - RS)          // RS 0..3; OPNA Table 2-8 is exactly this 
 rate = (R == 0) ? 0 : min(63, 2 * R + Rks)
 ```
 
-OPNA Table 2-8 (Key-Scaling value of Rate), transcribed: for KS=0 the value is 0 or 1
-(0 for blocks 0-3, 1 for blocks 4-7); KS=1: 0..3 (one per two blocks); KS=2: 0..7 (one per
-block); KS=3: 0..31 (one per keycode). Release rate can never be 0 (Nemesis: "RR is
+OPNA Table 2-8 (Key-Scaling value of Rate), transcribed: KS=0: 0..3 (one step per two
+blocks: blocks 0-1 -> 0, 2-3 -> 1, 4-5 -> 2, 6-7 -> 3); KS=1: 0..7 (one per block);
+KS=2: 0..15 (one per two keycodes); KS=3: 0..31 (one per keycode). This is exactly
+`keycode5 >> (3 - KS)`. Verified 2026-09-28 against the OPNA manual p.29 (text extracted
+from the translated PDF) and Sega's "KC/8 .. KC/1" description. (Corrected 2026-09-28: the
+earlier transcription gave KS=0 as 0/1, KS=1 as 0..3 and KS=2 as 0..7, one level off and
+inconsistent with the shift formula.) Release rate can never be 0 (Nemesis: "RR is
 treated as a 5-bit value with the LSB set to 1, and it's after this conversion that the
-check is made").
+check is made"). Verified 2026-09-28 against the OPNA manual p.30 ("Rate = 2R + Rks; Rate =
+0 in case of R = 0"; RR "(Set value * 2 + 1) is assumed to be R"; maximum 63) and
+Nemesis page 8 (same three rules).
 
 Rate is recomputed when a phase starts; the common emulator behaviour (MAME, per Eke on
 page 8) also refreshes it immediately when AR/DR/SR/RR, RS or fnum/block change. Nemesis
@@ -388,6 +425,10 @@ constexpr uint8_t kEgIncrement[64][8] = {
 };
 ```
 
+Verified 2026-09-28 against Nemesis page 8 (re-read: rates 0, 2, 4, 5, 6, 7, 9, 11, 48,
+49, 51, 53, 59 and 60-63 checked entry by entry; shift 1 for rates 40-43 and 0 for 44-47)
+and `kEgShift` regenerated with `max(0, 11 - rate/4)` in Python (identical).
+
 Update cycle (Nemesis page 8 pseudocode; counter width from jsgroth part 3):
 
 ```
@@ -445,7 +486,15 @@ in the operator.
 
 ### Documented durations for verification
 
-The OPNA manual has no attack/decay time table. Reference values from the sources:
+The OPNA manual and Sega's manual (Maxim's transcription only gives Timer A times) have
+no attack/decay time table. Reference values from the sources:
+
+* GManiac (SpritesMind t=932, hardware measurement by phase modulation): with an attack
+  increment of 1 per update the operator "reaches maximum output of 8168 by step 73"; his
+  derived rule is "att += not(att) asr 4", scaled by the increment for faster rates. The
+  formula below reproduces this exactly: from 0x3FF, 73 updates with inc 1 (1023, 959,
+  899, 842, 789, 739, 692, 648, 607, 569, 533, 499, ...), 40 with inc 2, 21 with inc 4, 10
+  with inc 8 (1023, 511, 255, 127, 63, 31, 15, 7, 3, 1, 0).
 
 * Nemesis page 8: a rate of 2 in decay lasts "up to 10223616 samples, or 193.5 seconds on
   a PAL Mega Drive"; rate 63 "as low as 312 samples". Both use his EG ratio of 2.4375
@@ -478,6 +527,11 @@ rate  attack 0x3FF->0 (EG cycles / ms)   decay 0->0x3FF (EG cycles / ms)   decay
   63           0        0                     128         7.2                   5.9
 ```
 
+Verified 2026-09-28: the whole table re-simulated in Python (counter starting at 0,
+first tick = 1, skip-0 at 4096): every EG-cycle count and millisecond value identical.
+Note the skip-0 counter means shift 11 updates only at counter 2048 (pattern index 1) and
+shift 10 only at 1024/2048/3072 (indices 1..3); averages match the wide-counter rates.
+
 Each rate step of 4 halves the time; rates within a group of 4 differ only by the
 increment pattern (rates 48-63 differ by 1.33x/1.5x/1.75x within a group, rates 8-47 by
 the 0,1 patterns). Unit tests should check the EG-cycle counts exactly and the
@@ -504,6 +558,15 @@ Exponential (power) table, 256 entries, 0.11 fixed point, offset by one step:
 ```
 expTable[i] = round(2^(-(i + 1) / 256) * 2048),  i = 0..255    // expTable[0] = 2042, expTable[255] = 1024
 ```
+
+Equivalent "OPL-style" formulation (the form quoted in the task brief): a table of the
+fractional part `expFrac[i] = round((2^(i/256) - 1) * 1024)` (0..1018) read with an inverted
+index and the implicit leading one restored: `kExpTable[f] = expFrac[255 - f] + 1024`.
+Because `round(x - 1024) + 1024 = round(x)`, the two formulations give identical values for
+all 256 entries (checked with Python: `all(exp_n[f] == exp_o[255 - f] + 1024)` is True;
+`expFrac[0] = 0`, `expFrac[255] = 1018`). Likewise the sine formula
+`round(-log2(sin((i + 0.5) / 256 * pi / 2)) * 256)` is the same expression as the one above
+(checked equal for all 256 entries). The implementer may use either form.
 
 Generated values (Python, `int(x + 0.5)`):
 
@@ -547,6 +610,12 @@ constexpr uint16_t kExpTable[256] = {
 };  // min 0x400 (1024), max 0x7FA (2042), sum 377687
 ```
 
+Verified 2026-09-28: both arrays parsed from this file and diffed against a fresh Python
+generation of both formulations (sine: `(2i+1)/512` and `(i+0.5)/256` forms; exp: the
+`2^(-(i+1)/256)` form and the inverted OPL-style fraction table): 0 differences out of 256
+in each table; sums 65406 and 377687 confirmed. The operator verification values below
+were recomputed with `op_out` and match.
+
 ### Operator evaluation
 
 Inputs: 10-bit phase from the phase generator, 10-bit modulation input, 10-bit EG output.
@@ -581,9 +650,14 @@ Verification values (from the generated tables): phase 0x100, att 0 -> 8168; pha
 * Operator S1 feedback (jsgroth part 4; Nemesis page 13 and Eke page 11 note that the
   chip averages the last two S1 outputs): with `FB` = register value 0..7,
   `modInput = (op1Out[n-1] + op1Out[n-2]) >> (10 - FB)` for FB != 0, and 0 for FB = 0.
-  If the code applies the common `>> 1` to feedback as well, shift by `9 - FB`. OPNA
-  Table 2-3 gives the modulation index per FB value: OFF, pi/16, pi/8, pi/4, pi/2, pi,
-  2pi, 4pi.
+  jsgroth explains the 10 as "9 - FB" for one output plus 1 more for averaging two
+  outputs; the result goes straight into the 10-bit phase input (no further `>> 1`).
+  OPNA Table 2-3 gives the modulation index per FB value: OFF, pi/16, pi/8, pi/4, pi/2,
+  pi, 2pi, 4pi. Verified 2026-09-28: OPNA Table 2-3 re-read in the extracted text; with
+  two full-scale outputs (16336) the shift gives 31, 63, 127, 255, 510, 1021, 2042 phase
+  units for FB 1..7, i.e. about pi/16 .. 4pi of the 1024-unit turn (Python), matching the
+  table; the "10 - FB" and "average of the last two outputs" statements confirmed in a
+  search excerpt of jsgroth part 4 (page itself blocked by a bot filter).
 
 ### Algorithms
 
@@ -619,6 +693,11 @@ Evaluation order quirk (Nemesis page 13, jsgroth part 4): operators are evaluate
 S1, S3, S2, S4 with a one-stage pipeline, so these modulator paths use the modulator's
 output from the previous sample: alg 0: S2->S3; alg 1: S1->S3 and S2->S3; alg 2: S2->S3;
 alg 3: S2->S4; alg 5: S1->S3. Optional to emulate; documented for fidelity.
+Verified 2026-09-28 by derivation from jsgroth part 4's two rules (search excerpt:
+evaluation order "1→3→2→4"; an operator evaluated immediately after its modulator cannot
+see that modulator's new output): delayed pairs are S2->S3 (evaluated later) and the
+consecutive pairs S1->S3, S3->S2, S2->S4; applied to the eight algorithms this gives
+exactly the list above (no algorithm uses S3->S2).
 
 ### Channel accumulation and clamp
 
@@ -705,6 +784,13 @@ setting  divider  NTSC Hz  PAL Hz   (8 MHz)   plutiedev (7.67 MHz, from the manu
 7          5     83.230   82.471   86.806    69.22
 ```
 
+Verified 2026-09-28: NTSC/PAL/8 MHz columns recomputed in Python (fs/128/N, identical);
+OPNA values 3.98 5.56 6.02 6.37 6.88 9.63 48.1 72.2 Hz re-read in the manual (p.33);
+plutiedev column re-read on plutiedev (identical, and equal to the OPNA values times
+7.67/8 within 0.01 Hz). The divider table itself comes only from jsgroth part 6 (page
+blocked on 2026-09-28, not re-read): single secondary source, see Ambiguities 13.
+One LFO cycle = 128 * N FM samples (13824, 9856, 9088, 8576, 7936, 5632, 1024, 640).
+
 ### Amplitude modulation (tremolo)
 
 OPNA manual: AMS 0..3 = 0, 1.4, 5.9, 11.8 dB. Applied as an attenuation added to the EG
@@ -718,7 +804,11 @@ amOffset = { 0, am >> 3, am >> 1, am }[AMS]                       // AMS 0..3
 ```
 
 Maximum offsets: AMS 3: 0x7E = 126 steps = 11.85 dB; AMS 2: 63 steps = 5.93 dB; AMS 1:
-15 steps = 1.41 dB (matches 11.8 / 5.9 / 1.4 dB).
+15 steps = 1.41 dB (matches 11.8 / 5.9 / 1.4 dB). Verified 2026-09-28: the OPNA manual
+p.33 AMS column (0, 1.4, 5.9, 11.8 dB) re-read; the three maxima recomputed in Python
+(1.411, 5.927, 11.853 dB). The LFO phase at which the attenuation is maximal (counter 0
+here) comes from jsgroth part 6 only and could not be re-read [unverified]; it does not
+change depths or rates.
 
 ### Phase (frequency) modulation (vibrato)
 
@@ -763,8 +853,15 @@ inc17   = (fnum12 << block) >> 2                      // replaces (fnum << block
 
 Peak depth check for fnum = 0x400 (only bit 10 set): deltas 0, 4, 8, 12, 16, 24, 48, 96
 in 12-bit units = 0, 3.38, 6.75, 10.11, 13.47, 20.17, 40.11, 79.31 cents, matching the
-manual's 0, 3.4, 6.7, 10, 14, 20, 40, 80. For fnum 0x2A8 (A) at FMS 7 the peak delta is
-63 (of 1360 twelve-bit units).
+manual's 0, 3.4, 6.7, 10, 14, 20, 40, 80. For fnum 0x2A8 (680, between C and C#; the
+earlier "(A)" label was wrong, A is 1083 = 0x43B) at FMS 7 the peak delta is 63 (of 1360
+twelve-bit units).
+
+Verified 2026-09-28: Nemesis's page 33 table re-read (all 8 rows identical) with his rule
+"For fnum bit 10, shift the values up by 1. For fnum bit 8, shift the values down by 1";
+bit 10 in 12-bit units is therefore 2 x 2 = 4 x his bit-9 table, which is `kPmTable`;
+OPNA PMS column (0, 3.4, 6.7, 10, 14, 20, 40, 80 cents) re-read p.33; plutiedev PMS
+(±0.034 .. ±0.80 semitones) identical; peak cents recomputed in Python.
 
 ## DAC
 
@@ -844,15 +941,25 @@ VA0-VA6 and Model 2 VA2, jsgroth part 1) uses no offsets.
 * Model 1 VA0-VA2: first-order RC low-pass, cutoff 3.39 kHz; Model 1 VA3-VA6: 2.84 kHz
   (jsgroth filtering post citing the sega-16 model guide). Model 2 (and VA7): a
   second-order filter that sounds "noisy, muffled and heavily distorted" (Kabuto); its
-  cutoff is not documented in the sources consulted [unverified]. The filter applies to
-  FM and PSG alike.
+  cutoff is not documented in the sources consulted [unverified]. Residual Media
+  ("Forensics: Genesis 2 with original Mega Amp") says the Model 2 amplifier 315-5684
+  (boards VA2, VA2.3, VA3, VA4) is "a second-order low-pass filter with external
+  capacitors to adjust the cutoff frequency", without giving the stock cutoff; the
+  3.68 kHz / 21.16 kHz figures on that page belong to the aftermarket Mega Amp, not to
+  the stock console. A ConsoleMods search snippet adds that Model 2 VA0-VA1.8 and Model 1
+  VA7 use a Sallen-Key low-pass "with a too-high Q-factor" (page itself blocked, values
+  not obtained). The filter applies to FM and PSG alike.
 * First-order Butterworth/RC coefficients at fs (bilinear, generated):
   3390 Hz @ 53267.04 Hz: b0 = b1 = 0.1684983368, a1 = -0.6630033263 (jsgroth's scipy
   values match); 2840 Hz: b0 = b1 = 0.1446281622, a1 = -0.7107436755. At the PSG rate
   223721.56 Hz: 3390 Hz: b0 = b1 = 0.0454734564, a1 = -0.9090530873; 2840 Hz:
   b0 = b1 = 0.0383705863, a1 = -0.9232588275. A one-pole RC step form
   `y += alpha * (x - y)` with `alpha = 1 - exp(-2*pi*fc/fs)` gives 0.3295941588 (3390)
-  and 0.2846590708 (2840).
+  and 0.2846590708 (2840) at the FM rate (0.0908158527 and 0.0766629642 at the PSG rate).
+  Verified 2026-09-28: all coefficients recomputed in Python (identical to 10 digits); the
+  3.39 kHz (VA0-VA2) and 2.84 kHz (VA3-VA6) first-order cutoffs confirmed in a search
+  excerpt of jsgroth's filtering post (page blocked) and in the ConsoleArtisan/sega-16
+  summaries.
 * Stereo: Model 1 headphone jack only, Model 2 stereo on the AV out, Model 3 mono.
 
 ## SN76489 (Genesis PSG)
@@ -895,13 +1002,20 @@ Range: period 0x3FF = 109.35 Hz (MIDI A2 -10 cents, Maxim), period 1 = 111861 Hz
 half-wavelength (tone value) is set to 1, they output a DC offset value corresponding to
 the volume level"; the note that period 0 behaves the same is Maxim's statement for the
 Sega implementations; the datasheet is silent on 0). Output per channel is 0 or +1 times
-the volume (the flip-flop initial state is arbitrary).
+the volume (the flip-flop initial state is arbitrary). Verified 2026-09-28: f = N/32n and
+the N/16 counter rate re-read on the datasheet scan p.2; Maxim's "If the register value is
+zero or one then the output is a constant value of +1" re-read; periods and frequencies
+recomputed in Python (254 -> 440.397 Hz, 0x3FF -> 109.346 Hz = A2 -10.3 cents).
 
 ### Attenuation
 
-Datasheet Table 1: weights A0..A3 = 16, 8, 4, 2 dB (bit 3 of the register = 2 dB, bit 0 =
-16 dB in the data-word order A0 A1 A2 A3 = 1000 = 16 dB), all ones = OFF, "maximum
-attenuation is 28 db". Maxim: 2 dB per step, ratio 10^(-0.1) = 0.79432823 per step,
+Datasheet Table 1: weights A0..A3 = 16, 8, 4, 2 dB, all ones = OFF, "maximum attenuation
+is 28 db". TI numbers bits MSB-first (the data-format figure labels the first bit "BIT 0"
+and the pin table says "D0 (MSB)"), so A0 is the most significant attenuation bit: in the
+usual LSB-first numbering of the 4-bit value, bit 0 = 2 dB, bit 1 = 4 dB, bit 2 = 8 dB,
+bit 3 = 16 dB, and the value is simply 2 dB per step. (Corrected 2026-09-28: the earlier
+text said "bit 3 of the register = 2 dB, bit 0 = 16 dB", which is only true in TI's
+numbering.) Verified 2026-09-28 against the datasheet scan (pages 2-4 rendered and read). Maxim: 2 dB per step, ratio 10^(-0.1) = 0.79432823 per step,
 volume table as published:
 
 ```cpp
@@ -911,7 +1025,8 @@ constexpr int16_t kPsgVolume[16] = {
      5193,  4125,  3277,  2603,  2067,  1642,  1304,     0 };
 ```
 
-Recomputing round(32767 * 10^(-att/10)) gives the same values except entry 7: 6538
+Verified 2026-09-28: the table re-read on Maxim's SMS Power page (identical, including
+6568). Recomputing round(32767 * 10^(-att/10)) gives the same values except entry 7: 6538
 (published 6568, an apparent typo of 30; see Ambiguities). On the 8191 scale
 (8191 * 10^(-att/10)): 8191, 6506, 5168, 4105, 3261, 2590, 2057, 1634, 1298, 1031, 819,
 651, 517, 411, 326, 0.
@@ -927,8 +1042,12 @@ constexpr uint16_t kNoiseReload[4] = { 0x10, 0x20, 0x40, 0 /* use tone 2 (channe
 // shift rates: clock/512 (6991.30 Hz NTSC), clock/1024 (3495.65 Hz), clock/2048 (1747.82 Hz), tone-2 rate
 ```
 
-Datasheet Table 3: NF0 NF1 = 00 N/512, 10 N/1024 (printed as 0 0 in the scan; row order
-gives N/512, N/1024, N/2048), 01 N/2048, 11 "Tone Generator #3 Output". With tone 2 as the
+Datasheet Table 3 (NF0 is the MSB in TI numbering): NF0 NF1 = 00 N/512, 01 N/1024 (the
+scan misprints this row as "0 0"), 10 N/2048, 11 "Tone Generator #3 Output". So the
+register value rr = 0, 1, 2, 3 selects N/512, N/1024, N/2048, tone 3, consistent with
+Maxim's reload table. (Corrected 2026-09-28: the earlier text gave 10 = N/1024 and 01 =
+N/2048, bit-swapped; checked on the rendered scan page 3 and on Howel's LSB-first
+transcription, which lists NF1 NF0 = 01 -> N/1024, 10 -> N/2048.) With tone 2 as the
 source the LFSR shifts at the tone-2 frequency f = clock/(32*period).
 
 LFSR (Maxim; Genesis/SMS/GG data sampled by Charles MacDonald): 16 bits on the Sega
@@ -950,6 +1069,11 @@ outputs a pulse train at (shift rate)/16: 436.96 Hz at /512; with tone 2 as sour
 range is 6.83 Hz (period 0x3FF) to 6991.3 Hz (period 1), "shifted 4 octaves down from the
 regular tone range" (Maxim). First 48 output bits after a noise-register write, white
 mode, output read before the shift: `000000000000000100000000000010010000000001000001`.
+Verified 2026-09-28: taps, widths, feedback bits and the 0x8000 reset re-read on Maxim's
+SMS Power page ("all bits are zero except for the highest bit"; output = the bit shifted
+off the end; periodic period 16 on the 16-bit register); the datasheet's "Whenever the
+noise control register is changed, the shift register is cleared" read on the scan;
+periods 57337 / 16 / 32767 and the 48-bit prefix re-run in Python (identical).
 
 Output inversion note (Maxim): some systems produce inverted output; a 16-bit LFSR with
 pattern $0006 inverted equals pattern $8005. The Genesis values above were sampled with
@@ -993,17 +1117,21 @@ Frequency:
 12. Maximum (block 7, fnum 2047) = 6655.129 Hz (jsgroth: 6654.7 at 7.67e6).
 13. Phase increment for MUL 0: inc20 = inc17 >> 1 (x0.5); MUL 15: inc17*15.
 14. Key code: block 4, fnum 0x2A8 (F11..F8 = 0101) -> kc = 16; fnum 0x400 (1000) -> kc = 18; fnum 0x3C0 (0111) -> kc = 17; fnum 0x4C0 (1001) -> kc = 19 (N3/N4 formula).
-15. Detune: kc 18, DT 3 -> +9; DT 7 -> -9; kc 31, DT 3 -> +22 = 1.1175 Hz; kc 0, DT 1 -> 0 (OPNA Table 2-6).
-16. Detune underflow: inc17 = 5, DT 7 at kc 31 -> (5 - 22) & 0x1FFFF = 0x1FFEF (jsgroth part 2).
+15. Detune: kc 18, DT 3 -> +9; DT 7 -> -9; kc 31, DT 3 -> +22 = 1.1176 Hz; kc 0, DT 1 -> 0 (OPNA Table 2-6).
+16. Detune underflow (masking function alone): inc17 = 5, detune -22 -> (5 - 22) & 0x1FFFF = 0x1FFEF (jsgroth part 2). This input is not reachable through the registers (kc 31 means block 7, where inc17 = fnum * 64); a register-reachable case: block 0, fnum 1 (inc17 = (1 << 0) >> 1 = 0, kc 0), DT 7 -> (0 - 2) & 0x1FFFF = 0x1FFFE; block 0, fnum 3 (inc17 = 1), DT 6 -> (1 - 1) = 0; block 0, fnum 3, DT 7 -> 0x1FFFF.
+16b. Phase increment, block 4, fnum 1083 (kc 18), DT 0: inc17 = (1083 << 4) >> 1 = 8664; MUL 0 -> inc20 = 4332 (220.06 Hz); MUL 1 -> 8664 (440.13 Hz); MUL 15 -> 129960; with DT 3 (+9): inc17 = 8673, MUL 1 -> 8673.
 
 Envelope:
 17. rate(AR 31, RS 0, kc 31) = 62 + (31 >> 3) = 65 -> 63; rate(AR 15, RS 3, kc 31) = 30 + 31 = 61; rate(0, any) = 0; release RR 15 -> R = 31 -> 62 + Rks.
 18. kEgShift[2] = 11, [44] = 0; kEgIncrement[63] = all 8; [2] = 0,1,0,1,0,1,0,1; [49] = 1,1,1,2,1,1,1,2.
 19. Attack from 0x3FF at rate 63 -> 0 cycles (skipped); rate 60 -> 10 EG cycles (0.56 ms); rate 32 -> 1160 EG cycles = 65.33 ms; rate 2 -> 296888 EG cycles = 16.72 s (simulation).
 20. Decay 0 -> 0x3FF: rate 63 -> 128 EG cycles = 384 FM samples = 7.21 ms; rate 48 -> 1023 cycles = 57.6 ms; rate 32 -> 16357 cycles = 921.2 ms; rate 2 -> 4187138 cycles = 235.8 s (Nemesis: 193.5 s PAL with his 2.4375 ratio).
-21. Attack single step: att 0x3FF, inc 8 -> 0x3FF + ((8 * ~0x3FF) >> 4) = 0x3FF - 512 = 0x1FF; att 0x10, inc 1 -> 0x10 + ((-17) >> 4) = 0x0F.
+21. Attack single step: att 0x3FF, inc 8 -> 0x3FF + ((8 * ~0x3FF) >> 4) = 0x3FF - 512 = 0x1FF; att 0x10, inc 1 -> 0x10 + ((-17) >> 4) = 0x10 - 2 = 0x0E (arithmetic shift floors: -17 >> 4 = -2; corrected 2026-09-28, the earlier value 0x0F assumed truncation towards zero).
+21b. Attack update count from 0x3FF to 0: inc 1 -> 73 updates (GManiac hardware measurement, t=932), inc 2 -> 40, inc 4 -> 21, inc 8 -> 10 (formula above).
 22. TL 127 -> 1016 (95.6 dB); SL 8 -> 0x100 (24 dB); SL 15 -> 0x3E0 (93 dB, OPNA Table 2-7).
 23. Attenuation to amplitude: 0x40 -> 0.5 (6.02 dB); 0x3FF -> 2^-15.984 (96.24 dB); step 0.09407 dB; >= 0x340 (78.27 dB) -> 0 output.
+23b. Key scaling: Rks for kc 31 = 3, 7, 15, 31 at RS 0..3; kc 18 -> 2, 4, 9, 18 (OPNA Table 2-8, `kc >> (3 - RS)`).
+23c. SSG-EG (x4 rule, decay phase, from att 0): rate 63 (inc 8 -> 32 per EG cycle) reaches 0x200 after 16 EG cycles; rate 48 (inc 1 -> 4) after 128 EG cycles; att then stays >= 0x200 until the SSG-EG logic acts. Inverted output: att 0 -> 0x200, att 0x100 -> 0x100, att 0x200 -> 0; mode shapes (register value 8..F): 8 \\\\, 9 \___, A \/\/, B \-- (hold high), C ////, D /-- (hold high), E /\/\, F /___ (OPNA 2-5-2). These are derived from the formulas; the x4 factor itself is Ambiguity 7.
 
 Operator:
 24. kSinTable[0] = 0x859, [1] = 0x6C3, [128] = 0x07F, [255] = 0x000, sum 65406.
@@ -1014,7 +1142,7 @@ Operator:
 29. Algorithm carriers: 0-3 -> {S4}; 4 -> {S2, S4}; 5, 6 -> {S2, S3, S4}; 7 -> all (OPNA).
 
 LFO / DAC / output:
-30. LFO frequencies NTSC: 3.853, 5.405, 5.861, 6.211, 6.712, 9.458, 52.019, 83.230 Hz (fs/128/N); PAL: 3.818, 5.355, 5.808, 6.155, 6.651, 9.372, 51.544, 82.471 Hz.
+30. LFO frequencies NTSC: 3.853, 5.405, 5.861, 6.211, 6.712, 9.458, 52.019, 83.230 Hz (fs/128/N); PAL: 3.818, 5.355, 5.808, 6.155, 6.651, 9.372, 51.544, 82.471 Hz; LFO cycle in FM samples: 13824, 9856, 9088, 8576, 7936, 5632, 1024, 640.
 31. AM offsets: AMS 3 max 0x7E (11.85 dB), AMS 2 max 63 (5.93 dB), AMS 1 max 15 (1.41 dB), AMS 0 none.
 32. PM peak for fnum 0x400: 0, 4, 8, 12, 16, 24, 48, 96 twelve-bit units = 0, 3.38, 6.75, 10.11, 13.47, 20.17, 40.11, 79.31 cents; fnum 0x2A8, FMS 7 -> 63; fnum 0x7FF, FMS 7 -> 190.
 33. DAC: 0x00 -> -256, 0x80 -> 0, 0xFF -> +254 (9-bit); 0x7F -> -2.
@@ -1026,9 +1154,13 @@ PSG:
 37. Note -> period: A4 -> 254, C4 -> 428, A2 -> 1017, C7 -> 53 (round(clock/(32 f))).
 38. Volume: att 0 -> 32767, 1 -> 26028, 6 -> 8231, 14 -> 1304, 15 -> 0 (Maxim table); ratio per step 0.79432823.
 39. Noise: white period 57337 shifts from 0x8000 with taps 0x0009; periodic period 16; 15-bit/0x0003 -> 32767.
-40. Noise shift rates: 6991.30, 3495.65, 1747.82 Hz; periodic tone at /512 = 436.96 Hz; tone-2 source period 1 -> 6991.3 Hz, 0x3FF -> 6.834 Hz.
+40. Noise shift rates: 6991.30, 3495.65, 1747.82 Hz; periodic tone at /512 = 436.96 Hz; tone-2 source period 1 -> 6991.3 Hz, 0x3FF -> 6.834 Hz (periodic-noise output frequency; the LFSR shift rate is 16x these).
+40b. Noise rate selection: rr = 0, 1, 2 -> reload 0x10, 0x20, 0x40 (N/512, N/1024, N/2048); rr = 3 -> tone 2 (channel 3) reload value (Maxim; datasheet Table 3 with NF0 as MSB).
+40c. Tone period 0 and 1 -> constant +1 output (times the volume); period 2 -> 55930.4 Hz square (Maxim).
 41. First 48 white-noise output bits after reset: 000000000000000100000000000010010000000001000001.
-42. PSG frame: 223721.5625 / 60.0988 = 3722.56 counter ticks per NTSC frame.
+42. PSG frame: 223721.5625 / 59.92274 = 3733.50 counter ticks per NTSC frame (the frame is 3420 * 262 = 896040 master clocks = 3733.5 * 16 * 15 exactly); PAL: 221680.9333 / 49.70146 = 4460.25 ticks (3420 * 313 master clocks). (Corrected 2026-09-28: the earlier 3722.56 used the NES frame rate 60.0988 Hz.)
+43. Genesis frame rate: NTSC 53693175 / (3420 * 262) = 59.92274 Hz; PAL 53203424 / (3420 * 313) = 49.70146 Hz. FM samples per frame: NTSC 888.93 (896040 / 1008), PAL 1061.96.
+44. PAL fnum octave (block 4): 650 688 729 773 819 867 919 973 1031 1093 1158 1226.
 
 ## Ambiguities
 
@@ -1044,8 +1176,11 @@ Each entry: topic; sources consulted; what each says; recommended decision; alte
    plain free-running counter.
 3. Attack formula. Nemesis: `att += inc * (((1024 - att) / 16) + 1)` applied to an
    inverted register that is cleared at key-on (he later doubted the clear); jsgroth:
-   `att += (inc * ~att) >> 4`, no reset at key-on, hardware verified. Decision: jsgroth's
-   form. Alternative: Nemesis's form (produces different step sizes near 0).
+   `att += (inc * ~att) >> 4`, no reset at key-on, hardware verified; GManiac (t=932,
+   hardware): "att += not(att) asr 4", 73 steps at the slowest pattern, which the jsgroth
+   form reproduces exactly; GreenLine (same thread, from a patent) proposed
+   `att -= step + (att >> 4)`. Decision: jsgroth/GManiac form. Alternative: Nemesis's form
+   (produces different step sizes near 0).
 4. Attenuation at key-on. Nemesis first said the attenuation is cleared; Eke (MAME) and
    Nemesis's reply, plus jsgroth: it is not cleared, the attack continues from the current
    value, except rates 62-63 which set it to 0. Decision: not cleared.
@@ -1131,10 +1266,103 @@ Each entry: topic; sources consulted; what each says; recommended decision; alte
     source disputes them but they are optional. Decision: implement the S1,S3,S2,S4
     order with the listed delayed paths.
 23. Timers/CSM: not modelled (only notes above).
-24. YM2612 vs YM3438 output level. nukeykt: board gain 24x vs 6x; TmEE: YM3438
+24. AMS depth sign. OPNA manual and Sega's manual: 0, 1.4, 5.9, 11.8 dB; plutiedev writes
+    "+-1.4 dB", "+-5.9 dB", "+-11.8 dB". jsgroth part 6: AM is a unipolar attenuation
+    (0 .. max, never a gain). Decision: unipolar attenuation 0..max (the EG can only
+    attenuate); the printed dB value is the peak-to-peak swing. Alternative: +-depth around
+    a centre (impossible at TL 0, rejected).
+25. Exponential table formula. Nemesis: `round(2^(-(i+1)/256) * 2048)`; task brief / OPL
+    ROM convention: `round((2^(i/256) - 1) * 1024)` read inverted plus 1024. Verified
+    identical for all entries, no decision needed.
+26. Model 2 filter cutoff. Kabuto, jsgroth, Residual Media: second-order low-pass on the
+    315-5684 amplifier with external capacitors; no stock cutoff or Q found (ConsoleMods
+    page blocked). Decision: do not model (see 16). Alternative: measure a Model 2 recording
+    later and fit a biquad.
+27. YM2612 vs YM3438 output level. nukeykt: board gain 24x vs 6x; TmEE: YM3438
     "significantly louder"; Kabuto: loud-PCM bit 30x vs 5x. Decision: same digital full
     scale for both revisions (the boards compensate); the difference is the ladder
     offsets only.
+28. Driver tick rate. `docs/ENGINE_SPECS.md` says the Genesis driver runs "once per video
+    frame, 60.0988 Hz NTSC / 50.0070 Hz PAL", which are the NES rates. The Genesis frame
+    is 3420 master clocks x 262 lines (NTSC) / 313 lines (PAL): 59.92274 Hz / 49.70146 Hz
+    (Sega Retro technical specifications: 59.92274 / 49.701459 Hz; RadDad772: 3420 master
+    clocks per line). Decision: the Genesis driver ticks at 59.92274 / 49.70146 Hz
+    (`frameRate()` / `masterClocksPerFrame()` in `GenesisTables.h`); ENGINE_SPECS.md
+    "Common structure" was corrected on 2026-09-28 to list the Genesis rates separately.
+    Alternative: keep 60.0988 Hz (0.3% faster vibrato and software envelopes than a real
+    game).
+29. LFO divider and AM phase provenance (verification 2026-09-28). The divider table
+    108 77 71 67 62 44 8 5 and the AM triangle phase (maximum attenuation at counter 0)
+    come only from jsgroth part 6, which could not be re-read (bot filter, no archive
+    access). The OPNA manual gives 8 MHz frequencies whose implied dividers (109.05,
+    78.06, 72.10, 68.14, 63.09, 45.07, 9.02, 6.01) are about one larger for settings 0-5
+    and differ by 1.0 for settings 6-7. Decision unchanged (divider table). Alternative:
+    dividers 109 78 72 68 63 45 9 6 derived from the manual.
+30. Tone period 2 and up follow the datasheet formula; period 0 is covered by 20. The
+    datasheet noise Table 3 misprints row 2 as "0 0"; resolved by row order and by
+    Maxim's reload table (no decision needed).
+
+Added during implementation (2026-09-28, no new source consulted; each point follows from
+the sections above or is left unspecified by them):
+
+31. AM while the LFO is disabled. "LFO" says disabling holds the counter at 0, and "Amplitude
+    modulation" (jsgroth part 6, [unverified] phase) puts the maximum attenuation at counter
+    0. Taken together, an operator with its AM bit set and AMS > 0 is attenuated by the full
+    AMS depth (up to 11.8 dB) while the LFO is off. Decision: implement literally (the core
+    only holds the counter; `amAttenuation(0, ams)` is the maximum). Alternative: AM offset 0
+    while the LFO is disabled (would need a source saying the AM output is gated; the sources of
+    Ambiguities 38 say it is not).
+32. $A4-$A6 latch scope. The sources say the high byte is latched until the low byte is
+    written, not whether there is one latch per channel or one shared latch. Decision: one
+    latch per channel. Alternative: a single latch per bank (a $A5 write followed by a $A0
+    write would apply channel 2's block to channel 1). Identical for drivers that always
+    write each pair in order, which ours does.
+33. SSG-EG inversion flag at key-on. "SSG-EG" says key-off clears the flag; nothing is said
+    about key-on. Decision: key-on also clears it (each note starts with the shape's own
+    polarity). Alternative: keep the flag across notes (A/E triangles could start mirrored).
+34. SSG-EG hold-high overshoot. With the x4 rule the attenuation can step past 0x200 (for
+    example 508 + 8 = 516 with the mixed 1/2 increment patterns of rates 49-51); in the hold
+    modes B and D the output is then `(0x200 - att) & 0x3FF`, which wraps to near 0x3FF
+    (near silence) instead of holding at maximum level. Decision: implement the formulas
+    literally (fast rates whose increments divide 0x200 hold at maximum as expected).
+    Alternative: clamp the attenuation to 0x200 when the gate is reached.
+35. Key edge timing. The core applies each $28 write immediately between two FM samples, so a
+    key-off immediately followed by a key-on still produces an off -> on edge (new attack,
+    phase reset). On hardware the key state is sampled when each operator slot is processed;
+    an off/on pair written faster than one sample (18.8 us) could be missed. Real drivers write
+    a whole patch between the two (many register writes with busy waits), so the edge is
+    seen. Decision: edge per write. Alternative: sample the key state per operator slot.
+36. PSG noise in tone-3 mode with a tone-3 period of 0. The counter model (reload 0, toggle when
+    the counter is 0) makes it behave like period 1 (shift every 2 ticks). Maxim's "period 0
+    behaves like 1" statement is for tone output only. Decision: counter model as is.
+37. Output coupling capacitor. No source gives the Genesis output high-pass. Decision: a 5 Hz
+    one-pole DC blocker (`kDcBlockHz`), which removes the ladder offsets and the unipolar PSG
+    DC and is below the audio band. Alternative: a measured value from a Model 1 recording.
+
+Added during the fidelity review (2026-09-28):
+
+38. AM while the LFO is disabled (continues 31). Nemesis (Sources 30): AM is still applied with
+    the LFO off and the waveform is "locked", which can attenuate an AMS-3 operator strongly;
+    Eke (Sources 31): the level is held while disabled and reset when the LFO is enabled; jsgroth
+    part 6 (not re-readable): disabling holds the counter at 0; MAME (as reported by Nemesis):
+    AM/PM reset to none on disable. All hardware-oriented sources agree that AM keeps acting, so
+    a constant attenuation of up to 11.85 dB (AMS 3, AM bit set) with the LFO off is authentic.
+    They differ on the frozen position: counter 0 (jsgroth) vs the position at the moment of
+    disabling (Nemesis "locked", Eke "held"). Decision unchanged: counter held at 0 (identical
+    for the power-on state and for any patch that never enables the LFO, which is how this engine
+    is normally driven), covered by the test "AM stays applied while the LFO is disabled".
+    Alternative: freeze the counter at its current value on disable and reset it to 0 on enable
+    (changes only what a song hears after turning the LFO off mid-note).
+39. DAC software volume rounding. "Velocity" gives `round(velocity * dac_volume) / 127` but not how
+    the scaled sample is rounded. This is driver behaviour (no hardware source applies).
+    Decision: round the product to nearest (`128 + round(c * gain / 127)`, symmetric around
+    0x80; 127 is odd so there are no ties). Alternative: truncation towards zero (the earlier
+    code), which rounds the two halves in opposite directions.
+40. Unison retrigger. "Software features" says the partner follows the owner; it does not say
+    what a repeated note on the owner does. Decision: the owner keeps and re-keys its own
+    partner (same channel), so a retrigger never occupies extra channels. Alternative: release
+    the old partner and key the next free channel (the earlier behaviour: the partner walked up
+    one channel per retrigger while the old ones were still releasing).
 
 ## Sources
 
@@ -1233,6 +1461,38 @@ Name, URL, date consulted (all 2026-09-28), what was taken.
     (blocked; search snippet only). Ladder effect naming (HardWareMan), YM3438 in Model 1
     VA7; used only as confirmation of source 20's console list.
 
+25. SpritesMind, "YM2612 shape of envelope attack", http://gendev.spritesmind.net/forum/viewtopic.php?t=932
+    (via summary). GManiac's hardware measurement of the attack curve (73 steps to 8168,
+    "att += not(att) asr 4"); GreenLine's patent-based alternative.
+26. Residual Media, "Forensics: Genesis 2 with original Mega Amp",
+    https://residualmedia.net/forensics-genesis-2-with-original-mega-amp/ (via summary).
+    315-5684 second-order low-pass with external capacitors on Model 2 VA2-VA4; Mega Amp
+    cutoffs (aftermarket, not used).
+27. Howel, "SN76489 Sound Generator Chip", https://www.acornatom.nl/sites/atomreview/howel/parts/76489.htm
+    (consulted 2026-09-28). LSB-first retranscription of the TI tables: noise NF1 NF0 = 00
+    N/512, 01 N/1024, 10 N/2048, 11 tone 3; attenuation bit weights; "shift register is
+    cleared". Used to confirm the datasheet bit order.
+28. Sega Retro, "Sega Mega Drive/Technical specifications" (via search summary, consulted
+    2026-09-28). Refresh rates 59.92274 Hz NTSC / 49.701459 Hz PAL.
+29. RadDad772, "Genesis VDP internals, part three: basic timing, DMA, and VRAM access
+    slots", https://raddad772.github.io/2024/07/21/genesis-vdp-pt-3.html (consulted
+    2026-09-28). "any given scanline takes exactly 3420 master clocks" (NTSC, common modes).
+30. Nemesis thread (source 5) page 26, http://gendev.spritesmind.net/forum/viewtopic.php?start=375&t=386
+    (via summary, consulted 2026-09-28). Nemesis: with the LFO disabled, AM (and possibly PM)
+    is still applied and "the LFO waveform itself is locked"; a frozen value can attenuate an
+    AMS-3 instrument strongly (Spider-Man: Separation Anxiety intro relies on it). MAME resets
+    AM/PM on disable. Used for Ambiguities 38.
+31. Same thread page 33 (source 9), re-read via summary 2026-09-28 for the LFO. Eke: the
+    modulation level "is held when LFO is disabled, and is reseted when LFO is enabled" (his
+    emulator's behaviour, stated as matching hardware). Used for Ambiguities 38.
+
+Verification pass 2026-09-28: the OPNA manual PDF (source 4) was re-read as extracted text
+(pages 24-33: formula, Tables 2-3, 2-4, 2-6, 2-7, 2-8, rate formula, LFO/PMS/AMS); the TI
+datasheet (source 18) pages were rendered and read; plutiedev (source 1), Nemesis pages 8
+and 33 (sources 5, 9) and Maxim's SN76489 page (source 17) were re-fetched. jsgroth's
+posts (sources 20, 21) and ConsoleMods returned bot-filter / 403 pages; only search
+excerpts of them were available.
+
 ## Generator script
 
 The Python used for every computed value above (run with `python gen.py`; it prints the
@@ -1281,3 +1541,173 @@ def lfsr_period(taps, width, reset):
 def lpf(fc, fs):
     w = math.tan(math.pi * fc / fs); return w / (1 + w), (w - 1) / (1 + w)
 ```
+
+## Implementation decisions
+
+How `GenesisEngine` (`dsp/include/chipdsp/genesis/`, `dsp/src/genesis/`) uses this
+specification. New ambiguities met while implementing are entries 31-40 above.
+
+### Structure
+
+* `GenesisTables.h`: every table and pure formula of this document (`constexpr`), plus the
+  driver helpers (note -> block/fnum, note -> PSG period) and the output constants.
+* `Ym2612Core`: register-level YM2612. `write(bank, reg, value)` / `writePort(port, value)`
+  (one address latch, one data port); `clockSample()` advances one FM sample: LFO step, SSG-EG
+  logic (every sample), EG (every 3rd sample, 12-bit counter skipping 0), then the six channels
+  (operators in the order S1, S3, S2, S4 with the pipeline delays of "Evaluation order quirk",
+  per-carrier `>> 5`, 9-bit clamp, DAC substitution on channel 6). The output stage
+  (`channelOutputLeft/Right`, `outputLeft/Right`) applies `ladderOutput()`; `setLadderEffect()`
+  is the `chip_revision` switch (0 = discrete YM2612 with ladder, 1 = YM3438/ASIC, linear).
+  Rates are recomputed from the registers at every EG update (Ambiguity 6). The decay ->
+  sustain test ("Phase transitions") runs at the start of each EG cycle and again right after
+  the decay step, with the clamp to SL10, so the attenuation is never seen above SL10 in the
+  decay phase. Timers, CSM and
+  channel 3 special mode are not modelled ($27 is stored, $A8-$AE are ignored).
+* `Sn76489Core`: register-level PSG. `write(byte)` (latch/data protocol), `clock()` = one
+  counter tick at PSG clock / 16; outputs `bit * kPsgVolume[att]` per channel (0/+1 model,
+  Ambiguity 21).
+* `GenesisDriver`: the software sound driver (below). `GenesisEngine`: parameters, time base,
+  resampling, output stage.
+
+### Time base and resampling
+
+* Everything is scheduled in master clocks (53.69 / 53.20 MHz): one FM sample every
+  7 x 144 = 1008, one PSG tick every 15 x 16 = 240, one driver frame every 3420 x 262 (NTSC) or
+  3420 x 313 (PAL), one DAC write every master / `dac_rate`. Events at the same instant run in
+  the order frame, DAC write, FM sample, PSG tick. Event times are exact integers in a double,
+  rebased every ~18 s.
+* After each FM sample the summed L/R output (9-bit units) is compared with the previous one
+  and the change goes to a `BandLimitedStepSynth` prepared for the FM rate; after each PSG tick
+  the PSG sum goes to a synth prepared for the PSG tick rate. So the FM DAC hold at 53.27 kHz
+  and the PSG steps at 223.7 kHz are both band-limited exactly once. The synths are prepared
+  at `prepare()` for the clock selected then; a later NTSC/PAL switch only changes the time
+  base (the kernel cutoff differs by 0.9 %, and cannot be rebuilt on the audio thread).
+* Level scale: 6 x 256 nine-bit units = 1.0 (`kOutputScale`); a single FM channel at full scale
+  peaks at 0.167. PSG units are multiplied by `kPsgToFmGain` (Ambiguity 17): one PSG channel
+  at attenuation 0 = 40 nine-bit units. There is no clipping stage: the sum of all channels
+  can exceed 1.0 (the real amplifier would clip; not modelled).
+* Output stage after the resampler, per side: DC blocker 5 Hz (Ambiguity 37), then the Model 1
+  low-pass when `model1_lowpass` = 1: the first-order RC at 3390 Hz (VA0-VA2), applied to FM
+  and PSG alike. It runs at the host rate on the band-limited signal, where the exact answer
+  is a digital filter whose response equals the analog RC below the host Nyquist.
+  `rcLowPass()` (GenesisTables.h) keeps the RC pole exactly (impulse invariance) and places two
+  zeros so that |H|^2 matches 1 / (1 + (f / fc)^2) at DC and at 0.70 and 0.95 of
+  min(20 kHz, 0.45 fs): error < 0.14 dB up to that frequency at 22.05-44.1 kHz, < 0.08 dB at
+  48 kHz, < 0.001 dB at 96 kHz (tested). Only the magnitude is matched (the phase is that of a
+  minimum-phase digital filter and differs from the RC's in the treble). The bilinear form
+  (generator `lpf()`, `firstOrderLowPass()`, kept for the native-rate reference coefficients)
+  was used before; it squeezes the response towards the host Nyquist (-3.4 dB too low at
+  15 kHz at 48 kHz, -4.3 dB at 44.1 kHz), so the filter sounded different at each host rate.
+  Running it at the native FM rate would not fix that (the bilinear warping at 53.3 kHz is
+  still -1 dB at 10 kHz) and would need the filtered output emitted as steps at every chip
+  event. The shared `OnePoleLowPass` (`util/Filters.h`) was not used: its
+  `alpha = dt / (RC + dt)` form puts a nominal 3390 Hz cutoff at about 2.8 kHz at 48 kHz.
+  The 2.84 kHz (VA3-VA6) variant is not exposed (`model1_lowpass` is 0..1 in ENGINE_SPECS).
+* Per-channel outputs: FM channel c alone through the same output stage
+  (`ladderOutput(sample, L/R bit, revision)`), PSG channel alone at its mix level (mono, copied
+  to both sides). They use their own synths and filters, run only while the host passes
+  buffers, and sum to the main output (everything after the chips is linear; tested).
+
+### Driver tick model (software, not chip behaviour)
+
+* The driver ticks once per video frame: 59.92274 Hz NTSC, 49.70146 Hz PAL (Ambiguity 28;
+  not the NES rates listed in ENGINE_SPECS). The first tick happens at time 0 after `reset()`.
+* `noteOn` / `noteOff` are handled at once, i.e. at the start of the next rendered block, like
+  a driver that executes a command as soon as it receives it (a real game would wait for the
+  next frame, up to 16.7 ms of jitter, which a plugin should not add). The register sequence
+  is the documented one: `$28` key off, patch registers, `$A4` then `$A0`, `$28` key on for
+  the four operators (`0xF0 | channel code`). A new note on a sounding channel therefore
+  re-attacks from the current attenuation (no reset, Ambiguity 4).
+* Every frame the driver, for each channel in use: advances the vibrato, writes the patch
+  registers whose value changed (it keeps a shadow of every register written, like most
+  drivers), rewrites the frequency if block/fnum changed (glide from `setChannelPitch`,
+  vibrato), and writes `$22` (LFO) and `$2B` (DAC enable) when they change. PSG: advances the
+  software envelopes and writes attenuation/period bytes only on change; the noise control
+  register is written at note on and when `psg_noise_mode` / `psg_noise_rate` change (each
+  write resets the LFSR, which is audible and authentic).
+* `setParameter` stores the value; it reaches the chips at the next frame (or the next note
+  on, which re-reads all parameters). `chip_revision`, `model1_lowpass` and `clock` are
+  applied at the start of the next block.
+
+### MIDI note -> registers
+
+* FM: `note + transpose + fine_tune / 100` goes through "MIDI note to (block, fnum) rule"
+  (one block per octave, `block = clamp(note / 12 - 1, 0, 7)`, fnum rounded to nearest,
+  clamped to 2047). Software vibrato and unison detune are then added in fnum units and the
+  result is clamped to 0..2047 without changing the block, so the fnum grid is always audible.
+  Fractional notes (glide) use the same rounding.
+* PSG tone: `period = round(psg_clock / (32 f))` for `note + psg_transpose`, plus vibrato and
+  unison offsets in period units, clamped to 0..1023 (periods 0/1 give the documented constant
+  output, Ambiguity 20).
+* PSG noise (channel 9): rates 0-2 ignore the note. With `psg_noise_rate` = 3 the note sets
+  tone 3's period (the noise clock) and the driver mutes tone 3 and keeps it for itself while
+  the noise note sounds (channel 8 notes are ignored meanwhile and it reports active; a tone-3
+  note already sounding ends, also when the rate is switched to 3 during the noise note). In
+  periodic mode the period is computed for `note + 48`, because a periodic pulse train sounds
+  four octaves below the tone-3 frequency ("Noise channel"), so the played note is the heard
+  fundamental; white noise uses the note directly.
+* DAC (channel 5 when `dac_enable` = 1): the sample in slot `dac_sample` is streamed to `$2A`
+  at `dac_rate` Hz, or `dac_rate * 2^((note - 60) / 12)` with `dac_keyed` (clamped to
+  100 Hz .. the FM rate). The core samples `$2A` once per FM sample (zero-order hold, aliasing
+  kept).
+
+### Velocity
+
+* FM: `round((1 - velocity) * velocity_depth)` TL steps (0.75 dB each) are added to the carrier
+  operators of the current algorithm, clamped to 127; modulators are unchanged (so velocity
+  changes loudness, not timbre).
+* PSG: `round((1 - velocity) * 15)` attenuation steps (2 dB each) are added, clamped to 15.
+* DAC: the driver scales the signed sample by `round(velocity * dac_volume) / 127` before
+  writing `$2A` (software volume; the DAC itself has none); the scaled value is rounded to
+  nearest (Ambiguity 39).
+
+### noteOff and channel activity
+
+* FM: `noteOff` writes `$28` with the four operator bits cleared: the hardware release phase
+  at RR. `isChannelActive` stays true until no operator is keyed and every carrier
+  attenuation is >= 0x340 (output exactly 0, "Attenuation scale").
+* PSG: `noteOff` starts the software release (`psg_sw_release` frames; 0 = attenuation 15 at
+  once). Active until the envelope reaches 0.
+* DAC: one-shot samples (`dac_loop` = 0) play to their end regardless of note off (drum
+  practice); looped samples stop at note off and `$2A` is set to 0x80. Active while playing.
+  At the end of a one-shot sample the last byte stays in `$2A` (DC, removed by the coupling
+  stage).
+
+### Software features (driver behaviour, labelled as such)
+
+* Vibrato (`vibrato_*` for FM, `psg_vibrato_*` for PSG): triangle, `rate` frames per half
+  cycle, `depth` in fnum / period units, starting at the centre after `vibrato_delay` frames:
+  `p = (frames - delay + rate / 2) mod (2 rate)`, offset = `-depth + 2 depth p / rate` for
+  `p < rate`, else `depth - 2 depth (p - rate) / rate`, rounded. Rate 0 or depth 0 = off.
+  The hardware LFO (`lfo_*`, `ams`, `fms`) is separate and is chip behaviour.
+* PSG software envelope (`psg_sw_*`, frames): level 0..15 (15 = full). Attack 0 -> 15 over
+  `attack` frames, decay 15 -> `sustain` over `decay` frames, sustain, release from the
+  current level to 0 over `release` frames; 0 frames = instant. Written attenuation =
+  `min(15, psgN_att + (15 - level) + velocity steps)`.
+* Unison (`unison_detune`, `psg_unison_detune`): a note also keys the next free channel of the
+  same kind (FM: scanning upwards from the channel and skipping channel 6 in DAC mode; PSG:
+  tones only) with the same patch and `+detune` fnum units (FM, higher) or period units (PSG,
+  lower). The partner follows the owner's note off and pitch; a note played directly on the
+  partner detaches it; a new note on the owner re-keys the same partner (Ambiguity 40).
+
+### Samples
+
+* `loadSample` (message thread) resamples the PCM to the current `dac_rate` (box average over
+  each output byte's source span when downsampling, linear interpolation when upsampling) and
+  quantises to unsigned 8-bit `round(128 + 127 s)`. A result longer than 65536 bytes returns
+  false (the slot budget of ENGINE_SPECS). Changing `dac_rate` later changes the pitch, as it
+  would with a ROM sample.
+* Two pre-allocated banks of 16 x 64 KiB and an atomic active index (ARCHITECTURE "Sample
+  slots"): the loader copies the active bank's other slots into the inactive one, writes the
+  new slot and flips the index; the audio thread reads the index at each block start and at
+  note on/off. Two loads within one audio block would write the bank the audio thread is
+  still reading, so the audio thread also publishes the bank it is reading (`bankInUse`,
+  -1 between blocks; published then re-checked against the index, sequentially consistent
+  atomics), and the loader yields while `bankInUse` equals the bank it is about to write
+  (at most one audio block). The audio thread never waits.
+
+### Real-time behaviour
+
+`renderBlock`, `noteOn`, `noteOff`, `setChannelPitch`, `setParameter`, `reset` do not allocate
+(tested with a global `operator new` counter), take no locks and do no I/O. Blocks larger than
+the prepared size are split internally.

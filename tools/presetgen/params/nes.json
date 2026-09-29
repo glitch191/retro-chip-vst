@@ -1,7 +1,7 @@
 {
   "meta": {
     "chip": "nes",
-    "source": "ENGINE_SPECS.md (hand-transcribed; regenerate with chiptool dump-params once the engines exist)"
+    "source": "chiptool dump-params"
   },
   "params": [
     {
@@ -774,7 +774,7 @@
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 64,
       "group": "DMC",
       "id": 63,
       "isInteger": true,

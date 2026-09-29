@@ -14,19 +14,29 @@ namespace chipdsp
 //
 // Held keys form a pattern (Up, Down, UpDown, AsPlayed, Random) repeated over 1..4
 // octaves. Each step emits a note on; the matching note off is scheduled gatePercent %
-// of the step length later and may land in a later block. Step timing:
+// of the step length later and may land in a later block. A step also ends every arp
+// note still sounding (off first, at the same sample), so a note never overlaps the
+// next step even when the gate rounds past it. Step timing:
 //   * Sync while the host plays: steps start exactly when ppqPosition crosses a
 //     multiple of the division. The first step after silence fires immediately at the
-//     key press and the following ones fall on the grid.
+//     key press and the following ones fall on the grid. A transport jump (loop,
+//     locate) skips the grid lines it passes over.
 //   * Sync while stopped, and Free: a free-running counter (division at the host BPM,
 //     or freeRateHz) started by the first key press.
-// A released key leaves the pattern at the next step (its sounding note finishes its
+//   * A non-finite or non-positive bpm counts as 120 BPM; a non-finite ppqPosition
+//     counts as a stopped transport (free-running at the tempo).
+// The pattern position is the last note played: after a chord change the next step
+// plays the note that follows it in pattern order among the notes now held. A
+// released key leaves the pattern at the next step (its sounding note finishes its
 // gate). hold keeps released keys in the pattern until every key is up and a new key
 // arrives, which starts a new pattern.
 // Disabled: input events pass through unchanged; pending arp notes are turned off in
 // the first block after the switch. Note offs for notes the arpeggiator does not hold
-// (e.g. keys pressed before it was enabled) pass through so nothing gets stuck.
-// Random uses a xorshift32 generator; seed() makes the sequence reproducible.
+// (e.g. keys pressed before it was enabled) pass through so nothing gets stuck. A note
+// off that does not fit in the output buffer stays pending and is sent at the start of
+// the next block.
+// Random uses a xorshift32 generator; seed() makes the sequence reproducible, and
+// reset() or a transport start returns it to the last seed.
 // Audio thread safe: fixed storage, no allocation, no exceptions.
 class Arpeggiator
 {
@@ -91,9 +101,10 @@ public:
     void setHold(bool hold) noexcept { current.hold = hold; }
 
     // Reseeds the Random pattern generator (0 is replaced by a fixed non-zero seed).
+    // reset() and every transport start return the generator to this seed.
     void seed(uint32_t value) noexcept;
 
-    // Forgets held notes, pending note offs and timing. Emits nothing.
+    // Forgets held notes, pending note offs and timing, and reseeds Random. Emits nothing.
     void reset() noexcept;
 
     // Consumes the block's input events (sorted by sampleOffset) and fills outputEvents
@@ -116,6 +127,16 @@ private:
         uint8_t midiChannel = 1;
         bool keyDown = false;
         float velocity = 0.0f;
+        uint64_t serial = 0;    // arrival order (note-on order)
+    };
+
+    // Position of a note in the upward pattern: octave, then pitch (except AsPlayed),
+    // then note-on order.
+    struct PatternKey
+    {
+        int octave = 0;
+        int pitch = 0;          // untransposed key
+        uint64_t serial = 0;
     };
 
     struct SequenceNote
@@ -123,6 +144,7 @@ private:
         uint8_t note = 0;
         uint8_t midiChannel = 1;
         float velocity = 0.0f;
+        PatternKey key {};
     };
 
     struct PendingOff
@@ -132,18 +154,23 @@ private:
         int time = 0;           // block-relative sample offset, may exceed the block
     };
 
-    static constexpr int kMaxSequence = kMaxHeldNotes * kMaxOctaves * 2; // UpDown worst case
-    static constexpr int kMaxPendingOffs = 64;
+    // The sequence is the upward order only; Down and UpDown walk it by key.
+    static constexpr int kMaxSequence = kMaxHeldNotes * kMaxOctaves;
+    // At most one arp note sounds at a time; the rest is room for note offs deferred
+    // because the output buffer was full.
+    static constexpr int kMaxPendingOffs = 2 * kMaxEventsPerBlock;
 
     void applyParamTransitions(NoteEventBuffer& out) noexcept;
     void handleInput(const NoteEvent& event, int time, NoteEventBuffer& out) noexcept;
     void fireStep(int time, NoteEventBuffer& out) noexcept;
     int nextStepOffset(int cursor, int numSamples) const noexcept;
     void rebuildSequence() noexcept;
+    int selectStep() noexcept;
+    bool keyLess(const PatternKey& a, const PatternKey& b) const noexcept;
     void emitPendingOffsUpTo(int time, NoteEventBuffer& out) noexcept;
-    void emitPendingOffFor(uint8_t note, uint8_t midiChannel, int time, NoteEventBuffer& out) noexcept;
-    void schedulePendingOff(uint8_t note, uint8_t midiChannel, int time, int now, NoteEventBuffer& out) noexcept;
+    void deferOff(uint8_t note, uint8_t midiChannel, int time) noexcept;
     void flushPendingOffs(int time, NoteEventBuffer& out) noexcept;
+    void endBlock(int numSamples) noexcept;
     bool anyKeyDown() const noexcept;
     int findHeld(uint8_t note, uint8_t midiChannel) const noexcept;
     void removeHeld(int index) noexcept;
@@ -152,13 +179,19 @@ private:
     Params current {};
     bool wasEnabled = false;
     bool wasHold = false;
+    bool wasPlaying = false;
 
     std::array<HeldNote, kMaxHeldNotes> held {};
     int heldCount = 0;
+    uint64_t nextSerial = 0;
 
     std::array<SequenceNote, kMaxSequence> sequence {};
     int sequenceLength = 0;
-    int stepIndex = 0;
+
+    // Pattern position: the last note played and, for UpDown, the direction.
+    bool hasLast = false;
+    PatternKey lastKey {};
+    bool ascending = true;
 
     std::array<PendingOff, kMaxPendingOffs> pending {};
     int pendingCount = 0;
@@ -173,11 +206,13 @@ private:
     bool immediatePending = false; // a key press while idle: fire at the current position
     bool gridValid = false;
     int64_t lastGridStep = 0;      // index of the last grid line consumed
+    double expectedNextPpq = 0.0;  // ppq where the next block starts if the transport runs on
     bool freeValid = false;
     double freeNext = 0.0;         // block-relative time of the next free-running step
     bool hasFired = false;
     double lastFireTime = 0.0;     // block-relative time of the last step
 
+    uint32_t seedValue = 1u;
     uint32_t rngState = 1u;
 };
 

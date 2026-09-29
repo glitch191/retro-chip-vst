@@ -184,13 +184,36 @@ class QaTests(unittest.TestCase):
     def test_feature_distance(self):
         table = ParamTable.load("nes")
         presets = [self.make("A"), self.make("B", p1_duty=1), self.make("C", p1_duty=0)]
-        same = {"mel": [-20.0] * 40, "env": [0.5] * 20}
-        other = {"mel": [-20.0] * 20 + [-60.0] * 20, "env": [0.5] * 20}
+        voiced = [9100.0] * 10
+        same = {"mel": [-20.0] * 80, "env": [0.5] * 120, "pitch": voiced}
+        other = {"mel": [-20.0] * 40 + [-50.0] * 40, "env": [0.5] * 120, "pitch": voiced}
         features = {"A": same, "B": dict(same), "C": other}
         result = qa.deduplicate(presets, table, features=features, jobs=1)
         self.assertEqual([p.name for p in result.kept], ["A", "C"])
         self.assertEqual(result.removals[0].kind, "perceptual")
-        self.assertEqual(qa.mel_cosine_distance([-20.0] * 40, [-20.0] * 40), 0.0)
+
+    def test_feature_distance_components(self):
+        # A pure 3 dB level offset is level, not shape.
+        shape, level = qa.spectral_distance([-20.0] * 40, [-23.0] * 40)
+        self.assertAlmostEqual(shape, 0.0)
+        self.assertAlmostEqual(level, 3.0)
+        # A 2-point envelope difference of 60 dB over 120 points is 1 dB on average.
+        a = [1.0] * 120
+        b = [1.0] * 118 + [0.0, 0.0]
+        self.assertAlmostEqual(qa.envelope_distance(a, b), 1.0)
+        # Vibrato vs no vibrato: +-4 cents alternating -> 4 cents mean; unvoiced frames ignored.
+        cents, voicing = qa.pitch_distance([9100.0, 9104.0, 9096.0, 0.0], [9100.0, 9100.0, 9100.0, 0.0])
+        self.assertAlmostEqual(cents, 8.0 / 3.0)
+        self.assertEqual(voicing, 0.0)
+        # A variant that differs in a render-blind key (SNES voice-2 echo) is never removed by
+        # features, even with identical renders.
+        table = ParamTable.load("snes")
+        base = dict(table.defaults())
+        p1 = Preset(name="A", chip="snes", category="Pad", subcategory="Echo", params=dict(base))
+        p2 = Preset(name="B", chip="snes", category="Pad", subcategory="Echo", params=dict(base, v2_echo=1 - base["v2_echo"]))
+        f = {"mel": [-20.0] * 80, "env": [0.5] * 120, "pitch": [9100.0] * 10}
+        result = qa.deduplicate([p1, p2], table, features={"A": f, "B": dict(f)}, jobs=1)
+        self.assertEqual(len(result.kept), 2)
 
     def test_report_sections_round_trip(self):
         table = ParamTable.load("nes")

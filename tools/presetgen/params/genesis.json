@@ -1,7 +1,7 @@
 {
   "meta": {
     "chip": "genesis",
-    "source": "ENGINE_SPECS.md (hand-transcribed; regenerate with chiptool dump-params once the engines exist)"
+    "source": "chiptool dump-params"
   },
   "params": [
     {
@@ -26,8 +26,8 @@
       "isInteger": true,
       "key": "chip_revision",
       "labels": [
-        "YM2612 (discrete)",
-        "YM3438 (ASIC)"
+        "YM2612 (discrete, ladder effect)",
+        "YM3438 / ASIC"
       ],
       "max": 1,
       "min": 0,
@@ -61,7 +61,7 @@
       ],
       "max": 1,
       "min": 0,
-      "name": "LFO",
+      "name": "LFO Enable",
       "unit": ""
     },
     {
@@ -71,14 +71,14 @@
       "isInteger": true,
       "key": "lfo_freq",
       "labels": [
-        "3.98 Hz",
-        "5.56 Hz",
-        "6.02 Hz",
-        "6.37 Hz",
-        "6.88 Hz",
-        "9.63 Hz",
-        "48.1 Hz",
-        "72.2 Hz"
+        "3.853 Hz (PAL 3.818)",
+        "5.405 Hz (PAL 5.355)",
+        "5.861 Hz (PAL 5.808)",
+        "6.211 Hz (PAL 6.155)",
+        "6.712 Hz (PAL 6.651)",
+        "9.458 Hz (PAL 9.372)",
+        "52.02 Hz (PAL 51.54)",
+        "83.23 Hz (PAL 82.47)"
       ],
       "max": 7,
       "min": 0,
@@ -87,18 +87,28 @@
     },
     {
       "default": 4,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 5,
       "isInteger": true,
       "key": "algorithm",
+      "labels": [
+        "0: S1>S2>S3>S4",
+        "1: (S1+S2)>S3>S4",
+        "2: (S1+(S2>S3))>S4",
+        "3: ((S1>S2)+S3)>S4",
+        "4: S1>S2 + S3>S4",
+        "5: S1>(S2+S3+S4)",
+        "6: S1>S2 + S3 + S4",
+        "7: S1+S2+S3+S4"
+      ],
       "max": 7,
       "min": 0,
       "name": "Algorithm",
       "unit": ""
     },
     {
-      "default": 0,
-      "group": "FM",
+      "default": 5,
+      "group": "FM Patch",
       "id": 6,
       "isInteger": true,
       "key": "feedback",
@@ -109,7 +119,7 @@
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 7,
       "isInteger": true,
       "key": "ams",
@@ -121,17 +131,17 @@
       ],
       "max": 3,
       "min": 0,
-      "name": "AMS",
+      "name": "AM Sensitivity",
       "unit": ""
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 8,
       "isInteger": true,
       "key": "fms",
       "labels": [
-        "0",
+        "0 cents",
         "3.4 cents",
         "6.7 cents",
         "10 cents",
@@ -142,12 +152,12 @@
       ],
       "max": 7,
       "min": 0,
-      "name": "FMS",
+      "name": "FM Sensitivity",
       "unit": ""
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 9,
       "isInteger": true,
       "key": "transpose",
@@ -158,7 +168,7 @@
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 10,
       "isInteger": true,
       "key": "fine_tune",
@@ -169,7 +179,7 @@
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 11,
       "isInteger": true,
       "key": "vibrato_rate",
@@ -180,18 +190,18 @@
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 12,
       "isInteger": true,
       "key": "vibrato_depth",
       "max": 64,
       "min": 0,
       "name": "Vibrato Depth",
-      "unit": ""
+      "unit": "fnum"
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 13,
       "isInteger": true,
       "key": "vibrato_delay",
@@ -202,25 +212,25 @@
     },
     {
       "default": 0,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 14,
       "isInteger": true,
       "key": "unison_detune",
       "max": 15,
       "min": 0,
       "name": "Unison Detune",
-      "unit": ""
+      "unit": "fnum"
     },
     {
       "default": 1,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 15,
       "isInteger": true,
       "key": "fm1_pan",
       "labels": [
-        "L",
-        "C",
-        "R"
+        "Left",
+        "Center",
+        "Right"
       ],
       "max": 2,
       "min": 0,
@@ -229,14 +239,14 @@
     },
     {
       "default": 1,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 16,
       "isInteger": true,
       "key": "fm2_pan",
       "labels": [
-        "L",
-        "C",
-        "R"
+        "Left",
+        "Center",
+        "Right"
       ],
       "max": 2,
       "min": 0,
@@ -245,14 +255,14 @@
     },
     {
       "default": 1,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 17,
       "isInteger": true,
       "key": "fm3_pan",
       "labels": [
-        "L",
-        "C",
-        "R"
+        "Left",
+        "Center",
+        "Right"
       ],
       "max": 2,
       "min": 0,
@@ -261,14 +271,14 @@
     },
     {
       "default": 1,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 18,
       "isInteger": true,
       "key": "fm4_pan",
       "labels": [
-        "L",
-        "C",
-        "R"
+        "Left",
+        "Center",
+        "Right"
       ],
       "max": 2,
       "min": 0,
@@ -277,14 +287,14 @@
     },
     {
       "default": 1,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 19,
       "isInteger": true,
       "key": "fm5_pan",
       "labels": [
-        "L",
-        "C",
-        "R"
+        "Left",
+        "Center",
+        "Right"
       ],
       "max": 2,
       "min": 0,
@@ -293,14 +303,14 @@
     },
     {
       "default": 1,
-      "group": "FM",
+      "group": "FM Patch",
       "id": 20,
       "isInteger": true,
       "key": "fm6_pan",
       "labels": [
-        "L",
-        "C",
-        "R"
+        "Left",
+        "Center",
+        "Right"
       ],
       "max": 2,
       "min": 0,
@@ -308,91 +318,109 @@
       "unit": ""
     },
     {
+      "default": 16,
+      "group": "FM Patch",
+      "id": 21,
+      "isInteger": true,
+      "key": "velocity_depth",
+      "max": 127,
+      "min": 0,
+      "name": "Velocity Depth",
+      "unit": "TL"
+    },
+    {
       "default": 30,
       "group": "Operator 1",
-      "id": 21,
+      "id": 22,
       "isInteger": true,
       "key": "op1_tl",
       "max": 127,
       "min": 0,
-      "name": "Op 1 TL",
+      "name": "Op 1 Total Level",
       "unit": ""
     },
     {
       "default": 31,
       "group": "Operator 1",
-      "id": 22,
+      "id": 23,
       "isInteger": true,
       "key": "op1_ar",
       "max": 31,
       "min": 0,
-      "name": "Op 1 AR",
+      "name": "Op 1 Attack Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 8,
       "group": "Operator 1",
-      "id": 23,
+      "id": 24,
       "isInteger": true,
       "key": "op1_dr",
       "max": 31,
       "min": 0,
-      "name": "Op 1 DR",
+      "name": "Op 1 Decay Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 2,
       "group": "Operator 1",
-      "id": 24,
+      "id": 25,
       "isInteger": true,
       "key": "op1_sr",
       "max": 31,
       "min": 0,
-      "name": "Op 1 SR",
+      "name": "Op 1 Sustain Rate",
       "unit": ""
     },
     {
-      "default": 15,
+      "default": 7,
       "group": "Operator 1",
-      "id": 25,
+      "id": 26,
       "isInteger": true,
       "key": "op1_rr",
       "max": 15,
       "min": 0,
-      "name": "Op 1 RR",
+      "name": "Op 1 Release Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 2,
       "group": "Operator 1",
-      "id": 26,
+      "id": 27,
       "isInteger": true,
       "key": "op1_sl",
       "max": 15,
       "min": 0,
-      "name": "Op 1 SL",
+      "name": "Op 1 Sustain Level",
       "unit": ""
     },
     {
       "default": 1,
       "group": "Operator 1",
-      "id": 27,
-      "isInteger": true,
-      "key": "op1_mul",
-      "max": 15,
-      "min": 0,
-      "name": "Op 1 MUL",
-      "unit": ""
-    },
-    {
-      "default": 0,
-      "group": "Operator 1",
       "id": 28,
       "isInteger": true,
-      "key": "op1_dt",
-      "max": 7,
+      "key": "op1_mul",
+      "labels": [
+        "x0.5",
+        "x1",
+        "x2",
+        "x3",
+        "x4",
+        "x5",
+        "x6",
+        "x7",
+        "x8",
+        "x9",
+        "x10",
+        "x11",
+        "x12",
+        "x13",
+        "x14",
+        "x15"
+      ],
+      "max": 15,
       "min": 0,
-      "name": "Op 1 DT",
+      "name": "Op 1 Multiplier",
       "unit": ""
     },
     {
@@ -400,16 +428,43 @@
       "group": "Operator 1",
       "id": 29,
       "isInteger": true,
-      "key": "op1_rs",
-      "max": 3,
+      "key": "op1_dt",
+      "labels": [
+        "0",
+        "+1",
+        "+2",
+        "+3",
+        "-0",
+        "-1",
+        "-2",
+        "-3"
+      ],
+      "max": 7,
       "min": 0,
-      "name": "Op 1 RS",
+      "name": "Op 1 Detune",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 1",
       "id": 30,
+      "isInteger": true,
+      "key": "op1_rs",
+      "labels": [
+        "KC/8",
+        "KC/4",
+        "KC/2",
+        "KC/1"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "Op 1 Rate Scaling",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 1",
+      "id": 31,
       "isInteger": true,
       "key": "op1_am",
       "labels": [
@@ -418,25 +473,25 @@
       ],
       "max": 1,
       "min": 0,
-      "name": "Op 1 AM",
+      "name": "Op 1 AM Enable",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 1",
-      "id": 31,
+      "id": 32,
       "isInteger": true,
       "key": "op1_ssg",
       "labels": [
         "Off",
-        "Mode 0",
-        "Mode 1",
-        "Mode 2",
-        "Mode 3",
-        "Mode 4",
-        "Mode 5",
-        "Mode 6",
-        "Mode 7"
+        "8: saw down",
+        "9: down, hold low",
+        "A: triangle down",
+        "B: down, hold high",
+        "C: saw up",
+        "D: up, hold high",
+        "E: triangle up",
+        "F: up, hold low"
       ],
       "max": 8,
       "min": 0,
@@ -446,89 +501,96 @@
     {
       "default": 0,
       "group": "Operator 2",
-      "id": 32,
+      "id": 33,
       "isInteger": true,
       "key": "op2_tl",
       "max": 127,
       "min": 0,
-      "name": "Op 2 TL",
+      "name": "Op 2 Total Level",
       "unit": ""
     },
     {
       "default": 31,
       "group": "Operator 2",
-      "id": 33,
+      "id": 34,
       "isInteger": true,
       "key": "op2_ar",
       "max": 31,
       "min": 0,
-      "name": "Op 2 AR",
+      "name": "Op 2 Attack Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 5,
       "group": "Operator 2",
-      "id": 34,
+      "id": 35,
       "isInteger": true,
       "key": "op2_dr",
       "max": 31,
       "min": 0,
-      "name": "Op 2 DR",
+      "name": "Op 2 Decay Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 2,
       "group": "Operator 2",
-      "id": 35,
+      "id": 36,
       "isInteger": true,
       "key": "op2_sr",
       "max": 31,
       "min": 0,
-      "name": "Op 2 SR",
+      "name": "Op 2 Sustain Rate",
       "unit": ""
     },
     {
-      "default": 15,
+      "default": 7,
       "group": "Operator 2",
-      "id": 36,
+      "id": 37,
       "isInteger": true,
       "key": "op2_rr",
       "max": 15,
       "min": 0,
-      "name": "Op 2 RR",
+      "name": "Op 2 Release Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 2,
       "group": "Operator 2",
-      "id": 37,
+      "id": 38,
       "isInteger": true,
       "key": "op2_sl",
       "max": 15,
       "min": 0,
-      "name": "Op 2 SL",
+      "name": "Op 2 Sustain Level",
       "unit": ""
     },
     {
       "default": 1,
       "group": "Operator 2",
-      "id": 38,
-      "isInteger": true,
-      "key": "op2_mul",
-      "max": 15,
-      "min": 0,
-      "name": "Op 2 MUL",
-      "unit": ""
-    },
-    {
-      "default": 0,
-      "group": "Operator 2",
       "id": 39,
       "isInteger": true,
-      "key": "op2_dt",
-      "max": 7,
+      "key": "op2_mul",
+      "labels": [
+        "x0.5",
+        "x1",
+        "x2",
+        "x3",
+        "x4",
+        "x5",
+        "x6",
+        "x7",
+        "x8",
+        "x9",
+        "x10",
+        "x11",
+        "x12",
+        "x13",
+        "x14",
+        "x15"
+      ],
+      "max": 15,
       "min": 0,
-      "name": "Op 2 DT",
+      "name": "Op 2 Multiplier",
       "unit": ""
     },
     {
@@ -536,16 +598,43 @@
       "group": "Operator 2",
       "id": 40,
       "isInteger": true,
-      "key": "op2_rs",
-      "max": 3,
+      "key": "op2_dt",
+      "labels": [
+        "0",
+        "+1",
+        "+2",
+        "+3",
+        "-0",
+        "-1",
+        "-2",
+        "-3"
+      ],
+      "max": 7,
       "min": 0,
-      "name": "Op 2 RS",
+      "name": "Op 2 Detune",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 2",
       "id": 41,
+      "isInteger": true,
+      "key": "op2_rs",
+      "labels": [
+        "KC/8",
+        "KC/4",
+        "KC/2",
+        "KC/1"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "Op 2 Rate Scaling",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 2",
+      "id": 42,
       "isInteger": true,
       "key": "op2_am",
       "labels": [
@@ -554,25 +643,25 @@
       ],
       "max": 1,
       "min": 0,
-      "name": "Op 2 AM",
+      "name": "Op 2 AM Enable",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 2",
-      "id": 42,
+      "id": 43,
       "isInteger": true,
       "key": "op2_ssg",
       "labels": [
         "Off",
-        "Mode 0",
-        "Mode 1",
-        "Mode 2",
-        "Mode 3",
-        "Mode 4",
-        "Mode 5",
-        "Mode 6",
-        "Mode 7"
+        "8: saw down",
+        "9: down, hold low",
+        "A: triangle down",
+        "B: down, hold high",
+        "C: saw up",
+        "D: up, hold high",
+        "E: triangle up",
+        "F: up, hold low"
       ],
       "max": 8,
       "min": 0,
@@ -580,91 +669,98 @@
       "unit": ""
     },
     {
-      "default": 30,
+      "default": 36,
       "group": "Operator 3",
-      "id": 43,
+      "id": 44,
       "isInteger": true,
       "key": "op3_tl",
       "max": 127,
       "min": 0,
-      "name": "Op 3 TL",
+      "name": "Op 3 Total Level",
       "unit": ""
     },
     {
       "default": 31,
       "group": "Operator 3",
-      "id": 44,
+      "id": 45,
       "isInteger": true,
       "key": "op3_ar",
       "max": 31,
       "min": 0,
-      "name": "Op 3 AR",
+      "name": "Op 3 Attack Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 10,
       "group": "Operator 3",
-      "id": 45,
+      "id": 46,
       "isInteger": true,
       "key": "op3_dr",
       "max": 31,
       "min": 0,
-      "name": "Op 3 DR",
+      "name": "Op 3 Decay Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 2,
       "group": "Operator 3",
-      "id": 46,
+      "id": 47,
       "isInteger": true,
       "key": "op3_sr",
       "max": 31,
       "min": 0,
-      "name": "Op 3 SR",
+      "name": "Op 3 Sustain Rate",
       "unit": ""
     },
     {
-      "default": 15,
+      "default": 7,
       "group": "Operator 3",
-      "id": 47,
+      "id": 48,
       "isInteger": true,
       "key": "op3_rr",
       "max": 15,
       "min": 0,
-      "name": "Op 3 RR",
+      "name": "Op 3 Release Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 4,
       "group": "Operator 3",
-      "id": 48,
+      "id": 49,
       "isInteger": true,
       "key": "op3_sl",
       "max": 15,
       "min": 0,
-      "name": "Op 3 SL",
+      "name": "Op 3 Sustain Level",
       "unit": ""
     },
     {
-      "default": 1,
-      "group": "Operator 3",
-      "id": 49,
-      "isInteger": true,
-      "key": "op3_mul",
-      "max": 15,
-      "min": 0,
-      "name": "Op 3 MUL",
-      "unit": ""
-    },
-    {
-      "default": 0,
+      "default": 2,
       "group": "Operator 3",
       "id": 50,
       "isInteger": true,
-      "key": "op3_dt",
-      "max": 7,
+      "key": "op3_mul",
+      "labels": [
+        "x0.5",
+        "x1",
+        "x2",
+        "x3",
+        "x4",
+        "x5",
+        "x6",
+        "x7",
+        "x8",
+        "x9",
+        "x10",
+        "x11",
+        "x12",
+        "x13",
+        "x14",
+        "x15"
+      ],
+      "max": 15,
       "min": 0,
-      "name": "Op 3 DT",
+      "name": "Op 3 Multiplier",
       "unit": ""
     },
     {
@@ -672,16 +768,43 @@
       "group": "Operator 3",
       "id": 51,
       "isInteger": true,
-      "key": "op3_rs",
-      "max": 3,
+      "key": "op3_dt",
+      "labels": [
+        "0",
+        "+1",
+        "+2",
+        "+3",
+        "-0",
+        "-1",
+        "-2",
+        "-3"
+      ],
+      "max": 7,
       "min": 0,
-      "name": "Op 3 RS",
+      "name": "Op 3 Detune",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 3",
       "id": 52,
+      "isInteger": true,
+      "key": "op3_rs",
+      "labels": [
+        "KC/8",
+        "KC/4",
+        "KC/2",
+        "KC/1"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "Op 3 Rate Scaling",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 3",
+      "id": 53,
       "isInteger": true,
       "key": "op3_am",
       "labels": [
@@ -690,25 +813,25 @@
       ],
       "max": 1,
       "min": 0,
-      "name": "Op 3 AM",
+      "name": "Op 3 AM Enable",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 3",
-      "id": 53,
+      "id": 54,
       "isInteger": true,
       "key": "op3_ssg",
       "labels": [
         "Off",
-        "Mode 0",
-        "Mode 1",
-        "Mode 2",
-        "Mode 3",
-        "Mode 4",
-        "Mode 5",
-        "Mode 6",
-        "Mode 7"
+        "8: saw down",
+        "9: down, hold low",
+        "A: triangle down",
+        "B: down, hold high",
+        "C: saw up",
+        "D: up, hold high",
+        "E: triangle up",
+        "F: up, hold low"
       ],
       "max": 8,
       "min": 0,
@@ -716,91 +839,98 @@
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 6,
       "group": "Operator 4",
-      "id": 54,
+      "id": 55,
       "isInteger": true,
       "key": "op4_tl",
       "max": 127,
       "min": 0,
-      "name": "Op 4 TL",
+      "name": "Op 4 Total Level",
       "unit": ""
     },
     {
       "default": 31,
       "group": "Operator 4",
-      "id": 55,
+      "id": 56,
       "isInteger": true,
       "key": "op4_ar",
       "max": 31,
       "min": 0,
-      "name": "Op 4 AR",
+      "name": "Op 4 Attack Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 5,
       "group": "Operator 4",
-      "id": 56,
+      "id": 57,
       "isInteger": true,
       "key": "op4_dr",
       "max": 31,
       "min": 0,
-      "name": "Op 4 DR",
+      "name": "Op 4 Decay Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 2,
       "group": "Operator 4",
-      "id": 57,
+      "id": 58,
       "isInteger": true,
       "key": "op4_sr",
       "max": 31,
       "min": 0,
-      "name": "Op 4 SR",
+      "name": "Op 4 Sustain Rate",
       "unit": ""
     },
     {
-      "default": 15,
+      "default": 7,
       "group": "Operator 4",
-      "id": 58,
+      "id": 59,
       "isInteger": true,
       "key": "op4_rr",
       "max": 15,
       "min": 0,
-      "name": "Op 4 RR",
+      "name": "Op 4 Release Rate",
       "unit": ""
     },
     {
-      "default": 0,
+      "default": 2,
       "group": "Operator 4",
-      "id": 59,
+      "id": 60,
       "isInteger": true,
       "key": "op4_sl",
       "max": 15,
       "min": 0,
-      "name": "Op 4 SL",
+      "name": "Op 4 Sustain Level",
       "unit": ""
     },
     {
       "default": 1,
       "group": "Operator 4",
-      "id": 60,
-      "isInteger": true,
-      "key": "op4_mul",
-      "max": 15,
-      "min": 0,
-      "name": "Op 4 MUL",
-      "unit": ""
-    },
-    {
-      "default": 0,
-      "group": "Operator 4",
       "id": 61,
       "isInteger": true,
-      "key": "op4_dt",
-      "max": 7,
+      "key": "op4_mul",
+      "labels": [
+        "x0.5",
+        "x1",
+        "x2",
+        "x3",
+        "x4",
+        "x5",
+        "x6",
+        "x7",
+        "x8",
+        "x9",
+        "x10",
+        "x11",
+        "x12",
+        "x13",
+        "x14",
+        "x15"
+      ],
+      "max": 15,
       "min": 0,
-      "name": "Op 4 DT",
+      "name": "Op 4 Multiplier",
       "unit": ""
     },
     {
@@ -808,16 +938,43 @@
       "group": "Operator 4",
       "id": 62,
       "isInteger": true,
-      "key": "op4_rs",
-      "max": 3,
+      "key": "op4_dt",
+      "labels": [
+        "0",
+        "+1",
+        "+2",
+        "+3",
+        "-0",
+        "-1",
+        "-2",
+        "-3"
+      ],
+      "max": 7,
       "min": 0,
-      "name": "Op 4 RS",
+      "name": "Op 4 Detune",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 4",
       "id": 63,
+      "isInteger": true,
+      "key": "op4_rs",
+      "labels": [
+        "KC/8",
+        "KC/4",
+        "KC/2",
+        "KC/1"
+      ],
+      "max": 3,
+      "min": 0,
+      "name": "Op 4 Rate Scaling",
+      "unit": ""
+    },
+    {
+      "default": 0,
+      "group": "Operator 4",
+      "id": 64,
       "isInteger": true,
       "key": "op4_am",
       "labels": [
@@ -826,40 +983,29 @@
       ],
       "max": 1,
       "min": 0,
-      "name": "Op 4 AM",
+      "name": "Op 4 AM Enable",
       "unit": ""
     },
     {
       "default": 0,
       "group": "Operator 4",
-      "id": 64,
+      "id": 65,
       "isInteger": true,
       "key": "op4_ssg",
       "labels": [
         "Off",
-        "Mode 0",
-        "Mode 1",
-        "Mode 2",
-        "Mode 3",
-        "Mode 4",
-        "Mode 5",
-        "Mode 6",
-        "Mode 7"
+        "8: saw down",
+        "9: down, hold low",
+        "A: triangle down",
+        "B: down, hold high",
+        "C: saw up",
+        "D: up, hold high",
+        "E: triangle up",
+        "F: up, hold low"
       ],
       "max": 8,
       "min": 0,
       "name": "Op 4 SSG-EG",
-      "unit": ""
-    },
-    {
-      "default": 24,
-      "group": "FM",
-      "id": 65,
-      "isInteger": true,
-      "key": "velocity_depth",
-      "max": 127,
-      "min": 0,
-      "name": "Velocity Depth",
       "unit": ""
     },
     {
@@ -874,7 +1020,7 @@
       ],
       "max": 1,
       "min": 0,
-      "name": "DAC",
+      "name": "DAC Enable",
       "unit": ""
     },
     {
@@ -889,7 +1035,7 @@
       "unit": ""
     },
     {
-      "default": 8000,
+      "default": 16000,
       "group": "DAC",
       "id": 68,
       "isInteger": true,
@@ -949,7 +1095,7 @@
       "max": 15,
       "min": 0,
       "name": "PSG 1 Attenuation",
-      "unit": ""
+      "unit": "x2 dB"
     },
     {
       "default": 0,
@@ -960,7 +1106,7 @@
       "max": 15,
       "min": 0,
       "name": "PSG 2 Attenuation",
-      "unit": ""
+      "unit": "x2 dB"
     },
     {
       "default": 0,
@@ -971,7 +1117,7 @@
       "max": 15,
       "min": 0,
       "name": "PSG 3 Attenuation",
-      "unit": ""
+      "unit": "x2 dB"
     },
     {
       "default": 0,
@@ -982,7 +1128,7 @@
       "max": 15,
       "min": 0,
       "name": "PSG Noise Attenuation",
-      "unit": ""
+      "unit": "x2 dB"
     },
     {
       "default": 1,
@@ -996,7 +1142,7 @@
       ],
       "max": 1,
       "min": 0,
-      "name": "PSG Noise Mode",
+      "name": "Noise Mode",
       "unit": ""
     },
     {
@@ -1006,14 +1152,14 @@
       "isInteger": true,
       "key": "psg_noise_rate",
       "labels": [
-        "/512",
-        "/1024",
-        "/2048",
+        "Clock/512",
+        "Clock/1024",
+        "Clock/2048",
         "Tone 3"
       ],
       "max": 3,
       "min": 0,
-      "name": "PSG Noise Rate",
+      "name": "Noise Rate",
       "unit": ""
     },
     {
@@ -1080,7 +1226,7 @@
       "max": 15,
       "min": 0,
       "name": "PSG Vibrato Depth",
-      "unit": ""
+      "unit": "period"
     },
     {
       "default": 0,
@@ -1091,7 +1237,7 @@
       "max": 7,
       "min": 0,
       "name": "PSG Unison Detune",
-      "unit": ""
+      "unit": "period"
     },
     {
       "default": 0,

@@ -353,6 +353,10 @@ HTML listing, from Anomie's `gauss_coeffs[512]` (apudsp.txt) and from the SnesLa
 each other) and diffed entry by entry against this listing: 0 differences in all three;
 sum 262146 and maximum 0x519 recomputed from each source independently. The table is
 monotonically non-decreasing.
+Verified 2026-09-28 (second pass) against fullsnes "4-Point Gaussian Interpolation",
+Anomie apudsp.txt `gauss_coeffs[512]` and SnesLab "S-DSP/Gaussian Filter" (512 rows, hex
+and decimal columns consistent): re-parsed by a new script, 0 differences, sum 262146,
+quad-sum statistics (168 / 46 / 42) and the 0x801 list reproduced.
 
 Table checksum `[computed from the transcription above]`: `kGaussTable[0] = 0x000`,
 `kGaussTable[255] = 0x172`, `kGaussTable[256] = 0x176`, `kGaussTable[511] = 0x519`,
@@ -438,12 +442,19 @@ identical); `kRateOffset` against Anomie's `counter_offsets[32]` and SNESdev "DS
 Period Offset". One discrepancy between those two sources: for rate 30 SNESdev lists
 536 where Anomie lists 0. Rate 30 has period 2 and 536 mod 2 = 0, so both give the same
 event times; the table above keeps Anomie's 0. Rate 31 (period 1) is 0 in both.
+Verified 2026-09-28 (second pass) against Anomie `counter_rates`/`counter_offsets`
+(re-read from apudsp.txt), fullsnes "ADSR/Gain (and Noise) Rates" and SNESdev "DSP
+envelopes" period and offset tables; every rate simulated over 61440 samples.
 
 Every period is 1, 3 or 5 times a power of two (fullsnes). Global counter (Anomie,
 SNESdev): a single counter shared by all voices and the noise generator, initialised to
 0 on reset, decremented by one every sample, wrapping from 0 to 0x77FF (= 30719, so the
-counter cycles through 30720 values; Anomie and SNESdev write "0x77FF (30,720)" meaning
-the number of states, not the hex value). An event for rate R fires on a sample when
+counter cycles through 30720 values; Anomie writes "counts from 0x77FF to zero", SNESdev
+writes "$77FF (30,720)" meaning the number of states, not the hex value). SNESdev says the
+counter "decrements on each S-SMP clock" and labels its period table in "S-SMP clocks";
+its own timing table (attack 0 = 4100 ms = 64 x 2048 events) only works if that clock is
+the 32 kHz sample clock, which is what Anomie and fullsnes state (see Ambiguity 17). An
+event for rate R fires on a sample when
 
 ```
 R != 0 and ((counter + kRateOffset[R]) % kRatePeriod[R]) == 0
@@ -489,9 +500,17 @@ State machine:
 
 * Key-on: `E = 0`, state = Attack (both ADSR and GAIN modes track the state).
 * Attack -> Decay: Anomie: when the new value exceeds 0x7FF before clamping (a negative
-  new value also triggers it, "CRITICAL NOTE"); with +32 steps E reaches 0x7FF after 64
-  steps (0x800 clamped), with +1024 after 2 steps. fullsnes: "at Level >= 7E0h" (see
-  Ambiguities).
+  new value also triggers it, "CRITICAL NOTE"). fullsnes: "at Level >= 7E0h". Anomie's
+  text computes the new value every sample ("These registers are actually used to update
+  the envelope every sample. The calculated value is used as follows") and only step 1
+  (store E) is gated by the counter; steps 2-4 (Decay -> Sustain, Attack -> Decay, saving
+  the pre-clamp value for bent increase) are not. Read literally, the +32 attack stores
+  0x7E0 after 63 counter events, and on the next sample the computed value 0x800 exceeds
+  0x7FF, so the voice enters Decay with E = 0x7E0 without a 64th step: both sources then
+  agree. With +1024 (A = 15, rate 31, an event every sample) E = 0x400 then 0x7FF (0x800
+  clamped), Decay after 2 steps in both readings. Recommended: this reading (E = 0x7E0 at
+  the start of Decay for A = 0..14). Alternative: gate the Attack -> Decay test on the
+  counter event too (64 steps, E = 0x7FF). See Ambiguity 5.
 * Decay -> Sustain: Anomie, SNESdev: when the upper 3 bits of E equal SL
   (`(E >> 8) == SL`). fullsnes: `Level <= (SL + 1) * 0x100`. In GAIN mode the comparison
   uses VxGAIN bits 7-5 instead of VxADSR2 bits 7-5 (both sources) and has no audible
@@ -512,40 +531,66 @@ State machine:
 * Register race (SNESdev): the DSP reads ADSR1 in step S2 and ADSR2/GAIN in S3c of the
   same sample; a driver changing the mode bit should write ADSR2/GAIN before ADSR1.
 
-Exact per-sample update order for one voice (Anomie step S3c, executed for every voice
-every sample, values latched earlier in the sample):
+Exact per-sample update order for one voice (Anomie step S3c then S4, executed for every
+voice every sample, values latched earlier in the sample; revised 2026-09-28, Ambiguity 24):
 
 ```
-1. if FLG.7 or KOFF.x (KOFF only on poll samples): state = Release; if FLG.7: E = 0
-2. if internal KON.x (poll samples): E = 0, state = Attack, restart BRR, clear ENDX.x, start the 5-sample delay
-3. if BRR header with E=1, L=0 was loaded: state = Release, E = 0
-4. compute new value per the table above (if a counter event fired for the rate, or every sample for Release/direct gain)
-5. clamp to 0..0x7FF and store E; update state transitions (Attack->Decay, Decay->Sustain)
-6. ENVX = E >> 4 (written to $x8), OUTX = high byte of the envelope-scaled sample ($x9)
+S3c:
+1. s15 = noise or Gaussian sample; env = (s15 * E) >> 11 with E stored on the PREVIOUS
+   sample ("Apply the volume envelope. This is the value used for modulating the next
+   voice's pitch"); OUTX = env >> 7 ($x9), out16 = env << 1 (PMON source)
+2. if FLG.7 or KOFF.x (KOFF only on poll samples): state = Release; if FLG.7: E = 0
+3. if the current block's header (loaded every sample, S3b) has E=1, L=0: state = Release, E = 0
+   (not on key-on sample #1, which does no header check)
+4. if internal KON.x (poll samples): E = 0, state = Attack, restart BRR, clear ENDX.x, start
+   the 5-sample delay (KON comes last, so it overrides 2 and 3)
+5. compute the new value per the table above (every sample, Anomie "used to update the envelope every sample")
+6. if a counter event fired for the rate (always for Release, direct gain has no rate): store clamp(new, 0, 0x7FF) in E
+7. every sample: Decay -> Sustain if (E >> 8) == SL; Attack -> Decay if new > 0x7FF or new < 0;
+   save new & 0x7FF for the next bent-increase comparison
+   (5..7 are skipped on key-on samples #0..#4)
+S4:
+8. pitch step, BRR decode, block end (a new end block's header sets ENDX.x, Ambiguity 8,
+   except on the key-on sample: "this setting of ENDX.x will not override the clearing due
+   to KON in step S3c, if both occur during the same sample", Anomie S4)
+9. ENVX = E >> 4 ($x8, the value just stored)
 ```
 
-ADSR timing from the exact formulas `[computed]`: attack A from 0 to 0x7FF = 64 steps
-(2 for A = 15) x period: A = 0: 131072 samples = 4.096 s; A = 7: 5120 samples = 160 ms;
-A = 14: 192 samples = 6 ms; A = 15: 2 samples. Exponential decrease from 0x7FF to 0 takes
+Consequences `[computed]`: A = 15 outputs E = 0x400 on sample #6 and 0x7FF from #7; KOFF,
+FLG.7 and a code-1 header all change the output one sample after the sample on which they
+are seen; key-on sample #0 still outputs the old voice level.
+
+ADSR timing from the exact formulas `[computed]`: with the recommended reading the attack
+takes 63 steps x period (+1 sample) to reach Decay at E = 0x7E0 (2 steps for A = 15):
+A = 0: 129024 samples = 4.032 s; A = 7: 5040 samples = 157.5 ms; A = 14: 189 samples =
+5.9 ms; A = 15: 2 samples. (Simulated from a counter reset: Decay is entered after sample
+126978 for A = 0, 5018 for A = 7, 190 for A = 14, 2 for A = 15; the first period is shorter
+because of the counter phase.) The nominal time to full scale 0x800 is 64 steps: 131072
+samples = 4.096 s, 5120 = 160 ms, 192 = 6 ms; these are the manual's values and the
+result of the alternative reading. Exponential decrease from 0x7FF to 0 takes
 695 steps (values 0x7FF, 0x7F7, 0x7EF, ... in -8 steps while E > 0x700, then -7 ... down
 to -1 steps below 0x100). Decay from 0x7FF until `(E >> 8) == SL` takes 0 steps for SL = 7
 (0x7FF >> 8 = 7 already matches; the Decay -> Sustain check runs every sample, so the
 voice leaves Decay before its first counter event and the first exponential step is
 taken in Sustain at rate SR), 32 for SL = 6, 69 for SL = 5, 112 for SL = 4, 163 for
 SL = 3, 227 for SL = 2, 312 for SL = 1, 440 for SL = 0 (E = 255 after the last step; with
-fullsnes's `E <= (SL+1)*0x100` test: 0, 32, 69, 111, 163, 226, 312, 439).
+fullsnes's `E <= (SL+1)*0x100` test: 0, 32, 69, 111, 163, 226, 312, 439). Starting from
+0x7E0 (the recommended end of an A = 0..14 attack) the `(E >> 8) == SL` counts are
+SL 7: 0, 6: 29, 5: 65, 4: 108, 3: 159, 2: 223, 1: 308, 0: 436 (E after the last step
+2016, 1785, 1533, 1275, 1020, 765, 510, 255), and 0x7E0 reaches 0 after 691 steps.
 
 The official manual's approximate table (SNESdev "DSP envelopes", Super Famicom Wiki
 "Table 2.2"/"Table 2.3") lists attack 0 = 4.1 s, attack 7 = 160 ms, attack 14 = 6 ms,
-gain linear $9F = 2 ms and bent $FF = 3.5 ms: these agree with the exact step counts
-(131072, 5120, 192, 64 and 112 samples). Its exponential entries do not describe the
+gain linear $9F = 2 ms and bent $FF = 3.5 ms: these agree with the nominal step counts
+(131072, 5120, 192, 64 and 112 samples; the 63-step attack gives 4.03 s / 157.5 ms /
+5.9 ms, also within the manual's rounding, so the table cannot settle Ambiguity 5). Its exponential entries do not describe the
 time to reach 0: decay 0 = 1.2 s (exact: 440 x 64 = 28160 samples = 0.88 s to leave
 Decay at SL = 0, 695 x 64 = 1.39 s to reach 0), sustain rate $1F = 18 ms (exact: 695
 samples = 21.7 ms to 0), $01 = 38 s (exact: 44.5 s to 0). Every exponential entry of the
 manual (decay 0..7, sustain $01..$1F, GAIN $A1..$BF) corresponds to about 576..600
 exponential steps `[computed: 1.2 s / 64 = 600, 740 ms / 40 = 592, 37 ms / 2 = 592,
 18 ms / 1 = 576, 38 s / 2048 = 594]`, i.e. the level falling from 0x7FF to roughly
-0x60..0x77 (about -26 dB), which is presumably the threshold the manual's authors
+0x5F..0x77 (E = 95 after 600 steps, 119 after 576; about -25..-27 dB), which is presumably the threshold the manual's authors
 measured. Do not use the manual's exponential values as test expectations; use the step
 formulas.
 
@@ -717,6 +762,10 @@ Examples" for the official manual's example; verified 2026-09-28):
 | Band-pass 1.5-8.5 kHz | `34 33 00 D9 E5 01 FC EB` | N-SPC 4, +0.53 dB, ripples at 11-13 and 15-16 kHz | sum 13, abs 195, FIR0..6 positive 104 / negative -70 |
 | Low-pass (official manual) | `FF 08 17 24 24 17 08 FF` | fullsnes "Echo with Low-pass (bugged)" with EFB 40; SnesLab "many games", +0.27 dB | sum 132, abs 136, FIR0..6 positive 134 |
 
+Verified 2026-09-28 (second pass) against SnesLab "FIR Filter" ("Getting started" list
+and the example tables) and fullsnes "Filter Examples"; tap sums recomputed, and the
+max gains recomputed from the DTFT (+0.91, +0.65, +0.53, +0.27 dB) match SnesLab.
+
 Note that the N-SPC low-pass and the official low-pass break fullsnes's "positive sum of
 FIR0..FIR6 <= +7Fh" rule (150 and 134) and SnesLab's "absolute sum <= 128" rule, which
 is why fullsnes marks the official example "bugged": full-scale echo content can wrap in
@@ -738,6 +787,14 @@ out16  = env << 1                               // 16-bit value used by PMON of 
 vL     = (out16 * VxVOLL) >> 7  =  (env * VxVOLL) >> 6      // 16-bit, no clamp needed
 vR     = (out16 * VxVOLR) >> 7
 ```
+
+Low bit of the voice volume product: fullsnes writes `sample*VxVOLx SAR 6` on the 15-bit
+sample (the formula above, result may be odd). Anomie's formula `(S * VL) >> 7` does not
+say whether S is the 15- or the 16-bit sample, and two of his sentences ("The bit is
+'recovered' after the VxVOLL/VxVOLR volume adjustment"; noise: "volume adjustment then the
+left-shift to 'restore' the low bit") suggest `((env * VxVOL) >> 7) << 1` (always even).
+The two differ by 1 LSB for about half of all inputs (env 16383: VOL 64 -> 16383 vs 16382,
+VOL 1 -> 255 vs 254; VOL 127 and -128 give 32510 and -32766 in both). See Ambiguity 18.
 
 VxVOL = -128 cannot overflow because the envelope has already reduced the sample to at
 most `0x3FFF * 0x7FF / 0x800` (fullsnes): -16376 * -128 >> 6 = 32752.
@@ -783,12 +840,12 @@ for each output sample:
     if sample index is even: poll KON/KOFF (steps 1-3 of "Key-on, key-off")
     for v in 0..7 (in order, because PMON reads voice v-1's fresh output):
         latch registers (VOL, PITCH, SRCN, ADSR, GAIN) for this sample
-        apply FLG.7 / KOFF / KON / BRR-end transitions to the envelope state
-        update the envelope if the counter event for its rate fired (or Release/direct)
         s15 = noise if NON.v else gaussian(ring, index)
-        env = (s15 * E) >> 11; OUTX, ENVX; out16 = env << 1
+        env = (s15 * E) >> 11 with the previous sample's E; OUTX; out16 = env << 1
+        apply FLG.7 / BRR-end (current header) / KOFF / KON transitions, in that order
+        update the envelope if the counter event for its rate fired (or Release/direct)
         advance index by the (modulated) pitch; decode new BRR groups; handle block ends
-        vL, vR, main/echo accumulation
+        ENVX; vL, vR, main/echo accumulation
     echo: read buffer entry, FIR, EVOL into main, EFB into echo input, write, advance index
     global counter -= 1 (wrap 0 -> 0x77FF); noise update if its rate fired
     output (mainL, mainR) through mute and inversion
@@ -882,15 +939,15 @@ Each line: value, then the formula or source it comes from.
 17. Rate offsets: rates 3n+1 -> 0, 3n+2 -> 1040, 3n (n >= 1) -> 536, rate 30 -> 0, rate 31 -> 0 (Anomie, SNESdev).
 18. Counter: starts at 0, wraps 0 -> 0x77FF (= 30719; 30720 states per cycle); every rate fires with constant spacing = period across wraps (Anomie; verified by simulation over 61440 samples, re-run 2026-09-28).
 19. First event after reset for rate 2 at sample 1040, rate 3 at 536, rate 5 at 272, rate 9 at 216, rate 12 at 56, rate 1/4/7/... at 0 (computed from `(counter + offset) % period == 0` with counter = 0 at sample 0 and decrementing).
-20. Attack +32: 64 steps from 0 to exceed 0x7FF (2048 -> clamp 0x7FF); attack +1024: 2 steps (Anomie).
-21. Attack A = 0 lasts 64 x 2048 = 131072 samples = 4.096 s; A = 7: 5120 samples = 0.160 s; A = 14: 192 samples = 6 ms; manual lists 4.1 s / 160 ms / 6 ms (SNESdev "DSP envelopes").
+20. Attack +32 (recommended reading, Ambiguity 5): 63 stored steps to E = 0x7E0, Decay entered on the next sample (computed value 0x800 > 0x7FF) with E = 0x7E0; attack +1024 (A = 15): E = 0x400, then 0x7FF, Decay after 2 steps. Alternative reading: 64 steps, E = 0x7FF.
+21. Attack duration (recommended reading): 63 x period: A = 0: 129024 samples = 4.032 s; A = 7: 5040 = 157.5 ms; A = 14: 189 = 5.9 ms; from a counter reset at sample 0 the Decay state is entered after sample 126978 (A = 0), 5018 (A = 7), 190 (A = 14), 2 (A = 15). Nominal 64 x period (alternative reading, and the manual's 4.1 s / 160 ms / 6 ms): 131072 / 5120 / 192 samples.
 22. Exponential decrease from 0x7FF: 0x7FF, 0x7F7, 0x7EF, 0x7E7, 0x7DF, 0x7D7, 0x7CF, 0x7C7, 0x7BF, 0x7B7, 0x7AF, 0x7A7, 0x79F (step `-((E-1)>>8)-1`); 695 steps to reach 0.
-23. Decay steps from 0x7FF until `(E >> 8) == SL`: SL 7: 0, 6: 32, 5: 69, 4: 112, 3: 163, 2: 227, 1: 312, 0: 440; E after the last step: 2047, 1791, 1532, 1275, 1020, 765, 510, 255 (computed; fullsnes's `E <= (SL+1)*0x100` rule gives 0, 32, 69, 111, 163, 226, 312, 439).
+23. Decay steps from 0x7FF until `(E >> 8) == SL`: SL 7: 0, 6: 32, 5: 69, 4: 112, 3: 163, 2: 227, 1: 312, 0: 440; E after the last step: 2047, 1791, 1532, 1275, 1020, 765, 510, 255 (computed; fullsnes's `E <= (SL+1)*0x100` rule gives 0, 32, 69, 111, 163, 226, 312, 439). From 0x7E0 (end of an A = 0..14 attack, recommended reading): SL 7: 0, 6: 29, 5: 65, 4: 108, 3: 159, 2: 223, 1: 308, 0: 436; E after the last step 2016, 1785, 1533, 1275, 1020, 765, 510, 255.
 24. Bent increase 0 -> 0x7FF: 112 steps (48 steps of +32 to 0x600, then 64 steps of +8 to 0x7FF, last clamped); manual: rate $FF = 3.5 ms vs computed 112 samples = 3.5 ms.
 25. Release: 256 samples from 0x7FF to 0 at -8 per sample = 8 ms (fullsnes/Anomie/SNESdev).
 26. Direct gain 0x7F -> E = 0x7F0; 0x40 -> 0x400 (`E = G << 4`).
 27. ENVX = E >> 4: E = 0x7FF -> 127, 0x400 -> 64. OUTX: s15 = 16383, E = 0x7FF -> env 16375 -> OUTX 127 (0x7F); s15 = -16384, E = 0x7FF -> env -16376 -> OUTX -128 (0x80); s15 = 1000, E = 0x100 -> env 125 -> OUTX 0.
-28. Voice volume: env 16383, VOL 127 -> 32510; VOL -128 -> -32766; VOL 64 -> 16383; VOL 1 -> 255 (`(env * VOL) >> 6`).
+28. Voice volume: env 16383, VOL 127 -> 32510; VOL -128 -> -32766; VOL 64 -> 16383; VOL 1 -> 255 (`(env * VOL) >> 6`, fullsnes). With the alternative `((env * VOL) >> 7) << 1` (Ambiguity 18): 32510, -32766, 16382, 254.
 29. Master volume: 32767 x 127 >> 7 = 32511; -32768 x -128 >> 7 = 32768, which does not fit in 16 bits: 32767 with the recommended clamp16, -32768 with Anomie's `(int16_t)` truncation (fullsnes "-128 causes multiply overflows"; Ambiguity 16). 32767 x -128 >> 7 = -32767 fits either way.
 30. Pitch register from semitone offset (root at 32 kHz): -24 -> 0x0400, -12 -> 0x0800, -7 -> 0x0AAE (2734), -1 -> 0x0F1A (3866), 0 -> 0x1000, +1 -> 0x10F4 (4340), +7 -> 0x17F9 (6137), +12 -> 0x2000, +19 -> 0x2FF2 (12274), +24 -> 16384 clamped to 0x3FFF (`round(4096 * 2^(n/12))`).
 31. Playback rate: P = 0x1000 -> 32000 Hz; 0x0800 -> 16000 Hz; 0x2000 -> 64000 Hz; 0x3FFF -> 127992.19 Hz (`32000 * P / 4096`).
@@ -906,16 +963,28 @@ Each line: value, then the formula or source it comes from.
 41. Key-on: 5 output samples of 0 before the first data sample (Anomie, fullsnes "5 empty samples").
 42. Reset state: FLG behaves as 0xE0, ENDX = 0, global counter = 0, noise = 0x4000 (Anomie, fullsnes, SNESdev).
 43. Echo feedback at maximum (identity FIR `7F 00 .. 00`, EFB = 0x7F, EON voices silent, one buffer entry holding 15-bit 0x3FFF): successive (FIR output, echo input written back) pairs per buffer pass = (32510, 32256), (32004, 31752), (31502, 31254), (31008, 30764), (30522, 30282), (30044, 29808); each pass multiplies by (127/128)^2 = 0.9844 (-0.14 dB) with truncation, so the loop decays and never grows (computed; fullsnes "7Fh would repeat the echo almost infinitely"). With EFB = 0x40: (32510, 16254), (16126, 8062), (7998, 3998), (3966, 1982) (-6 dB per pass).
-44. Attack -> Decay: 64 steps of +32 with Anomie's "> 0x7FF before clamping" rule (E = 0x7FF on entry); 63 steps with fullsnes's ">= 0x7E0" rule (E = 0x7E0 on entry) (Ambiguity 5, computed).
+44. Attack -> Decay: 63 steps of +32, E = 0x7E0 on entry, with fullsnes's ">= 0x7E0" rule and with Anomie's "new value > 0x7FF" test evaluated every sample (recommended); 64 steps, E = 0x7FF on entry, if the test is gated by the counter event (alternative) (Ambiguity 5, computed).
 45. Exponential decrease thresholds: from 0x7FF, E = 0x100 after 439 steps, 255 after 440, 119 after 576, 103 after 592, 95 after 600, 15 after 680, 0 after 695 (computed; explains the manual's exponential timings, see "Envelope").
 46. Counter first events after reset (counter = 0 at sample 0): rate 2 -> sample 1040, 3 -> 536, 5 -> 272 (1040 mod 768), 6 -> 536 mod 640 = 536, 9 -> 216 (536 mod 320), 12 -> 56 (536 mod 160), 30 -> 0 (536 or 0 offset, both even) (computed, Anomie/SNESdev tables).
 47. fullsnes 16-bit Gaussian form results for the reference inputs of item 7: d = 0x80 -> 2501, d = 0 -> 2002, d = 0xFF -> 2999; four samples of +0x3FFF: d = 0 -> -16378, d = 0x80 -> 16382 (computed; differ from the Anomie form by at most 2 LSB, Ambiguity 1).
+48. Gaussian table properties: monotonically non-decreasing (`g[i] <= g[i+1]` for i = 0..510); quad sum symmetric, `quad(d) == quad(255 - d)` for every d (the coefficient set for 255 - d is the set for d in reverse order); coefficient sets: d = 0 -> (g[255], g[511], g[256], g[0]) = (370, 1305, 374, 0); d = 0x40 -> (168, 1210, 659, 11); d = 0x80 -> (56, 965, 969, 58); d = 0xFF -> (0, 374, 1305, 370) (computed from the table, identical in all three sources).
+49. All 32 rate periods = `kRatePeriod` (0 = never, 2048, 1536, 1280, 1024, 768, 640, 512, 384, 320, 256, 192, 160, 128, 96, 80, 64, 48, 40, 32, 24, 20, 16, 12, 10, 8, 6, 5, 4, 3, 2, 1), each firing with constant spacing over 61440 simulated samples (Anomie, fullsnes, SNESdev; computed).
+50. 16-bit output clamp: two voices at +32510 mix to 32767 (clamp after the addition, not 65020); with MVOL 127 -> 32511; adding an echo term `(32766 * 127) >> 7 = 32510` clamps to 32767; eight voices at -32766 mix to -32768 (Anomie "clamping to 16 bits after each addition", computed).
+51. N-SPC FIR preset gains (max of |H| over 0..16 kHz with taps/128, computed): high-pass `58 BF DB F0 FE 07 0C 0C` +0.91 dB (DC -42.1 dB); low-pass `0C 21 2B 2B 13 FE F3 F9` +0.65 dB (DC 0.0 dB); band-pass `34 33 00 D9 E5 01 FC EB` +0.53 dB; official low-pass `FF 08 17 24 24 17 08 FF` +0.27 dB at DC; identity -0.07 dB (127/128); matching the gains printed by SnesLab.
 
 Verified 2026-09-28: every value in items 1..42 was recomputed by an independent Python
 script from the source formulas (items 1..2 and 41..42 checked against the source
 texts); items 18, 23 and 29 were corrected as noted in "Ambiguities"; items 43..47 were
 added for the ENGINE_SPECS checklist (feedback stability at max, attack/decay
 thresholds, exponential timing, counter phase, alternative Gaussian form).
+
+Verified 2026-09-28 (second adversarial pass): every item 1..51 recomputed by a fresh
+Python script (BRR decoder, both Gaussian forms, counter simulation over 61440 samples,
+envelope simulations, PMON in both forms over a 14-bit x 15-bit grid, LFSR, FIR, echo
+loop, DTFT of the FIR presets); the Gaussian table re-extracted from fullsnes, Anomie's
+apudsp.txt and the SnesLab table (hex and decimal columns) with 0 differences. Items 20,
+21, 23, 28 and 44 were revised for Ambiguities 5 and 18; items 48..51 added (table
+symmetry/monotonicity, full period table, 16-bit output clamp, preset gains).
 
 ## Ambiguities
 
@@ -943,11 +1012,21 @@ thresholds, exponential timing, counter phase, alternative Gaussian form).
    fullsnes only says PMON does not affect the noise frequency. Only the moment the
    dummy BRR sample ends is affected. Recommended: follow the code (no modulation on
    noise voices). Alternative: apply modulation to the decode speed.
-5. Attack -> Decay threshold. fullsnes: switch at `Level >= 0x7E0` (and clip to 0x7FF if
-   >= 0x800). Anomie: switch when the new value exceeds 0x7FF before clamping (negative
-   values also trigger). With +32 steps fullsnes enters Decay at 0x7E0, Anomie at
-   0x7FF (one step later, 31 levels higher); with +1024 both agree. SNESdev follows
-   Anomie ("adds 32 ... clamped to 2047"). Recommended: Anomie. Alternative: fullsnes.
+5. Attack -> Decay threshold (revised 2026-09-28, second pass). fullsnes: switch at
+   `Level >= 0x7E0` (and clip to 0x7FF if >= 0x800). Anomie: switch when "the new value
+   is greater than 0x7FF" (negative values also trigger), in a list introduced by "These
+   registers are actually used to update the envelope every sample. The calculated value
+   is used as follows", where only step 1 (store the clamped value) depends on the
+   counter. Read literally, the new value 0x7E0 + 32 = 0x800 is computed on the sample
+   after the 63rd step and triggers Decay with E = 0x7E0, exactly fullsnes's result. The
+   first pass read Anomie as gating the test on the counter event (Decay at 0x7FF after
+   64 steps, 31 levels higher) and the same pass already evaluated the Decay -> Sustain
+   test every sample, which is inconsistent. SNESdev only says "adds 32" and "clamped to
+   0-2047", which does not decide. The manual's attack times (4.1 s, 160 ms, 6 ms) fit
+   64 steps slightly better (4.096 s vs 4.032 s) but are rounded nominal values (attack 1:
+   2600 ms vs 2.56 s nominal). Recommended: evaluate the Attack -> Decay test every sample
+   on the computed value (Decay at 0x7E0 for A = 0..14, at 0x7FF after 2 steps for
+   A = 15). Alternative: gate it on the counter event (Decay at 0x7FF after 64 steps).
 6. Decay -> Sustain threshold. Anomie/SNESdev: `(E >> 8) == SL`. fullsnes:
    `E <= (SL + 1) * 0x100`. They differ only when E lands exactly on `(SL+1)*0x100`
    (e.g. SL = 4: fullsnes switches at step 111 with E = 1280, Anomie at step 112 with
@@ -955,11 +1034,23 @@ thresholds, exponential timing, counter phase, alternative Gaussian form).
 7. Release at BRR end code 1. fullsnes lists "Step = -800h when BRR-end"; Anomie says
    the envelope goes to 0 immediately when the header is loaded. Same effect (E = 0 in
    the same sample). Recommended: set E = 0 and state = Release when the header with
-   E = 1, L = 0 is loaded.
+   E = 1, L = 0 is loaded (the engine checks the current header at S3c of every sample,
+   before KON, see Ambiguity 24).
 8. When ENDX is set. Register descriptions (fullsnes, Anomie, SNESdev): "at the START of
    decoding the BRR block". Anomie's BRR section: "when the block is complete". Because
    of the 12-sample look-ahead the difference is at most one block. Recommended: set the
    bit when the header of the end block is loaded (start). Alternative: at completion.
+   Re-examined 2026-09-28 (fidelity review): Anomie's S4 step text also reads "flag the
+   loop address for loading next step S2 and set ENDX.x in step S7", i.e. when the end
+   block has been finished, which supports the alternative. SNESdev "S-DSP registers"
+   ("set when the current BRR block has the end-flag set (not at the end of the BRR
+   sample)") and Anomie's own register note ("at the START of decoding the BRR block, not
+   at the end") support the recommendation, and SNESdev's "if the voice is recently
+   keyed-on, the ENDX bits will be clear (even if the BRR sample is a single BRR block)"
+   only holds for a single-block sample if the bit is not raised by finishing that block.
+   Decision unchanged (start); a driver polling ENDX sees the bit up to one block (16
+   samples at P = 0x1000) earlier than with the alternative. Both readings agree that a
+   bit raised on the key-on sample itself is overridden by the KON clear (Anomie S4).
 9. Final phase inversion. fullsnes: `sum XOR FFFFh` after the mute ("as done by
    built-in post-amp"). Anomie, SNESdev: not mentioned. Absolute polarity is inaudible
    alone but matters when mixing with other sources. Recommended: apply the inversion in
@@ -994,8 +1085,10 @@ thresholds, exponential timing, counter phase, alternative Gaussian form).
 15. Uninitialised registers at power-on (Anomie: "most registers are uninitialized").
     Recommended: `reset()` zeroes all 128 registers and sets FLG = 0xE0, then the
     driver initialises everything it uses (as real drivers do).
-16. Volume products at -128 (MVOL, EVOL, EFB). Anomie writes each stage as
-    `(int16_t)((S * V) >> 7)`, i.e. a 16-bit truncation, and reserves "clamped to 16
+16. Volume products at -128 (MVOL, EVOL, EFB). Anomie writes the VxVOL, MVOL and EVOL
+    stages as `(int16_t)((S * V) >> 7)`, i.e. a 16-bit truncation (his EFB line reads
+    `E = (int16_t)(E * V)>>7`, cast before the shift, which taken literally would
+    truncate the product and is presumably a typo for the same form), and reserves "clamped to 16
     bits" for the additions; fullsnes says only that -128 "causes multiply overflows
     (-8000h*-80h=-400000h)" and, for FIRx/EFB/EVOLx, "does probably cause multiply
     overflows?". The only affected case is V = -128 with a full-scale negative input
@@ -1003,6 +1096,78 @@ thresholds, exponential timing, counter phase, alternative Gaussian form).
     reach this case (fullsnes). Recommended: clamp16 (a bounded, click-free result, and
     the randomizer/presets avoid -128 anyway); alternative: wrap to -32768 as Anomie's
     cast suggests. Reference value 29 documents both results.
+17. Global counter clock (added 2026-09-28, second pass). SNESdev "DSP envelopes": the
+    counter "decrements on each S-SMP clock" and the period table gives "how many S-SMP
+    clocks elapse per envelope operation". Anomie: "decrementing by one each sample";
+    fullsnes: periods in "32000Hz sample units". At the 1.024 MHz S-SMP clock SNESdev's
+    own attack 0 = 4100 ms (64 x 2048) would be 128 ms, so SNESdev's "S-SMP clock" can
+    only mean the 32 kHz sample tick. Decision: one decrement per output sample.
+    Alternative: none consistent with any published timing.
+18. Low bit of the VxVOL product (added 2026-09-28, second pass). fullsnes: `sample *
+    VxVOLx SAR 6` on the 15-bit envelope output (odd results possible). Anomie: `(S *
+    VL) >> 7` with S not stated as 15- or 16-bit, plus "The bit is 'recovered' after the
+    VxVOLL/VxVOLR volume adjustment" and, for noise, "volume adjustment then the
+    left-shift to 'restore' the low bit", which suggests `((s15 * V) >> 7) << 1` (always
+    even). The two differ by 1 LSB in about 49.5 % of random (env, VOL) pairs `[computed]`
+    and never at full scale for VOL 127 / -128. Recommended: fullsnes's explicit formula
+    `(env * V) >> 6` (equal to Anomie's formula if S is the 16-bit `env << 1`, which his
+    "Apply the VxVOL registers (16-bit stereo sample)" overview supports). Alternative:
+    `((env * V) >> 7) << 1`. Reference value 28 lists both.
+19. Frozen echo buffer length (added 2026-09-28, second pass). Anomie's overview says a
+    write-disabled echo buffer is "a static sample buffer up to 0.96 seconds long", while
+    his EDL text, fullsnes and SNESdev give at most 30720 bytes = 7680 stereo samples =
+    0.24 s. 0.96 s is 30720 divided by 32000, i.e. bytes counted as samples. Decision:
+    0.24 s (7680 samples); fullsnes's ".25s" in its copy of the EDL note is a rounding of
+    the same value.
+20. Gaussian quad sum at d = 2 (added 2026-09-28 by the engine implementation). Reference
+    value 6 and the "Overflow case" worked example say the coefficients for d = 2 sum to
+    0x800, but the table of this document (identical to fullsnes, Anomie and SnesLab) gives
+    `g[253] + g[509] + g[258] + g[2] = 0x16A + 0x518 + 0x17D + 0 = 0x7FF`; the 0x801 list and
+    the 168 / 46 / 42 counts are consistent with the table, and d = 5 is the first 0x800
+    fraction. The Gaussian result quoted for d = 2 (-16376 for four -0x4000 samples) is
+    unaffected (it was computed from the table). Decision: the table is authoritative;
+    `test_snes_gaussian.cpp` checks `quad(2) == 0x7FF`. Alternative: none.
+21. Output of key-on sample #0 (added 2026-09-28). Anomie's sequence calls sample #0 the
+    "final pre-KON sample" while also setting the envelope to 0 on it; whether that
+    sample's output still uses the old envelope is not stated. First decision: the KON
+    actions happen before the envelope multiply, so #0 outputs 0. Revised 2026-09-28
+    (fidelity review, Ambiguity 24): Anomie's S3c applies the envelope before it handles
+    KON ("After the final pre-KON sample is prepared, the envelope is set to 0"), so #0
+    outputs the old voice level; the pre-KON pitch step and BRR decode still run on #0.
+    Samples #1..#5 are silent as documented and the first data sample is #6. Decision: old
+    level on #0. Alternative: 0 on #0 (a one-sample difference).
+22. Decay -> Sustain at SL = 7 with a fast decay rate (added 2026-09-28). The "Envelope"
+    section says SL = 7 takes 0 decay steps because the transition test "runs every sample,
+    so the voice leaves Decay before its first counter event". With the documented
+    per-sample order (store on a counter event, then evaluate the transitions) that holds
+    only if the first sample in Decay has no counter event; with D = 7 (rate 30, period 2)
+    an event can fall on that sample and one step is taken first (E = 0x7F7). Decision: keep
+    the documented order (store, then transitions), so SL = 7 costs 0 or 1 step depending
+    on the counter phase; the tests use D = 0 (period 64), where the documented 0 is exact.
+    Alternative: evaluate the Decay -> Sustain test before the store.
+23. Analog output high-pass (added 2026-09-28). No consulted source gives the cutoff of the
+    SNES output coupling after the DAC (the post-amp inversion of Ambiguity 9 is the only
+    documented property of that stage). Decision: the engine uses the project's common
+    one-pole DC blocker at 5 Hz, labelled as a non-chip stage. Alternative: a measured value
+    if one is found later.
+24. Envelope application vs update order (added 2026-09-28, fidelity review). The first
+    version of "Exact per-sample update order" and "Order of operations per sample" put
+    the KON/KOFF/FLG.7 transitions and the envelope update before the `(s15 * E) >> 11`
+    multiply, which contradicts the Anomie S3c text they cite (re-fetched 2026-09-28):
+    "If applicable, replace the current sample with the noise sample. Apply the volume
+    envelope. Check FLG bit 7 (NOT previously loaded). Check BRR header 'e' and 'l' bits to
+    determine if the voice ends. Handle KOFF and KON using previously loaded values. [...]
+    Update the volume envelope, using previously loaded values." The key-on sequence text
+    ("#5 = Envelope updating begins. The sample output is still '0x0000', because of the
+    order in which voice operations are performed") confirms that the envelope stored on a
+    sample is first heard on the next one. Decision: Anomie's order (apply the stored E,
+    then FLG.7, BRR end, KOFF, KON, then compute and store the new E); every envelope change
+    reaches OUTX, the outputs and PMON one sample after it is stored. The BRR end check
+    reads the current block's header every sample (S3b "Load the BRR header byte (every
+    time)"), so a code-1 header loaded by a decode acts at the next sample's S3c, and a KON
+    on that sample overrides it. Alternative: the first version's order (every envelope
+    change one sample earlier; A = 15 outputs 0x7FF on #6 instead of 0x400; it also let
+    a same-sample code-1 header cancel a key-on, which contradicts Anomie S3c/S4).
 
 Corrections made by the 2026-09-28 verification pass (all sources re-fetched, tables
 re-derived with Python):
@@ -1020,6 +1185,31 @@ re-derived with Python):
 * Volume -128 wrap/clamp added as Ambiguity 16; reference value 29 reworded.
 * No numeric value of the Gaussian table, the rate tables, the BRR/Gaussian/PMON/noise/
   echo worked examples or the other reference values needed a change.
+
+Corrections made by the second adversarial pass (2026-09-28; fullsnes.htm, Anomie's
+apudsp.txt and the SnesLab pages re-downloaded and parsed by script, SNESdev pages
+re-read, every table and example recomputed with Python):
+
+* Attack -> Decay (Ambiguity 5): the first pass's reading of Anomie (transition gated
+  by the counter, 64 steps, E = 0x7FF) contradicted the every-sample wording of his
+  envelope list; the literal reading agrees with fullsnes (E = 0x7E0 after 63 steps).
+  Recommendation changed, alternative kept; the envelope text, the per-sample update
+  order and reference values 20, 21, 44 revised; decay counts from 0x7E0 added (23).
+* "Anomie and SNESdev write 0x77FF (30,720)": only SNESdev writes the parenthesised
+  count; Anomie writes "counts from 0x77FF to zero". SNESdev's "S-SMP clock" wording
+  for the counter recorded as Ambiguity 17.
+* VxVOL low-bit question (fullsnes `SAR 6` vs a possible Anomie `>> 7` then `<< 1`)
+  recorded as Ambiguity 18; reference value 28 lists both results.
+* Anomie's "0.96 seconds" frozen buffer recorded as Ambiguity 19 (0.24 s kept).
+* Anomie's EFB formula wording noted in Ambiguity 16.
+* Manual exponential-threshold level corrected from "0x60..0x77" to "0x5F..0x77"
+  (E = 95 after 600 steps).
+* Reference values 48..51 added for the ENGINE_SPECS checklist (Gaussian symmetry and
+  monotonicity, all 32 periods, 16-bit output clamp, FIR preset gains).
+* Confirmed unchanged: the 512-entry Gaussian table (0 differences against each of the
+  three sources, sum 262146), kRatePeriod, kRateOffset, the BRR shift/filter formulas and
+  all worked examples, the Gaussian examples in both forms, PMON (both forms identical on
+  a 14-bit x 15-bit grid), noise LFSR, FIR/echo examples, N-SPC preset bytes and tap sums.
 
 ## Sources
 
@@ -1044,7 +1234,10 @@ All consulted on 2026-09-28.
    modulation code and 0x7FFF index clamp, Gaussian table and 15-bit formula, envelope
    state machine details (pre-clamp bent value, negative attack trigger, GAIN bits as
    sustain level), register timing, noise generator formula, echo processing order,
-   EDL/ESA application, FIR wrap/clamp and `& ~1`.
+   EDL/ESA application, FIR wrap/clamp and `& ~1`. Re-fetched 2026-09-28 (fidelity
+   review): voice steps S3b/S3c/S4 (envelope applied before FLG.7 / BRR end / KOFF / KON /
+   envelope update; ENDX set in S4 does not override the KON clear), the key-on sequence
+   #0..#6 and the ENDX register note (Ambiguities 8, 21, 24).
 3. SNESdev Wiki, "S-DSP registers", https://snes.nesdev.org/wiki/S-DSP_registers (raw
    wikitext). Taken: register bit diagrams, KON/KOFF errata, FLG semantics, noise
    frequency table, PMON formula and notes (voice 0/7), NON caution, DIR entry format,
@@ -1081,3 +1274,186 @@ All consulted on 2026-09-28.
 12. Romhacking.net document listing for Anomie's S-DSP Doc,
     https://www.romhacking.net/documents/191/ (index only; used to identify the
     document, download blocked).
+
+## Implementation decisions
+
+Written with the `SnesDspEngine` implementation (2026-09-28). Code:
+`dsp/include/chipdsp/snes/` (`SnesTables.h`, `BrrCodec.h`, `SnesDsp.h`, `SnesDriver.h`,
+`SnesDspEngine.h`) and `dsp/src/snes/`. No new external source was consulted; everything
+below is either taken from the sections above or is a driver/engine choice, labelled so.
+
+### Layers
+
+* **Chip core** (`SnesDsp`, chip behaviour only): 128-byte register file, 64 KiB APU RAM
+  image, 8 voices, global counter, noise LFSR, echo unit and mixer, stepped one 32 kHz
+  sample per `step()` in the order of "Order of operations per sample". Every formula is
+  the recommended one of this document: Anomie's Gaussian form (Ambiguity 1), bits 4..11
+  as fraction (2), unclamped PMON step with the index clamped to 0x7FFF (3), no PMON on
+  noise voices (4), Attack -> Decay tested every sample on the computed value (5), Anomie
+  Decay -> Sustain test (6), E = 0 at a code-1 header (7), ENDX set when an end block's
+  header is loaded and never for the first header after a key-on (8), the post-amp
+  inversion on every output (9, 12), `hiddenEnv = new & 0x7FF` for bent increase (10),
+  `(counter + offset) % period` events (11), all registers 0 and FLG = 0xE0 on reset (15),
+  clamped MVOL/EVOL/EFB products (16), one counter decrement per sample (17), `(env * VOL)
+  >> 6` voice volume (18), key-on sample #0 outputs the old level (21), Anomie's S3c order
+  with the stored envelope applied before it is updated and KON handled after the FLG.7 and
+  BRR-end checks (24).
+* **Driver** (`SnesDriver`, software behaviour): what an SPC700 sound program would do.
+  It only writes registers and APU RAM, never the chip's internal state.
+* **Engine** (`SnesDspEngine`, plugin glue): parameters, sample banks, BRR encoding, the
+  32 kHz -> host resampling and the DC blocker.
+
+### Driver tick model
+
+* The chip runs at exactly 32000 Hz. Before every chip sample the engine calls
+  `SnesDriver::beforeSample()`.
+* Tick: every 128 chip samples (4 ms, the typical SPC700 timer tick), counted from
+  `reset()`. A tick rewrites the global registers from the parameters (DIR, MVOL, EFB,
+  EON, NON, PMON, FIR0..7, EVOL, FLG noise clock and echo-write bit), runs the echo
+  management below, recomputes every sounding voice's pitch (note + transpose + fine
+  tune + vibrato) and writes PITCHL/H when it changed, and keys off (KOFF) voices whose
+  GAIN release reads ENVX = 0.
+* Key events are not delayed to the next tick: `noteOn`/`noteOff` are queued and flushed
+  on the first chip sample of the next `renderBlock()` (the plugin splits blocks at MIDI
+  events, see `ARCHITECTURE.md`). Because KON is polled every second sample and a second
+  KON write before the poll replaces the first ("Key-on, key-off"), the driver collects all
+  pending key-ons into one KON write and never writes KON twice within 2 samples; a key-on
+  that arrives sooner waits for the next allowed sample.
+* `setChannelPitch` only updates the channel's note; the new register value is written at
+  the next tick, like a pitch slide in a real driver.
+* Vibrato (driver): triangle wave of +/- `vibrato_depth` pitch-register units, one half
+  cycle (from one peak to the other) every `vibrato_rate` ticks (period `2 * rate` ticks =
+  `8 * rate` ms), after `vibrato_delay` ticks from key-on. Sampled once per tick at cycle
+  position `x = (tick + ceil(rate / 2)) mod 2 * rate`, where `x = 0` is -depth and
+  `x = rate` is +depth, so both peaks are reached for every rate 1..15; the first value is 0
+  for even rates and the first step above 0 (`+depth / rate`, rounded) for odd rates, then
+  rising. Rate 1 alternates +depth / -depth every tick. The depth is in register units, so
+  its size in cents shrinks as the note rises (as in drivers that add a fixed offset).
+
+### MIDI note -> registers
+
+* Pitch: `P = round(4096 * storedRate / 32000 * 2^((note + transpose + fineTune / 100 -
+  root) / 12))` clamped to 0..0x3FFF, then the vibrato offset is added and clamped again.
+  `root` is the slot's root note (`setSampleRootNote`, default 60, fractional allowed) and
+  `storedRate` the rate of the BRR data. The 4.12 grid is never smoothed.
+* SRCN: slot `s` uses directory entry `2s` (one-shot) or `2s + 1` (looped), chosen at
+  key-on from the slot's loop point and `loop_override` (see "APU RAM map").
+* Envelope: `ADSR1 = adsr_enable << 7 | decay << 4 | attack`, `ADSR2 = sustain_level << 5 |
+  sustain_rate`; `GAIN = gain_value` (direct, 0..127) or `0x80 / 0xA0 / 0xC0 / 0xE0 |
+  min(gain_value, 31)` for gain_mode 1..4. ADSR2 and GAIN are written before ADSR1
+  (SNESdev race note).
+* `noise_enable` sets NON for all 8 voices, `noise_clock` is FLG bits 0-4, `pmon` sets
+  PMON = 0xFE (voices 1..7 modulated by voice x-1; bit 0 has no function). The noise voice
+  still steps through its BRR sample, so a one-shot sample ends a noise note.
+* Instrument latching (driver): the instrument part of the parameters (sample,
+  loop_override, ADSR/GAIN, release mode/rate, volume, pan) is captured when `noteOn` is
+  called and written at key-on; later changes affect the next note only. Pitch-related
+  parameters (transpose, fine tune, vibrato) and all global/echo parameters are live
+  (applied at the next tick).
+
+### Velocity mapping
+
+Driver: `VxVOLL = round(volume * velocity * min(64, 64 - pan) / 64)`, `VxVOLR = round(volume *
+velocity * min(64, 64 + pan) / 64)`, i.e. linear velocity and a balance pan law (the far
+side is attenuated linearly, the near side keeps the full value). The registers are only
+written at key-on, so they stay 0..127 (never negative: no phase inversion from pan).
+MVOLL = MVOLR = `main_volume`.
+
+### noteOff -> hardware
+
+* `release_mode` 0: the driver sets the voice's KOFF bit (the register value is kept, KOFF
+  acts continuously) and clears it again just before that voice's next KON, so the key-on is
+  not undone by the next poll. Hardware release: -8 per sample, 256 samples = 8 ms from full.
+* `release_mode` 1 (driver release): GAIN = `0xA0 | release_rate` (exponential decrease),
+  then ADSR1 bit 7 cleared (GAIN written first). Like an SPC700 program, the driver polls
+  ENVX ($x8 = E >> 4) at each tick and writes KOFF once it reads 0 (E < 16), so the last
+  few levels may be released at -8 per sample. `release_rate` 0 is the GAIN "never" rate:
+  the note holds until it is re-triggered (hardware consequence, kept).
+* A note released before its key-on reached the chip is dropped (its KON bit is removed).
+* `isChannelActive()` = pending key-on, or the chip reports the voice sounding: KON latched
+  or start-up running, or not (Release with E = 0); for a GAIN release (release_mode 1) the
+  channel is also inactive as soon as E = 0, without waiting for the next tick's KOFF
+  (engine query of the chip state, not driver behaviour). A one-shot sample that ends
+  releases the voice by itself (code-1 block).
+
+### Chip behaviour vs driver/engine behaviour
+
+Chip (`SnesDsp`): everything in the sections above this one (BRR decode, Gaussian,
+pitch/PMON, ADSR/GAIN/counter, noise, echo/FIR, mixing, saturation, mute, inversion,
+KON/KOFF polling, ENDX). Driver (`SnesDriver`): 4 ms tick, key event flushing, instrument
+latching, pitch from MIDI notes, vibrato, velocity/pan, GAIN release, echo buffer placement,
+EDL clamping and re-initialisation, FIR presets, APU RAM map. Engine: BRR encoding,
+resampling of sources above 32 kHz, the sample banks, resampling to the host rate and the DC
+blocker.
+
+### APU RAM map and budget (driver)
+
+```
+0x0000-0x01FF  reserved (the zero page and stack a real SPC700 driver would use)
+0x0200-0x02FF  sample directory, DIR = 0x02, 64 entries (2 per slot)
+0x0300-0x0303  echo buffer when EDL = 0 (ESA = 0x03, one 4-byte entry)
+0x0304-0x030C  silent block, code 3, looping to itself (empty slots)
+0x030D-0x0315  silent block, code 1 (terminator: releases the voice when loaded)
+0x0400-...     BRR data, slots packed in slot order
+top            echo buffer for EDL >= 1: ESA = 0x100 - 8 * EDL, 0x10000 - 2048 * EDL .. 0xFFFF
+```
+
+* Budget: `loadSample` fails when the total BRR size would exceed `0x10000 - 0x0400 -
+  2048 * echo_delay` bytes (64512 bytes at EDL 0, 33792 at EDL 15). The 1 KiB reserve is a
+  driver decision (ENGINE_SPECS states "64 KiB minus the echo buffer"; a real driver also
+  needs its code, which is not modelled). Edits that keep the size (`setSampleLoop`,
+  `setSampleRootNote`) only check the physical limit.
+* If `echo_delay` is raised above what fits below the loaded samples, the driver programs
+  the largest EDL whose buffer does not overlap the data (`SnesDriver::maxEchoDelay`), so the
+  echo can never overwrite samples (on hardware it would).
+* Echo re-initialisation (driver, "Echo" section): when the effective EDL changes the
+  driver sets FLG.5 (echo writes off), writes EVOL = 0, moves ESA, writes EDL, clears the new
+  buffer in APU RAM and waits 60 ticks (240 ms = 7680 samples, counted from the tick after
+  the change) before enabling writes and EVOL again, so
+  the old length has run out (EDL only applies when the index wraps). After `reset()` the
+  chip's echo index is 0, so the initial EDL applies at once without the wait. Switching
+  echo on clears the buffer first (no stale repeats); switching it off sets FLG.5 and
+  EVOL = 0.
+
+### Samples, loops and BRR encoding (engine)
+
+* Mono float PCM is converted to the 15-bit domain (`round(x * 16383)`), clamped to the
+  Gaussian-safe range -0x3FFA..+0x3FF8 by the encoder. Sources above 32 kHz are first
+  decimated to 32 kHz (Blackman-windowed sinc, cutoff 0.475 x 32 kHz); sources at or below
+  32 kHz are stored at their own rate (smaller in RAM, pitch register scaled by rate/32000).
+* Encoder: per block, filters 0..3 and shifts 0..12 are all tried; for each sample the
+  nibble nearest to the residual and its two neighbours are evaluated with the real
+  decoder (`brrDecodeSample`), keeping the history exactly as the S-DSP will see it; the
+  candidate with the smallest squared error wins, with decoded values outside the safe
+  range priced out. Block 0 and the loop block are forced to filter 0.
+* Every sample is stored with its last block flagged code 3 (end + loop). Looping is then
+  decided by the directory: the looped entry's loop address is the loop block (or the
+  sample start when the slot has no loop point and `loop_override` forces a loop); the
+  one-shot entry's loop address is the shared code-1 terminator block, whose header
+  releases the voice with E = 0. Compared with a sample whose own last block is code 1, the
+  last block is heard (the voice stops when the terminator header loads, one block later).
+  This lets `loop_override` switch a slot between one-shot and loop without rewriting BRR
+  data in RAM. The loop end is always the sample end (hardware).
+* `setSampleLoop(slot, block)` re-encodes the slot with filter 0 at the loop block;
+  `loadSample` resets the slot's loop point and keeps its root note.
+* Threading (ARCHITECTURE.md): two pre-allocated banks (APU RAM image + slot table);
+  `loadSample` rebuilds the bank the audio thread is not reading and flips an atomic
+  `(generation << 1) | index`; at block start the audio thread claims the active bank,
+  copies the directory, dummy blocks and BRR data into the chip's APU RAM when the
+  generation changed, and releases the claim. The message thread only waits while the audio
+  thread is copying from the bank it wants to write.
+
+### Output stage
+
+* The soft clip requested by the product owner is the hardware's own saturating 16-bit
+  arithmetic: the voice sum, the echo sum and the final `main + echo` are clamped to
+  -32768..32767 after each addition, the MVOL/EVOL/EFB products are clamped (Ambiguity 16),
+  and nothing else limits the level. There is no additional soft-clipping curve.
+* Main output: `~(mute ? 0 : clamp16(MVOL(mix) + EVOL(fir)))`. Per-voice buses: the voice
+  alone through VxVOL, MVOL, mute and the same inversion, without echo (ENGINE_SPECS).
+* Each 32 kHz output value (main L/R and, when the host asked for them, the 16 per-voice
+  values) is handed to its own `BandLimitedStepSynth` as a step at the sample's host-time
+  position (cutoff at 16 kHz, zero-order hold in raw mode), then the 5 Hz DC blocker
+  (Ambiguity 23) removes the -1 LSB inversion offset and any DC. Per-voice work is skipped
+  when the channel pointers are null.
+
