@@ -6,6 +6,8 @@
 #include "ui/SnesPanel.h"
 #include "ui/Theme.h"
 
+#include "chipdsp/snes/SnesDspEngine.h"
+
 #include <cmath>
 
 namespace rcv
@@ -102,6 +104,7 @@ RetroChipEditor::RetroChipEditor (RetroChipProcessor& p)
 
     rcvProcessor.visualizer().setEnabled (true);
     rcvProcessor.midiLearn().addChangeListener (this);
+    rcvProcessor.presetManager().addChangeListener (this);
 
     auto& apvts = rcvProcessor.parameters();
     if (auto* chipParam = apvts.getParameter (ParamIds::chip))
@@ -117,6 +120,11 @@ RetroChipEditor::RetroChipEditor (RetroChipProcessor& p)
             if (! committingScale)
                 applyScale (value);
         });
+
+    // The SNES echo buffer shares the APU RAM with the samples: the free bytes follow echo_delay.
+    if (auto* echoDelay = apvts.getParameter (ParamRegistry::engineParamId (chipdsp::ChipId::Snes, "echo_delay")))
+        echoDelayAttachment = std::make_unique<juce::ParameterAttachment> (*echoDelay, [this] (float) { updateSampleList(); });
+    updateSampleList();
 
     // The corner and the host may resize between 1x and the largest scale that fits the
     // screen (at most 2x); the aspect ratio is fixed.
@@ -144,6 +152,7 @@ RetroChipEditor::RetroChipEditor (RetroChipProcessor& p)
 
 RetroChipEditor::~RetroChipEditor()
 {
+    rcvProcessor.presetManager().removeChangeListener (this);
     rcvProcessor.midiLearn().removeChangeListener (this);
     rcvProcessor.visualizer().setEnabled (false);
     setLookAndFeel (nullptr);
@@ -253,10 +262,45 @@ void RetroChipEditor::setDiagnostics (bool shown)
     strip.setDiagnosticsShown (shown);
 }
 
-void RetroChipEditor::changeListenerCallback (juce::ChangeBroadcaster*)
+void RetroChipEditor::changeListenerCallback (juce::ChangeBroadcaster* source)
 {
+    // A preset or sample change: the SNES sample list.
+    if (source == &rcvProcessor.presetManager())
+    {
+        updateSampleList();
+        return;
+    }
     // MIDI learn armed, learned or cleared: controls redraw their learn outline and tooltip.
     content.repaint();
+}
+
+void RetroChipEditor::updateSampleList()
+{
+    auto* snesPanel = dynamic_cast<SnesPanel*> (panels[static_cast<size_t> (chipdsp::ChipId::Snes)].get());
+    if (snesPanel == nullptr)
+        return;
+
+    auto& pm = rcvProcessor.presetManager();
+    const auto& engine = rcvProcessor.engineHost().engine (chipdsp::ChipId::Snes);
+    const auto* snes = dynamic_cast<const chipdsp::SnesDspEngine*> (&engine);
+
+    std::vector<SampleListSection::Entry> entries;
+    for (int slot = 0; slot < engine.numSampleSlots(); ++slot)
+    {
+        auto name = pm.factorySampleInSlot (chipdsp::ChipId::Snes, slot);
+        const bool loaded = snes != nullptr ? snes->sampleInfo (slot).loaded : name.isNotEmpty();
+        if (loaded)
+            entries.push_back ({ slot, name });   // empty name: a user sample
+    }
+    // echo_delay reaches the engine on the next audio block: stage it now so the free bytes
+    // are those of the current value.
+    int freeBytes = -1;
+    if (snes != nullptr)
+    {
+        rcvProcessor.engineHost().stageParameters (chipdsp::ChipId::Snes);
+        freeBytes = std::max (0, snes->freeSampleBytes());
+    }
+    snesPanel->setSampleList (std::move (entries), freeBytes);
 }
 
 void RetroChipEditor::onVBlank (double timestampSec)

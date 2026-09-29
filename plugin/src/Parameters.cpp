@@ -1,5 +1,7 @@
 #include "Parameters.h"
 
+#include "ValueFormat.h"
+
 #include "chipdsp/EngineFactory.h"
 
 #include <cmath>
@@ -158,6 +160,18 @@ std::unique_ptr<juce::RangedAudioParameter> ParamRegistry::makeParameter (const 
     const juce::ParameterID pid (info.id, kParameterVersionHint);
     const juce::String unit (info.desc.unit != nullptr ? info.desc.unit : "");
     const bool automatable = info.id != juce::String (ParamIds::uiScale);
+    // The value text (ValueFormat) already carries the unit, converted where the register unit
+    // reads badly ("x2 dB", "TL"), so the host label stays empty except for the bare "x".
+    const juce::String label = unit == "x" ? unit : juce::String();
+
+    // Host text goes through the editor's formatter; the lambdas keep their own copy of the
+    // info (its descriptor strings point at the engines' static tables).
+    auto text = [info] (float native, int maxLength)
+    {
+        const auto s = formatNativeValue (info, native);
+        return maxLength > 0 ? s.substring (0, maxLength) : s;
+    };
+    auto parse = [info] (const juce::String& s) { return parseNativeValue (info, s); };
 
     switch (info.kind)
     {
@@ -168,8 +182,11 @@ std::unique_ptr<juce::RangedAudioParameter> ParamRegistry::makeParameter (const 
             for (int i = 0; i < count; ++i)
                 choices.add (info.desc.choiceLabels[i]);
             const int defaultIndex = juce::jlimit (0, count - 1, static_cast<int> (std::lround (info.desc.defaultValue - info.desc.minValue)));
+            const float offset = info.desc.minValue;   // choice index -> native value
             return std::make_unique<juce::AudioParameterChoice> (pid, info.name, choices, defaultIndex,
-                                                                 juce::AudioParameterChoiceAttributes().withLabel (unit).withAutomatable (automatable));
+                                                                 juce::AudioParameterChoiceAttributes().withLabel (label).withAutomatable (automatable)
+                                                                     .withStringFromValueFunction ([text, offset] (int index, int n) { return text (static_cast<float> (index) + offset, n); })
+                                                                     .withValueFromStringFunction ([parse, offset] (const juce::String& s) { return static_cast<int> (std::lround (parse (s) - offset)); }));
         }
         case ParamKind::Int:
         {
@@ -177,17 +194,23 @@ std::unique_ptr<juce::RangedAudioParameter> ParamRegistry::makeParameter (const 
             const int hi = static_cast<int> (std::lround (info.desc.maxValue));
             const int def = juce::jlimit (lo, hi, static_cast<int> (std::lround (info.desc.defaultValue)));
             return std::make_unique<juce::AudioParameterInt> (pid, info.name, lo, hi, def,
-                                                              juce::AudioParameterIntAttributes().withLabel (unit).withAutomatable (automatable));
+                                                              juce::AudioParameterIntAttributes().withLabel (label).withAutomatable (automatable)
+                                                                  .withStringFromValueFunction ([text] (int v, int n) { return text (static_cast<float> (v), n); })
+                                                                  .withValueFromStringFunction ([parse] (const juce::String& s) { return static_cast<int> (std::lround (parse (s))); }));
         }
         case ParamKind::Bool:
             return std::make_unique<juce::AudioParameterBool> (pid, info.name, info.desc.defaultValue > 0.5f,
-                                                               juce::AudioParameterBoolAttributes().withLabel (unit).withAutomatable (automatable));
+                                                               juce::AudioParameterBoolAttributes().withLabel (label).withAutomatable (automatable)
+                                                                   .withStringFromValueFunction ([text] (bool v, int n) { return text (v ? 1.0f : 0.0f, n); })
+                                                                   .withValueFromStringFunction ([parse] (const juce::String& s) { return parse (s) > 0.5f; }));
         case ParamKind::Float:
         default:
             return std::make_unique<juce::AudioParameterFloat> (pid, info.name,
                                                                 juce::NormalisableRange<float> (info.desc.minValue, info.desc.maxValue),
                                                                 juce::jlimit (info.desc.minValue, info.desc.maxValue, info.desc.defaultValue),
-                                                                juce::AudioParameterFloatAttributes().withLabel (unit).withAutomatable (automatable));
+                                                                juce::AudioParameterFloatAttributes().withLabel (label).withAutomatable (automatable)
+                                                                    .withStringFromValueFunction (text)
+                                                                    .withValueFromStringFunction (parse));
     }
 }
 

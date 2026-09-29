@@ -197,7 +197,12 @@ TEST_CASE ("A sample that does not fit the hardware memory is reported", "[prese
             big = p;
     REQUIRE (big != nullptr);
     const int presetSlotIndex = presetSlot (*big, big->samples.front().first);
-    const int userSlot = (presetSlotIndex + 1) % snes->numSampleSlots();
+    // The user sample goes into the start-up sample's slot, replacing it, so the APU RAM holds
+    // the user sample alone.
+    const int userSlot = pm.currentSampleSlot (chipdsp::ChipId::Snes);
+    REQUIRE (pm.factorySampleInSlot (chipdsp::ChipId::Snes, userSlot) == pm.startupSampleName (chipdsp::ChipId::Snes));
+    REQUIRE (userSlot != presetSlotIndex);
+    REQUIRE ((userSlot + 1) % snes->numSampleSlots() != presetSlotIndex);
 
     // 3.5 s at 32 kHz = 112000 frames = 63000 BRR bytes: fits alone (64512), not with more.
     REQUIRE (pm.setUserSample (chipdsp::ChipId::Snes, userSlot, sineWav (112000, 32000.0)));
@@ -322,4 +327,61 @@ TEST_CASE ("MIDI learn mappings survive getState/setState and drive the real eng
             CHECK (engine.getParameter (info->engineParamId) == (value == 127 ? info->desc.maxValue : info->desc.minValue));
         }
     }
+}
+
+TEST_CASE ("A fresh instance plays its sample voices before any preset is applied", "[presets][samples][real]")
+{
+    // SNES voice 1 (Poly, MIDI channel 1), NES DMC (MIDI channel mode, channel 5) and the
+    // Genesis DAC (dac_enable on, MIDI channel mode, channel 6), each with default parameters.
+    struct Case
+    {
+        chipdsp::ChipId chip;
+        rcv::VoiceMode mode;
+        int midiChannel;
+        int hardwareChannel;
+    };
+    const Case c = GENERATE (Case { chipdsp::ChipId::Snes, rcv::VoiceMode::Poly, 1, 0 },
+                             Case { chipdsp::ChipId::Nes, rcv::VoiceMode::MidiChannel, 5, 4 },
+                             Case { chipdsp::ChipId::Genesis, rcv::VoiceMode::MidiChannel, 6, 5 });
+    INFO ("chip " << chipdsp::chipKey (c.chip));
+
+    auto proc = rcvtest::makeProcessor();
+    if (rcvtest::usesStubEngines (*proc))
+        SKIP ("Stub engines: no sample slots");
+    auto& pm = proc->presetManager();
+    CHECK (pm.current() == nullptr);
+    CHECK (pm.sampleStatus().isEmpty());
+
+    // The default slot holds the start-up sample.
+    const int slot = pm.currentSampleSlot (c.chip);
+    REQUIRE (slot >= 0);
+    const auto name = pm.startupSampleName (c.chip);
+    INFO ("start-up sample '" << name << "' in slot " << slot);
+    REQUIRE (name.isNotEmpty());
+    CHECK (pm.factorySampleInSlot (c.chip, slot) == name);
+    CHECK (pm.userSamples().empty());   // not part of the plugin state
+
+    rcvtest::setRaw (*proc, rcv::ParamIds::chip, static_cast<float> (static_cast<int> (c.chip)));
+    rcvtest::setRaw (*proc, rcv::ParamIds::voiceMode, static_cast<float> (static_cast<int> (c.mode)));
+    if (c.chip == chipdsp::ChipId::Genesis)
+        rcvtest::setRaw (*proc, "genesis_dac_enable", 1.0f);
+
+    rcvtest::Runner runner (*proc, kSampleRate, kBlock);
+    for (int b = 0; b < 20; ++b)   // chip switch fade
+        runner.process();
+
+    runner.noteOn (c.midiChannel, 60, 110);
+    float maxPeak = 0.0f;
+    bool channelActive = false;
+    const int blocks = static_cast<int> (0.5 * kSampleRate) / kBlock;
+    for (int b = 0; b < blocks; ++b)
+    {
+        runner.process();
+        maxPeak = std::max ({ maxPeak, rcvtest::peak (runner.mainChannel (0), kBlock), rcvtest::peak (runner.mainChannel (1), kBlock) });
+        channelActive = channelActive || proc->engineHost().engine (c.chip).isChannelActive (c.hardwareChannel);
+    }
+    const float peakDb = juce::Decibels::gainToDecibels (maxPeak, -120.0f);
+    WARN (chipdsp::chipKey (c.chip) << " start-up sample '" << name << "': peak " << peakDb << " dBFS within 0.5 s");
+    CHECK (channelActive);
+    CHECK (peakDb > -60.0f);
 }

@@ -68,6 +68,10 @@ TEST_CASE ("Dense MIDI never drops note-offs or sustain-off", "[enginehost][even
 {
     auto proc = rcvtest::makeProcessor();
     rcvtest::setRaw (*proc, rcv::ParamIds::polyChannels, 31.0f);   // all five NES channels
+    // The DMC plays a one-shot sample to its end whatever the note-off: point it at an empty
+    // slot (the start-up sample sits in slot 0) so only the envelopes decide activity.
+    if (! rcvtest::usesStubEngines (*proc))
+        rcvtest::setRaw (*proc, "nes_dmc_sample", 1.0f);
     rcvtest::Runner runner (*proc, kSampleRate, kBlock);
     const auto& host = proc->engineHost();
     const auto& nes = host.engine (chipdsp::ChipId::Nes);
