@@ -95,6 +95,15 @@ public:
 
     // ----- banks and queries -------------------------------------------------------------
     void loadBanks();
+
+    // Start-up samples, so a fresh instance plays its sample voices (SNES, NES DMC, Genesis
+    // DAC) before any preset is applied: for each chip, the slot its slot parameter's default
+    // value names receives the sample the chip's first factory preset (bank order) puts in
+    // that slot, otherwise the chip's first factory sample in index order. Loaded through
+    // loadFactorySampleIntoSlot() (sample info, hardware budget); a preset or a restored
+    // preset replaces them under the usual rules. Call after loadBanks(), before audio runs.
+    void loadStartupSamples();
+    juce::String startupSampleName (chipdsp::ChipId chip) const { return startupSamples[static_cast<size_t> (chip)].name; }
     int numPresets() const noexcept { return static_cast<int> (factory.size() + user.size()); }
     int numPresets (chipdsp::ChipId chip) const noexcept;
     juce::StringArray categories (chipdsp::ChipId chip) const;
@@ -131,12 +140,13 @@ public:
     // ----- user samples ------------------------------------------------------------------
     bool importUserSample (chipdsp::ChipId chip, int slot, const juce::File& wavFile);
     bool setUserSample (chipdsp::ChipId chip, int slot, const juce::MemoryBlock& wavData);
-    // Both return the slots to their default content (the current preset's sample, else empty).
+    // Both return the slots to their default content (the current preset's sample; with no
+    // current preset, the start-up sample; else empty).
     void removeUserSample (chipdsp::ChipId chip, int slot);
     const std::vector<UserSample>& userSamples() const noexcept { return samples; }
     juce::ValueTree userSamplesToValueTree() const;     // <UserSamples> <Sample chip slot wav/> </UserSamples>
-    // Slots that held a user sample return to their default content (the current preset's
-    // sample for that slot, otherwise empty), then the tree's samples load.
+    // Slots that held a user sample return to their default content (as removeUserSample()),
+    // then the tree's samples load.
     void restoreUserSamples (const juce::ValueTree& tree);
     void clearUserSamples();
 
@@ -222,6 +232,13 @@ private:
     std::array<std::vector<SampleEntry>, ParamRegistry::kNumChips> sampleIndex;
     // Per chip and slot: the factory sample loaded there, empty for an empty or user slot.
     std::array<std::vector<juce::String>, ParamRegistry::kNumChips> factorySlots;
+    // Per chip: the start-up sample (loadStartupSamples) and its slot; empty name = none.
+    struct StartupSample
+    {
+        juce::String name;
+        int slot = -1;
+    };
+    std::array<StartupSample, ParamRegistry::kNumChips> startupSamples;
     juce::String sampleError;
 
     Preset currentPreset;

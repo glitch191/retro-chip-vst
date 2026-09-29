@@ -49,6 +49,7 @@ RetroChipProcessor::RetroChipProcessor()
     host.attachParameters (registry, apvts);
     host.setMidiLearn (&learn);
     presets.loadBanks();
+    presets.loadStartupSamples();   // sample voices play before any preset is applied
 
     startTimer (kServiceIntervalMs);
 }

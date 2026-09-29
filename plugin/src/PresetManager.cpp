@@ -249,6 +249,48 @@ void PresetManager::loadBanks()
     sendChangeMessage();
 }
 
+void PresetManager::loadStartupSamples()
+{
+    for (int c = 0; c < ParamRegistry::kNumChips; ++c)
+    {
+        const auto chip = static_cast<chipdsp::ChipId> (c);
+        auto& startup = startupSamples[static_cast<size_t> (c)];
+        startup = {};
+        const auto* slotInfo = sampleSlotParam (chip);
+        const int numSlots = host.engine (chip).numSampleSlots();
+        if (slotInfo == nullptr || numSlots <= 0)
+            continue;
+        const int slot = juce::jlimit (0, numSlots - 1, static_cast<int> (std::lround (slotInfo->desc.defaultValue)));
+
+        // The first factory preset (bank order) that puts a sample into that slot.
+        juce::String name;
+        for (const auto& preset : factory)
+        {
+            if (preset.chip != chip)
+                continue;
+            for (const auto& [slotKey, sampleName] : preset.samples)
+                if (slotKey == slotInfo->engineKey() && presetSampleSlot (chip, slotKey, sampleName, preset, true) == slot)
+                {
+                    name = sampleName;
+                    break;
+                }
+            if (name.isNotEmpty())
+                break;
+        }
+        if (name.isEmpty())
+        {
+            const auto names = sampleNames (chip);
+            if (names.isEmpty())
+                continue;
+            name = names[0];
+        }
+
+        if (loadFactorySampleIntoSlot (chip, slot, name))   // a failure is logged and kept in sampleStatus()
+            startup = { name, slot };
+    }
+    sendChangeMessage();
+}
+
 void PresetManager::loadSampleIndex()
 {
     for (auto& list : sampleIndex)
@@ -1020,12 +1062,16 @@ int PresetManager::currentSampleSlot (chipdsp::ChipId chip) const
 
 void PresetManager::resetSlotToDefault (chipdsp::ChipId chip, int slot)
 {
-    // The current preset's sample for that slot, otherwise an empty slot (no factory sample
-    // outside the current preset, see releaseFactorySamples()).
+    // The current preset's sample for that slot; with no current preset, the start-up sample
+    // of that slot; otherwise an empty slot (no factory sample outside the current preset,
+    // see releaseFactorySamples()).
     if (hasCurrent && currentPreset.chip == chip)
         for (const auto& [slotKey, name] : currentPreset.samples)
             if (presetSampleSlot (chip, slotKey, name, currentPreset, false) == slot && loadFactorySampleIntoSlot (chip, slot, name))
                 return;
+    if (const auto& startup = startupSamples[static_cast<size_t> (chip)];
+        ! hasCurrent && startup.slot == slot && startup.name.isNotEmpty() && loadFactorySampleIntoSlot (chip, slot, startup.name))
+        return;
     clearSlot (chip, slot);
 }
 

@@ -119,7 +119,8 @@ TEST_CASE ("State round trip restores parameters, preset name, MIDI learn and us
         REQUIRE (sourceSnes != nullptr);
         REQUIRE (restoredNes != nullptr);
         REQUIRE (restoredSnes != nullptr);
-        REQUIRE (restoredNes->sampleLength (0) == 0);          // nothing there before the restore
+        // Before the restore: the start-up sample in NES slot 0, nothing in SNES slot 1.
+        REQUIRE (restored->presetManager().factorySampleInSlot (chipdsp::ChipId::Nes, 0).isNotEmpty());
         REQUIRE_FALSE (restoredSnes->sampleInfo (1).loaded);
     }
     restored->setStateInformation (state.getData(), static_cast<int> (state.getSize()));
@@ -153,6 +154,7 @@ TEST_CASE ("State round trip restores parameters, preset name, MIDI learn and us
         // the restored dmc_rate), same BRR size, stored rate and root note / one-shot loop.
         CHECK (restoredNes->sampleLength (0) > 0);
         CHECK (restoredNes->sampleLength (0) == sourceNes->sampleLength (0));
+        CHECK (restored->presetManager().factorySampleInSlot (chipdsp::ChipId::Nes, 0).isEmpty());   // the user sample replaced it
         const auto a = sourceSnes->sampleInfo (1);
         const auto b = restoredSnes->sampleInfo (1);
         CHECK (b.loaded);

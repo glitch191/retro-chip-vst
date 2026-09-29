@@ -13,8 +13,13 @@ Engine parameters are generated from `IChipEngine::parameterDescriptors()` for e
 the three engines at construction. Host parameter id = `<chipKey>_<desc.key>`
 (`nes_p1_duty`, `snes_echo_delay`, `genesis_op1_tl`). Name = `<ChipName> <desc.name>`.
 Integer descriptors become `AudioParameterInt` (or `AudioParameterChoice` when
-`choiceLabels` is set); continuous ones become `AudioParameterFloat` with the unit as
-label. The `group` string is kept in a side table (`ParamInfo`) for the UI.
+`choiceLabels` is set); continuous ones become `AudioParameterFloat`. The `group` string
+is kept in a side table (`ParamInfo`) for the UI. Every parameter's host text
+(`stringFromValue` / `valueFromString`) goes through the editor's formatter
+(`plugin/src/ValueFormat.h`), so automation lanes and generic editors show the panel text
+with its unit ("-6 dB" for an SN76489 attenuation of 3, "-18 dB" for a TL step count of 24,
+"48 ms" for an SNES echo delay of 3, "50 %" for a duty choice); the host label is empty
+except for the bare "x" unit. Parsing accepts that text and plain numbers in the shown unit.
 
 Global parameters (ids fixed):
 
@@ -127,6 +132,15 @@ sample_rate)` from `assets/samples/index.json`. Before loading, factory samples 
 chip's other slots are cleared (`clearSample`); user samples are kept unless the preset
 writes their slot. A failed load is logged and reported by `sampleStatus()`, which the
 strip shows under the sidebar forms (hidden when empty).
+
+Start-up samples: at construction (`loadStartupSamples()`, after `loadBanks()`), each chip's
+default sample slot (the slot parameter's default) receives the sample the chip's first
+factory preset in bank order puts in that slot, else the chip's first sample in index
+order (currently SNES `bass_finger`, NES `bass_pluck`, Genesis `clap`), so a fresh instance
+plays its SNES voices, NES DMC and Genesis DAC before any preset. They are factory samples
+(not in the plugin state): applying or restoring a preset replaces them under the rules
+above; with no current preset, removing a user sample from that slot brings the start-up
+sample back. The SNES panel lists the loaded slots and the free APU RAM ("Samples" box).
 
 API: `loadBanks()`, `categories(chip)`, `subcategories(chip, category)`,
 `presets(chip, category, subcategory)`, `search(chip, text)` (case-insensitive

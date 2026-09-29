@@ -86,6 +86,7 @@ private:
     void updateScreenLimits();
     void setDiagnostics (bool shown);
     void changeListenerCallback (juce::ChangeBroadcaster*) override;
+    void updateSampleList();   // SNES panel: loaded slots and free APU RAM
     void readScreenshotSettings();
     void applyScreenshotSearch();
     void takeScreenshotIfRequested();
@@ -103,6 +104,7 @@ private:
 
     std::unique_ptr<juce::ParameterAttachment> chipAttachment;
     std::unique_ptr<juce::ParameterAttachment> scaleAttachment;
+    std::unique_ptr<juce::ParameterAttachment> echoDelayAttachment;
 
     float scale = 1.0f;
     float screenMax = 2.0f;            // largest scale that fits the display (theme::kMaxScale at most)

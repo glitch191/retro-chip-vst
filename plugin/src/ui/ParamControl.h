@@ -5,6 +5,7 @@
 
 #include "MidiLearn.h"
 #include "Parameters.h"
+#include "ValueFormat.h"   // formatNativeValue(), used by the knobs
 
 #include <functional>
 #include <memory>
@@ -74,9 +75,6 @@ public:
 
     juce::Rectangle<int> knobArea;
 };
-
-// Formats a native engine value for display: choice label, "On"/"Off", or number + unit.
-juce::String formatNativeValue (const ParamInfo& info, float native);
 
 // Base of Knob, ParamToggle and ParamChoice: one host parameter (or a free value), its
 // display label, the MIDI learn menu and the learning outline.

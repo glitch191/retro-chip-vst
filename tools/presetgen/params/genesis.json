@@ -337,7 +337,7 @@
       "max": 127,
       "min": 0,
       "name": "Op 1 Total Level",
-      "unit": ""
+      "unit": "TL"
     },
     {
       "default": 31,
@@ -507,7 +507,7 @@
       "max": 127,
       "min": 0,
       "name": "Op 2 Total Level",
-      "unit": ""
+      "unit": "TL"
     },
     {
       "default": 31,
@@ -677,7 +677,7 @@
       "max": 127,
       "min": 0,
       "name": "Op 3 Total Level",
-      "unit": ""
+      "unit": "TL"
     },
     {
       "default": 31,
@@ -847,7 +847,7 @@
       "max": 127,
       "min": 0,
       "name": "Op 4 Total Level",
-      "unit": ""
+      "unit": "TL"
     },
     {
       "default": 31,

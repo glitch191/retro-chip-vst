@@ -37,7 +37,7 @@ namespace
     using E = GenesisEngine;
 
 #define RCV_GEN_OP(n, tl, ar, dr, sr, rr, sl, mul)                                                                          \
-    { E::opParam(n - 1, E::OpTl), "op" #n "_tl", "Op " #n " Total Level", "Operator " #n, 0, 127, tl, true, "", nullptr },   \
+    { E::opParam(n - 1, E::OpTl), "op" #n "_tl", "Op " #n " Total Level", "Operator " #n, 0, 127, tl, true, "TL", nullptr }, \
     { E::opParam(n - 1, E::OpAr), "op" #n "_ar", "Op " #n " Attack Rate", "Operator " #n, 0, 31, ar, true, "", nullptr },    \
     { E::opParam(n - 1, E::OpDr), "op" #n "_dr", "Op " #n " Decay Rate", "Operator " #n, 0, 31, dr, true, "", nullptr },     \
     { E::opParam(n - 1, E::OpSr), "op" #n "_sr", "Op " #n " Sustain Rate", "Operator " #n, 0, 31, sr, true, "", nullptr },   \
