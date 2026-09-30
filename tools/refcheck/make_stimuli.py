@@ -225,7 +225,9 @@ def genesis_stimuli() -> list[tuple[dict, bytes]]:
                   desc=f"attack rate 14, rate scaling {rs}, block 6")
     # SSG-EG modes 8..15 on the carrier.
     for mode in range(8, 16):
-        fm_single(f"fm_ssg{mode:x}", carrier(ssg=mode, dr=20, sr=20, sl=15), off=0.85, end=1.0, kind="ssg",
+        # Modes without HOLD repeat ("ssg": envelope period and depth are compared too).
+        fm_single(f"fm_ssg{mode:x}", carrier(ssg=mode, dr=20, sr=20, sl=15), off=0.85, end=1.0,
+                  kind="env" if mode & 1 else "ssg",
                   desc=f"SSG-EG {mode:X}, DR = SR = 20, SL 15")
     # LFO: AM on S4 with AMS 1..3, PM with FMS 2/5/7 (LFO frequency 3 = 6.2 Hz).
     for ams in (1, 2, 3):
@@ -563,7 +565,9 @@ def snes_stimuli() -> list[tuple[dict, bytes, str]]:
         for rate in (14, 20):
             s = SpcStim()
             src = s.add_sample(sine)
-            start_gain = 0x00 if mode >= 0xC0 else 0x7F
+            # Increase modes start from direct 0x10 (-18 dB), not 0: Game Music Emu skips
+            # leading silence of a track, which would shift the reference's time base.
+            start_gain = 0x10 if mode >= 0xC0 else 0x7F
             s.voice(0, src, 0x1000, gain=start_gain)
             s.at(0.0, KOFF, 0x00)
             s.at(0.0, FLG, s.dsp[FLG])
@@ -571,7 +575,7 @@ def snes_stimuli() -> list[tuple[dict, bytes, str]]:
             s.at(S_ON + 0.1, 0x07, mode | rate)
             s.at(0.9, KOFF, 0x01)
             add(f"snes_gain_{label_}_{rate}", s, 1.0, dict(kind="env", f0=1000.0, on=S_ON, off=0.9,
-                                                        desc=f"GAIN {label_} rate {rate} from 0.12 s"))
+                                                        desc=f"GAIN {label_} rate {rate} from 0.12 s (start: direct 0x{start_gain:02X})"))
     # Pitch modulation: voice 0 (silent, VOL 0) modulates voice 1.
     s = SpcStim()
     src = s.add_sample(sine)
