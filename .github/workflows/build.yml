@@ -1,0 +1,72 @@
+# Builds the VST3 on a GitHub-hosted Windows runner, runs the unit tests and pluginval,
+# and publishes the bundle as a downloadable artefact. Pushing a tag such as v1.0.0 also
+# attaches the zipped bundle to a GitHub Release of that tag.
+#
+# JUCE and Catch2 are fetched by CMake (cmake/Dependencies.cmake); nothing else is needed.
+
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-x64:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # Configure, build and run ctest (DSP and plugin tests) with the release preset.
+      - name: Build and test
+        run: .\build.ps1 -Preset windows-x64-release
+
+      - name: pluginval (strictness 5)
+        run: .\tools\run_pluginval.ps1 -Strictness 5
+
+      - name: Package the VST3 bundle
+        run: |
+          $bundle = Get-ChildItem build\windows-x64-release -Recurse -Directory -Filter "*.vst3" | Select-Object -First 1
+          if (-not $bundle) { throw "No .vst3 bundle found" }
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Compress-Archive -Path $bundle.FullName -DestinationPath dist\RetroChip-VST3-win64.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RetroChip-VST3-win64
+          path: dist/RetroChip-VST3-win64.zip
+          if-no-files-found: error
+
+      - name: pluginval reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pluginval-reports
+          path: build-reports/pluginval
+          if-no-files-found: ignore
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows-x64
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: RetroChip-VST3-win64
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${{ github.ref_name }}" RetroChip-VST3-win64.zip --repo "${{ github.repository }}" --title "${{ github.ref_name }}" --generate-notes

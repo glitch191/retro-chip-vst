@@ -830,5 +830,5 @@ Ambiguity: `docs/PRESET_SPECS.md` has no Genesis lead or organ category.
 Sources: `docs/PRESET_SPECS.md`, `docs/research/genesis-sound-design.md` "Category mapping".
 Decision: taxonomy unchanged: FM leads and guitars in `FM Brass` / `Brass` (tag `lead`,
 `guitar`), wind leads in `FM Pad` / `LFO`, organs in `FM Pad` (tag `organ`); the browser
-search finds them by name and tag.
+search finds them by name, category and tag.
 Alternative: new `FM Lead` / `FM Organ` categories (a product decision, open).

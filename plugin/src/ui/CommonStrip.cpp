@@ -655,9 +655,18 @@ void CommonStrip::updateSearch()
         resultRows.push_back ({ preset->chip, preset->name, location, 0 });
     }
 
-    static_cast<ResultsSummary*> (resultsSummary)
-        ->setText (numResults == 0 ? juce::String ("No preset matches")
-                                   : juce::String (numResults) + (numResults == 1 ? " preset matches" : " presets match"));
+    // "193 presets match: NES 61, SNES 41, Genesis 91" (every chip is named even when only
+    // the first group fits in the list).
+    juce::String summary ("No preset matches");
+    if (numResults > 0)
+    {
+        juce::StringArray perChip;
+        for (const auto& r : resultRows)
+            if (r.isHeader())
+                perChip.add (juce::String (chipdsp::chipName (r.chip)) + " " + juce::String (r.count));
+        summary = juce::String (numResults) + (numResults == 1 ? " preset matches: " : " presets match: ") + perChip.joinIntoString (", ");
+    }
+    static_cast<ResultsSummary*> (resultsSummary)->setText (summary);
     resultsList.deselectAllRows();
     resultsList.updateContent();
     resultsList.getVerticalScrollBar().setCurrentRangeStart (0.0);

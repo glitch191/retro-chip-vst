@@ -11,6 +11,16 @@
 #include <set>
 #include <vector>
 
+#if JUCE_WINDOWS
+ #ifndef NOMINMAX
+  #define NOMINMAX
+ #endif
+ #ifndef WIN32_LEAN_AND_MEAN
+  #define WIN32_LEAN_AND_MEAN
+ #endif
+ #include <windows.h>
+#endif
+
 namespace
 {
     // Six user presets whose names all contain "zq" (absent from the factory banks), so the
@@ -48,6 +58,20 @@ namespace
             if (pm.numPresets (chip) == 0)
                 return false;
         return true;
+    }
+
+    // TextEditor reports Return and Escape through posted command messages: deliver the
+    // pending ones (the tests have no running message loop).
+    void deliverPendingMessages()
+    {
+       #if JUCE_WINDOWS
+        MSG msg {};
+        for (int i = 0; i < 1000 && PeekMessage (&msg, nullptr, 0, 0, PM_REMOVE) != 0; ++i)
+        {
+            TranslateMessage (&msg);
+            DispatchMessage (&msg);
+        }
+       #endif
     }
 
     juce::Component* findById (juce::Component& root, const juce::String& id)
@@ -212,6 +236,7 @@ TEST_CASE ("The search field consumes every key; Return and Escape release the k
         strip->setSearchText ("zq genesis");
         CHECK (field->keyPressed (juce::KeyPress (juce::KeyPress::downKey)));   // first result: Zq Delta
         CHECK (field->keyPressed (juce::KeyPress (juce::KeyPress::returnKey)));
+        deliverPendingMessages();
         CHECK (proc->presetManager().currentName() == "Zq Delta");
         CHECK (proc->selectedChip() == chipdsp::ChipId::Genesis);
         CHECK (field->getText() == "zq genesis");   // the search stays after the chip switch
@@ -223,6 +248,7 @@ TEST_CASE ("The search field consumes every key; Return and Escape release the k
             CHECK (field->hasKeyboardFocus (false));
         }
         CHECK (field->keyPressed (juce::KeyPress (juce::KeyPress::escapeKey)));
+        deliverPendingMessages();
         CHECK (field->getText().isEmpty());
         CHECK (juce::Component::getCurrentlyFocusedComponent() == nullptr);
     }
