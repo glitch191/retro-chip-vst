@@ -218,12 +218,16 @@ constexpr AlgoDef kAlgorithm[8] = {
 
 // Operators are evaluated in the order S1, S3, S2, S4 with a one-stage pipeline (research
 // "Evaluation order quirk"): a modulator evaluated after its target, or immediately before
-// it, is seen with its previous-sample output.
+// it, is seen with its previous-sample output. S1 is read by the other operators through
+// its feedback history registers, which adds one more sample to every S1 path (research
+// Ambiguity 41). Result, in samples: S1->S2 1, S1->S3 2, S1->S4 1, S2->S3 1, S2->S4 1,
+// S3->S4 0.
 constexpr int kEvalOrder[4] = { 0, 2, 1, 3 };
 constexpr int kEvalPosition[4] = { 0, 2, 1, 3 };   // position of S1..S4 in kEvalOrder
-constexpr bool modulatorIsDelayed(int target, int modulator) noexcept
+constexpr int modulatorDelay(int target, int modulator) noexcept
 {
-    return kEvalPosition[target] - kEvalPosition[modulator] < 2;
+    const int pipeline = kEvalPosition[target] - kEvalPosition[modulator] < 2 ? 1 : 0;
+    return modulator == 0 ? pipeline + 1 : pipeline;
 }
 
 // Carrier output truncated to 9 bits and summed with clamping (research "Channel accumulation").

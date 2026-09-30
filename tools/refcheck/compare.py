@@ -84,10 +84,11 @@ HARM_FLOOR_DB = -60.0
 CALIBRATION = {"ym2612": "fm_sine_ref", "sn76489": "psg_tone_ref", "sdsp": "snes_sine_ref"}
 GENESIS_REFS = ("nuked", "mame")
 # Chips whose renders share one lag per comparison (measured on the calibration stimulus):
-# the YM2612 sides apply the same VGM writes at the same times, while slow attacks make a
-# per-stimulus correlation ambiguous by whole periods. The PSG's initial tone phase differs
-# between cores and the SNES reference may skip leading silence, so those align per stimulus.
-GLOBAL_LAG_UNITS = {"ym2612"}
+# both sides apply the same writes at the same times, while slow attacks make a per-stimulus
+# correlation ambiguous by whole periods. The PSG's initial tone phase differs between cores
+# and the S-DSP noise LFSR phase at key-on differs (the SPC format does not store it), so those
+# align per stimulus.
+GLOBAL_LAG_UNITS = {"ym2612", "sdsp"}   # sdsp: except noise stimuli (LFSR phase differs)
 DIAG_BEGIN = "<!-- BEGIN DIAGNOSIS (hand-written, kept by compare.py) -->"
 DIAG_END = "<!-- END DIAGNOSIS -->"
 
@@ -573,9 +574,18 @@ def analyse(m: dict, rate: int, ref: tuple[list[float], list[float]], ours: tupl
 
 
 def env_timing(env_r: list[float], env_o: list[float], i_on: int, i_off: int) -> list[dict]:
-    """Crossing times in ms (envelope hop ENV_HOP_MS, interpolated)."""
+    """Crossing times in ms (envelope hop ENV_HOP_MS, interpolated). Levels closer than 10 dB
+    to the reference's residual floor (where only
+    filtered DC-step and ladder residues remain) are skipped: crossings there measure the
+    floor, not the envelope. The floor is the median of the last 20 ms when they start at
+    least 15 ms after key-off (otherwise no floor is applied)."""
     ms = ENV_HOP_MS
     out = []
+    last = int(20.0 / ms)
+    floor = -240.0
+    if len(env_r) - last > i_off + int(15.0 / ms):
+        tail = sorted(env_r[-last:])
+        floor = tail[len(tail) // 2] + 10.0
     peak_r = max(env_r[i_on:i_off]) if i_off > i_on else max(env_r)
     i_peak = env_r.index(peak_r, i_on)
     anchor_r = crossing(env_r, i_on - 40, i_off, peak_r - 40.0, True)
@@ -588,6 +598,8 @@ def env_timing(env_r: list[float], env_o: list[float], i_on: int, i_off: int) ->
                 out.append(dict(stage=f"attack to {lv:g} dB", ref_ms=(tr - anchor_r) * ms, ours_ms=(to - anchor_o) * ms))
     # Decay: from the reference peak position, both sides.
     for lv in (-3.0, -6.0, -12.0, -20.0):
+        if peak_r + lv < floor:
+            continue
         tr = crossing(env_r, i_peak, i_off, peak_r + lv, False)
         to = crossing(env_o, i_peak, i_off, peak_r + lv, False)
         if tr is not None and to is not None and (tr - i_peak) * ms >= 2.0:
@@ -598,7 +610,7 @@ def env_timing(env_r: list[float], env_o: list[float], i_on: int, i_off: int) ->
     if i_off < len(env_r) - 2:
         lvl_off = env_r[max(0, i_off - n_win)]
         for lv in (-6.0, -20.0, -40.0):
-            if lvl_off + lv < peak_r - 65.0:
+            if lvl_off + lv < peak_r - 65.0 or lvl_off + lv < floor:
                 continue
             tr = crossing(env_r, i_off - n_win, len(env_r), lvl_off + lv, False)
             to = crossing(env_o, i_off - n_win, len(env_o), lvl_off + lv, False)
@@ -725,7 +737,7 @@ def write_report(path: str, results: dict, manifest: list[dict], gains: dict, ti
     lines.append("Thresholds: pitch 1 cent, harmonics 1 dB (bins within 60 dB of H1), envelope timing 3 %, "
                  "per-channel level 0.5 dB. Columns: lag = our delay in samples after alignment (inv = inverted "
                  "polarity); null = reference energy over residual energy after alignment and gain; env shape = RMS dB "
-                 "difference of the 2 ms envelopes; spectral = RMS dB difference of 1/6-octave band powers.\n")
+                 "difference of the 4 ms sliding RMS envelopes; spectral = RMS dB difference of 1/6-octave band powers.\n")
     lines.append("### Global gain constants (one per chip)\n")
     lines.append("| comparison | chip | calibration stimulus | gain ref/ours (dB) |\n|---|---|---|---|")
     for (cmp_name, unit), g in sorted(gains.items()):
@@ -839,7 +851,7 @@ def main() -> None:
             g = unit_gain.get(m["unit"])
             r = analyse(m, rate, (rl[:n], rr[:n]), (tl[:n], tr[:n]), g,
                         coupling_ref=chip == "genesis", coupling_test=chip == "genesis" and test != "ours",
-                        fixed_lag=unit_lag.get(m["unit"]) if m["unit"] in GLOBAL_LAG_UNITS else None)
+                        fixed_lag=unit_lag.get(m["unit"]) if m["unit"] in GLOBAL_LAG_UNITS and m["kind"] != "noise" else None)
             if m["name"] == CALIBRATION.get(m["unit"]) and m["unit"] in GLOBAL_LAG_UNITS:
                 unit_lag[m["unit"]] = r["lag"]
             r["timebase"] = tb

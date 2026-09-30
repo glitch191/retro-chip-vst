@@ -1274,6 +1274,11 @@ All consulted on 2026-09-28.
 12. Romhacking.net document listing for Anomie's S-DSP Doc,
     https://www.romhacking.net/documents/191/ (index only; used to identify the
     document, download blocked).
+13. Reference renderer run as a black box (2026-09-29, product-owner decision of the same day;
+    no source read): Game Music Emu SPC player inside FFmpeg 9.0.2 (gyan.dev full shared
+    build), https://www.gyan.dev/ffmpeg/builds/. Used for the differential check only
+    (settings and known behaviour in `reference-emulators.md`, results in
+    `refcheck-report.md`: bit-exact apart from player gain and polarity on static stimuli).
 
 ## Implementation decisions
 

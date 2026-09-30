@@ -1363,6 +1363,19 @@ Added during the fidelity review (2026-09-28):
     partner (same channel), so a retrigger never occupies extra channels. Alternative: release
     the old partner and key the next free channel (the earlier behaviour: the partner walked up
     one channel per retrigger while the old ones were still releasing).
+41. Operator pipeline delay of S1 as a modulator (open, 2026-09-29). "Evaluation order quirk"
+    derives the delayed paths from the S1, S3, S2, S4 order (jsgroth part 4 excerpt, Nemesis
+    page 13): S2->S3, S1->S3 and S2->S4 use the previous sample, S1->S2, S1->S4 and S3->S4 the
+    current one. The differential check against two independent reference emulators run as
+    black boxes (Nuked OPN2 and the MAME / Genesis Plus GX core in VGMPlay 0.40.9, see
+    `reference-emulators.md` and `refcheck-report.md`) disagrees for every path that starts at
+    S1: both references agree with each other within 0.2 dB and differ from us by up to 9.5 dB
+    (fm_alg0 H1) on static algorithms 0-3. Adding one sample to every S1 path (S1->S2 1,
+    S1->S3 2, S1->S4 1; S2 and S3 paths unchanged) in a scratch build brings all eight
+    algorithms within 0.16 dB of Nuked. Plausible mechanism: other operators read S1 from the
+    same one-sample history register its feedback uses (`op1Out[n-1]`). No public text found
+    yet that states it. Recommended decision (pending the product owner and a public source):
+    adopt the +1 sample on S1 paths. Alternative: keep the documented derivation (current code).
 
 ## Sources
 
@@ -1492,6 +1505,12 @@ datasheet (source 18) pages were rendered and read; plutiedev (source 1), Nemesi
 and 33 (sources 5, 9) and Maxim's SN76489 page (source 17) were re-fetched. jsgroth's
 posts (sources 20, 21) and ConsoleMods returned bot-filter / 403 pages; only search
 excerpts of them were available.
+
+32. Reference emulators run as black boxes (2026-09-29, product-owner decision of the same
+    day; no source read): VGMPlay 0.40.9 with Nuked OPN2 / MAME SN76496 and MAME-GPGX YM2612 /
+    Maxim SN76489, https://github.com/vgmrips/vgmplay-legacy/releases/tag/0.40.9. Used for
+    the differential check only (tools, settings and licences in `reference-emulators.md`,
+    results in `refcheck-report.md`); evidence for Ambiguity 41.
 
 ## Generator script
 
