@@ -7,6 +7,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <vector>
 
@@ -187,40 +188,60 @@ TEST_CASE("S1 feedback on the core follows the documented formula", "[genesis][o
     CHECK((((8168 + 8168) >> (10 - 7)) & 0x3FF) == 0x3FA);
 }
 
-TEST_CASE("Pipeline delay: in algorithm 0, S3 sees S2's previous-sample output", "[genesis][operator][algorithm]")
+TEST_CASE("Pipeline delays: every modulation path uses its documented sample delay", "[genesis][operator][algorithm]")
 {
-    // Research "Evaluation order quirk" (Nemesis page 13, jsgroth part 4): operators run in the
-    // order S1, S3, S2, S4, so S3 reads S2 from the previous sample while S2 reads S1 and S4 reads
-    // S3 from the current one. A modulator's contribution is its output >> 1.
-    Ym2612Core ym;
-    const int tl[4] = { 0, 0, 0, 0 };
-    patch(ym, 0, 0, tl);
-    int prevS2 = 0;
-    int bad3 = 0, bad2 = 0, bad4 = 0;
-    bool s2Moves = false;
-    for (int i = 0; i < 1500; ++i)
+    // Research "Evaluation order quirk" and Ambiguity 41: operators run in the order S1, S3,
+    // S2, S4; a modulator evaluated after its target or immediately before it is seen one
+    // sample late, and S1 is read through its feedback history, one more sample late.
+    // Delays in samples, [target][modulator]; -1 = no path. Regression for refcheck finding F1
+    // (fm_alg0..3 against Nuked OPN2 and MAME / Genesis Plus GX).
+    constexpr int kDelay[4][4] = {
+        { -1, -1, -1, -1 },
+        {  1, -1, -1, -1 },   // S2 <- S1
+        {  2,  1, -1, -1 },   // S3 <- S1, S2
+        {  1,  1,  0, -1 },   // S4 <- S1, S2, S3
+    };
+    const int mul[4] = { 1, 2, 3, 1 };
+    for (int alg = 0; alg < 8; ++alg)
     {
-        uint32_t ph[4];
+        Ym2612Core ym;
+        const int tl[4] = { 0, 0, 0, 0 };
+        patch(ym, alg, 0, tl);
         for (int s = 0; s < 4; ++s)
-            ph[s] = ym.operatorPhaseCounter(0, s) >> 10;
-        ym.clockSample();
-        const int s1 = ym.operatorLastOutput(0, 0);
-        const int s2 = ym.operatorLastOutput(0, 1);
-        const int s3 = ym.operatorLastOutput(0, 2);
-        const int s4 = ym.operatorLastOutput(0, 3);
-        if (s2 != operatorOutput(static_cast<int>(ph[1]) + (s1 >> 1), ym.operatorEgOutput(0, 1)))
-            ++bad2;
-        if (s3 != operatorOutput(static_cast<int>(ph[2]) + (prevS2 >> 1), ym.operatorEgOutput(0, 2)))
-            ++bad3;
-        if (s4 != operatorOutput(static_cast<int>(ph[3]) + (s3 >> 1), ym.operatorEgOutput(0, 3)))
-            ++bad4;
-        s2Moves = s2Moves || s2 != prevS2;
-        prevS2 = s2;
+            writeOp(ym, 0, s, 0x30, mul[s]);
+        std::vector<std::array<int, 4>> out;
+        int bad = 0;
+        for (int n = 0; n < 1500; ++n)
+        {
+            int ph[4];
+            for (int s = 0; s < 4; ++s)
+                ph[s] = static_cast<int>(ym.operatorPhaseCounter(0, s) >> 10);
+            ym.clockSample();
+            std::array<int, 4> now{};
+            for (int s = 0; s < 4; ++s)
+                now[s] = ym.operatorLastOutput(0, s);
+            for (int s = 0; s < 4; ++s)
+            {
+                int sum = 0;
+                for (int j = 0; j < 4; ++j)
+                {
+                    if (!((kAlgorithm[alg].modMask[s] >> j) & 1))
+                        continue;
+                    REQUIRE(kDelay[s][j] >= 0);
+                    const int d = kDelay[s][j];
+                    if (d == 0)
+                        sum += now[j];
+                    else if (n - d >= 0)
+                        sum += out[static_cast<size_t>(n - d)][j];
+                }
+                if (now[s] != operatorOutput(ph[s] + (sum >> 1), ym.operatorEgOutput(0, s)))
+                    ++bad;
+            }
+            out.push_back(now);
+        }
+        INFO("algorithm " << alg);
+        CHECK(bad == 0);
     }
-    CHECK(s2Moves);
-    CHECK(bad2 == 0);
-    CHECK(bad3 == 0);
-    CHECK(bad4 == 0);
 }
 
 TEST_CASE("Key-on resets the phase counter, key-off does not", "[genesis][operator]")

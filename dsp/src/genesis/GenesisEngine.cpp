@@ -167,16 +167,18 @@ void GenesisEngine::prepare(double hostSampleRate, int maxBlockSize)
 
     const double fmRate = fmSampleRate(clockStd);
     const double psgRate = psgTickRate(clockStd);
-    fmSynthL.prepare(fmRate, hostRate, maxBlock);
-    fmSynthR.prepare(fmRate, hostRate, maxBlock);
-    psgSynth.prepare(psgRate, hostRate, maxBlock);
+    // Flat band-limited steps (refcheck finding F2; the NES keeps the legacy kernel).
+    constexpr auto kKernel = BandLimitedStepSynth::Kernel::IntegratedStep;
+    fmSynthL.prepare(fmRate, hostRate, maxBlock, kKernel);
+    fmSynthR.prepare(fmRate, hostRate, maxBlock, kKernel);
+    psgSynth.prepare(psgRate, hostRate, maxBlock, kKernel);
     for (int c = 0; c < 6; ++c)
     {
-        fmChSynthL[c].prepare(fmRate, hostRate, maxBlock);
-        fmChSynthR[c].prepare(fmRate, hostRate, maxBlock);
+        fmChSynthL[c].prepare(fmRate, hostRate, maxBlock, kKernel);
+        fmChSynthR[c].prepare(fmRate, hostRate, maxBlock, kKernel);
     }
     for (auto& s : psgChSynth)
-        s.prepare(psgRate, hostRate, maxBlock);
+        s.prepare(psgRate, hostRate, maxBlock, kKernel);
 
     mainFilterL.prepare(hostRate);
     mainFilterR.prepare(hostRate);
