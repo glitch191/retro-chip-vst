@@ -137,12 +137,14 @@ void Nes2A03Engine::prepare(double hostSampleRate, int maxBlockSize)
     mixer.build();
     // Both clocks downsample to any host rate, so the kernel (cutoff 0.45) is the same for NTSC
     // and PAL; the engine computes host times itself (hostSamplesPerClock), so the synths never
-    // need re-preparing when the clock standard changes on the audio thread.
-    mainSynth.prepare(kCpuHzNtsc, hostRate, maxBlock);
+    // need re-preparing when the clock standard changes on the audio thread. Integrated-step
+    // kernel: flat pass band (refcheck F2), as the SNES and Genesis engines.
+    constexpr auto kKernel = BandLimitedStepSynth::Kernel::IntegratedStep;
+    mainSynth.prepare(kCpuHzNtsc, hostRate, maxBlock, kKernel);
     mainStage.prepare(hostRate);
     for (int c = 0; c < kNesChannels; ++c)
     {
-        channelSynths[static_cast<size_t>(c)].prepare(kCpuHzNtsc, hostRate, maxBlock);
+        channelSynths[static_cast<size_t>(c)].prepare(kCpuHzNtsc, hostRate, maxBlock, kKernel);
         channelStages[static_cast<size_t>(c)].prepare(hostRate);
     }
     scratch.assign(static_cast<size_t>(maxBlock), 0.0f);

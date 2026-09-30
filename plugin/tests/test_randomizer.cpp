@@ -35,6 +35,20 @@ TEST_CASE ("Randomizer exclusion list", "[randomizer]")
                                    || key == "main_volume";
         CHECK (rcv::Randomizer::isExcluded (info) == expectedExcluded);
     }
+    // The preset's level correction is a global: never randomized.
+    const auto* presetGain = proc->paramRegistry().find (rcv::ParamIds::presetGain);
+    REQUIRE (presetGain != nullptr);
+    CHECK (rcv::Randomizer::isExcluded (*presetGain));
+}
+
+TEST_CASE ("Randomizer leaves preset_gain alone", "[randomizer]")
+{
+    auto proc = rcvtest::makeProcessor();
+    rcvtest::setRaw (*proc, rcv::ParamIds::presetGain, 12.5f);
+    for (auto chip : kChips)
+        for (juce::uint32 seed = 1; seed <= 20; ++seed)
+            proc->randomizer().randomize (chip, 1.0f, seed);
+    CHECK (rcvtest::getRaw (*proc, rcv::ParamIds::presetGain) == 12.5f);
 }
 
 TEST_CASE ("Randomizer stays inside ParamDesc bounds and never touches excluded parameters", "[randomizer]")

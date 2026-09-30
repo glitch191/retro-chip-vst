@@ -4,6 +4,7 @@ Modules:
     model   Preset / Seed dataclasses, ParamTable (hardware bounds), Cartesian expansion.
     naming  mechanical preset names built from parameters and axis labels.
     qa      parameter-distance and feature-distance de-duplication plus the QA report.
+    level   per-preset playing level (global preset_gain) from the rendered features.
 
 Entry point: tools/gen_presets.py. Seeds live in tools/presetgen/seeds/<chip>.py.
 Standard library only (no numpy).

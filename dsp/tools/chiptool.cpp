@@ -7,7 +7,8 @@
 //   chiptool render <preset.json> <out.wav> [--note 60] [--seconds 2] [--rate 48000]
 //                   [--velocity 100] [--channel N] [--notes 60,62,64 [--step 0.4] [--gate 0.8]]
 //       Applies the preset's "params" through the engine's parameterDescriptors() keys,
-//       plays the note for 60 % of the duration and writes a stereo 16-bit WAV.
+//       plays the note for 60 % of the duration and writes a stereo 16-bit WAV, scaled by
+//       the preset's global.preset_gain (dB, as the plugin applies it after the chip).
 //       --notes plays a monophonic phrase on the same channel instead: note i starts at
 //       i * step seconds and is released gate * step seconds later; the render lasts
 //       --seconds in total (the rest is the release tail).
@@ -17,8 +18,14 @@
 //       (C4 for 2 s held 1.4 s, and C3 for 0.5 s held 80 ms) and writes
 //       {name: {"mel": [40 left + 40 right log-energies in dB], "env": [20 RMS points],
 //               "pitch": [per-frame f0, cents re A4 + 10000, 0 = unvoiced],
-//               "mel_short": [...], "env_short": [...], "pitch_short": [...]}}, computed
-//       with an inline radix-2 FFT and a 40-band mel filterbank. The hardware channel is the lowest bit of the
+//               "mel_short": [...], "env_short": [...], "pitch_short": [...],
+//               "held_rms_db": R, "peak_db": P, "peak_short_db": S}}, computed
+//       with an inline radix-2 FFT and a 40-band mel filterbank. R is the stereo RMS (dBFS,
+//       full-scale sine = -3 dBFS) of the long pass between note-on and note-off over the
+//       10 ms windows within 20 dB of the loudest one (the part where the note sounds); P and
+//       S are the largest |sample| of either channel over each pass (dBFS). They measure the
+//       chip output: preset_gain is not applied (tools/presetgen derives it from them).
+//       The hardware channel is the lowest bit of the
 //       preset's global.poly_channels. Presets are rendered in
 //       parallel with std::thread, with a fresh engine instance per preset so that sample
 //       memory (SNES APU RAM budget) never carries over from one preset to the next.
@@ -41,7 +48,8 @@
 //       cycle of their VGM sample time, with the DMC sample memory from its "NES APU RAM write"
 //       data blocks (0x67, type 0xC2) mapped at $C000, and renders through the output path of
 //       Nes2A03Engine::renderChunk (one CPU cycle per step, NesMixer, BandLimitedStepSynth with
-//       the engine's ImpulseSum kernel unless --kernel integrated, NesOutputStage with
+//       the engine's IntegratedStep kernel (--kernel impulse: the legacy ImpulseSum kernel the
+//       engine used before 2026-09-30, for the refcheck F2 measurement), NesOutputStage with
 //       console_filter = 0, i.e. only the 5 Hz DC blocker). No driver: nothing but the file's
 //       writes reaches the chip. NTSC or PAL from the header clock.
 //
@@ -105,6 +113,9 @@ constexpr double kShortHoldSeconds = 0.08;
 // range of the NES keyed noise (notes 36..51 map to indexes 15..0; C4 and above clamp to 0).
 constexpr int kShortNote = 48;
 constexpr double kFeatureRate = 48000.0;
+constexpr double kLevelWindowSeconds = 0.010;   // held_rms_db: 10 ms windows
+constexpr double kLevelActiveRangeDb = 20.0;    // windows this far below the loudest are not the note
+constexpr double kLevelFloorDb = -120.0;        // level of silence
 constexpr int kFeatureNote = 60;
 constexpr int kFeatureVelocity = 100;
 
@@ -792,6 +803,56 @@ Value toArray(const std::vector<double>& values)
     return Value(std::move(a));
 }
 
+// Playing level of a stereo render (see the features description at the top of the file).
+double toDb(double linear)
+{
+    return linear > 0.0 ? std::max(kLevelFloorDb, 20.0 * std::log10(linear)) : kLevelFloorDb;
+}
+
+double heldRmsDb(const std::vector<float>& left, const std::vector<float>& right, size_t heldSamples)
+{
+    const size_t window = static_cast<size_t>(std::lround(kFeatureRate * kLevelWindowSeconds));
+    const size_t n = std::min({ heldSamples, left.size(), right.size() });
+    std::vector<double> power;   // mean square of L and R per window
+    for (size_t begin = 0; begin + window <= n; begin += window)
+    {
+        double sum = 0.0;
+        for (size_t i = begin; i < begin + window; ++i)
+            sum += static_cast<double>(left[i]) * left[i] + static_cast<double>(right[i]) * right[i];
+        power.push_back(sum / static_cast<double>(2 * window));
+    }
+    const double loudest = power.empty() ? 0.0 : *std::max_element(power.begin(), power.end());
+    if (loudest <= 0.0)
+        return kLevelFloorDb;
+    const double threshold = loudest * std::pow(10.0, -kLevelActiveRangeDb / 10.0);
+    double sum = 0.0;
+    int count = 0;
+    for (double p : power)
+        if (p >= threshold)
+        {
+            sum += p;
+            ++count;
+        }
+    return toDb(std::sqrt(sum / count));
+}
+
+double peakDb(const std::vector<float>& left, const std::vector<float>& right)
+{
+    float peak = 0.0f;
+    for (size_t i = 0; i < left.size(); ++i)
+        peak = std::max({ peak, std::abs(left[i]), std::abs(right[i]) });
+    return toDb(peak);
+}
+
+// global.preset_gain of a preset (dB, clamped to the plugin's -24..+36 range) as a linear gain.
+float presetGain(const Value& preset)
+{
+    if (const Value* g = preset.find("global"); g != nullptr && g->isObject())
+        if (const Value* db = g->find("preset_gain"); db != nullptr && db->isNumber())
+            return static_cast<float>(std::pow(10.0, std::clamp(db->asNumber(), -24.0, 36.0) / 20.0));
+    return 1.0f;
+}
+
 // ----- commands ---------------------------------------------------------------------------------
 
 int usage()
@@ -877,6 +938,12 @@ int cmdRender(int argc, char** argv)
     engine->prepare(opts.rate, kBlockSize);
     std::vector<float> left, right;
     renderPreset(*engine, preset, opts, true, &library, left, right);
+    const float gain = presetGain(preset);
+    for (size_t i = 0; i < left.size(); ++i)
+    {
+        left[i] *= gain;
+        right[i] *= gain;
+    }
     writeFile(wavPath, wavStereo16(left, right, static_cast<int>(std::lround(opts.rate))));
     return 0;
 }
@@ -963,6 +1030,10 @@ int cmdFeatures(int argc, char** argv)
                     entry[pass == 0 ? "mel" : "mel_short"] = toArray(mel);
                     entry[pass == 0 ? "env" : "env_short"] = toArray(envelopeFeatures(mono));
                     entry[pass == 0 ? "pitch" : "pitch_short"] = toArray(pitchTrack(mono, kFeatureRate));
+                    entry[pass == 0 ? "peak_db" : "peak_short_db"] = Value(peakDb(left, right));
+                    if (pass == 0)
+                        entry["held_rms_db"] = Value(heldRmsDb(left, right,
+                                                               static_cast<size_t>(std::lround(kFeatureHoldSeconds * kFeatureRate))));
                 }
                 names[index] = nameValue->asString();
                 results[index] = std::move(entry);
@@ -1340,7 +1411,7 @@ int cmdRegsNes(int argc, char** argv)
     const std::string vgmPath = argv[3];
     const std::string wavPath = argv[4];
     double rate = 44100.0;
-    auto kernel = chipdsp::BandLimitedStepSynth::Kernel::ImpulseSum;   // as Nes2A03Engine
+    auto kernel = chipdsp::BandLimitedStepSynth::Kernel::IntegratedStep;   // as Nes2A03Engine
     for (int i = 5; i < argc; ++i)
     {
         std::string v;

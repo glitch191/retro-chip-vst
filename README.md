@@ -149,15 +149,21 @@ capture chain.
   taps 0x0009 (white noise period 57337, periodic 16), 2 dB attenuation steps, and
   periods 0 and 1 giving a constant +1.
 * Quirks kept: 9-bit DAC truncation; F-number and block quantisation; AM still applies
-  while the LFO is disabled; the PSG is 16.1 dB below one FM channel at full scale, so
-  PSG presets play about 16-22 dB below FM presets. The optional Model 1 low-pass
+  while the LFO is disabled; the PSG is 16.1 dB below one FM channel at full scale (the
+  factory presets' `preset_gain` brings PSG presets to the common playing level, up to
+  +36 dB). The optional Model 1 low-pass
   (`model1_lowpass`, first order at 3.39 kHz) is available; Model 2 filtering is not
   modelled.
 * Samples: 16 DAC slots of 8-bit PCM, up to 64 KiB each, played at `dac_rate`.
 
-Output levels are relative to the hardware and are not normalised. One NES pulse at
-volume 12 is about -33 dBFS RMS and one Genesis FM channel about -26 dBFS RMS.
-`master_gain` (-24..+12 dB) compensates.
+The chip output is relative to the hardware and is not normalised: one NES pulse at
+volume 12 is about -33 dBFS RMS, one Genesis FM channel about -26 dBFS RMS, one PSG tone
+about -45 dBFS. Each factory preset sets `preset_gain` (-24..+36 dB, no panel control),
+which the plugin applies after the chip together with `master_gain`, so a held note plays
+at about -18 dBFS RMS with its peak at or below -1 dBFS (measured at C4, velocity 100;
+higher velocities can go up to 6 dB louder). The ratios between channels and the NES
+mixer curve are unchanged. Presets that do not set it (user presets saved before it
+existed) play at the chip level. `master_gain` (-24..+12 dB) stays the user's control.
 
 ## Multi-output buses
 
@@ -305,9 +311,12 @@ python tools\gen_presets.py --features build\presets-work\nes.features.json --fe
 cmake --build --preset windows-x64-release
 ```
 
-These steps were last run on 2026-09-30 for all three chips: steps 1 and 5 reproduced the
-committed samples and banks byte for byte (NES 314 expanded -> 311, SNES 338 -> 338,
-Genesis 393 -> 393). Step 5 exits with a non-zero code when a bank is outside
+These steps were last run on 2026-09-30 for all three chips, after the NES kernel change
+and with `preset_gain` (no parameter descriptor changed, so `dump-params` was not needed):
+the kept presets and their parameters are unchanged (NES 314 expanded -> 311, SNES
+338 -> 338, Genesis 393 -> 393), and step 5 wrote each preset's `preset_gain` from the
+rendered level (`docs/PRESET_SPECS.md`, "Playing level"; distribution in
+`docs/PRESET_QA.md`). Step 5 exits with a non-zero code when a bank is outside
 its target size (`docs/PRESET_SPECS.md`).
 
 The perceptual de-duplication in `docs/PRESET_QA.md` compares rendered features: a
@@ -340,7 +349,8 @@ A full run takes about 35 minutes (pure Python analysis) and writes
 (2026-09-30): the S-DSP is bit-exact with Game Music Emu on static stimuli apart from the
 player gain and polarity; SN76489 tones, levels and noise modes match; all eight YM2612
 algorithms are within 0.11 dB of Nuked OPN2 after the fixes of findings F1 (S1 pipeline
-delay) and F2 (resampler kernel).
+delay) and F2 (resampler kernel). The NES (`--chips nes`, rerun on 2026-09-30 after the NES
+switched to the integrated-step kernel) shows no engine deviation against NSFPlay.
 
 ## Listening set
 
@@ -352,7 +362,8 @@ delay) and F2 (resampler kernel).
 read with `git show`), "after" the working tree; both go through the same current
 engine, so a pair isolates preset and sample changes. `INDEX.md` lists the pairs with
 their peak and RMS levels and flags byte-identical pairs (unchanged presets kept as
-controls). It uses `chiptool render --notes 60,62,64 --step 0.4 --gate 0.8`, which plays
+controls). `chiptool render` applies the preset's `preset_gain`, so "after" files play at
+the factory levels; revisions before 2026-09-30 have none. It uses `chiptool render --notes 60,62,64 --step 0.4 --gate 0.8`, which plays
 a monophonic phrase on the preset's hardware channel.
 
 ## Testing
@@ -361,7 +372,7 @@ a monophonic phrase on the preset's hardware channel.
   (tables, formulas and behaviour of each chip against documented values, band-limited
   steps, allocator, arpeggiator, glide) and `plugin_tests` (processor, presets, state
   round trip, MIDI learn, value text, and the `[real]` tests that sweep all presets
-  through the real engines). Last run (2026-09-30): 325 of 325 passed.
+  through the real engines). Last run (2026-09-30): 330 of 330 passed.
 * One area only: `cmake --build --preset windows-x64-release --target chipdsp_tests_nes`,
   then `build\windows-x64-release\dsp\tests\chipdsp_tests_nes.exe`. The plugin tests are
   in `build\windows-x64-release\plugin\tests\plugin_tests.exe`.
@@ -425,8 +436,11 @@ separate tool downloaded for validation and is not linked.
   verification (`docs/HARDWARE_NOTES.md`, "LFO frequencies").
 * The scope of the MIDI Channel Mode messages (CC 120/121/123 per channel) follows
   general knowledge of the MIDI 1.0 specification; the document was not re-read.
-* PSG-only Genesis presets are 16-22 dB quieter than FM presets, and NES output is
-  quiet, because levels are hardware-relative. Use `master_gain`.
+* Levels are hardware-relative at the chip output; the factory presets' `preset_gain`
+  evens them out. 40 Genesis PSG presets (soft level variants) stop at the +36 dB bound,
+  up to 11 dB below the -18 dBFS target, and level variants ("Level Soft", ghost notes) now play
+  near the common level. The gain is measured at velocity 100: velocity 127 can put a
+  single note above 0 dBFS (30 of 262 sampled presets).
 * The DC blocker (5 Hz) and the output coupling behaviour at reset are modelling
   choices, not measured hardware values.
 * `poly_channels` has no editor control.

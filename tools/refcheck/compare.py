@@ -22,8 +22,9 @@ Pipeline (run tools\\refcheck\\make_stimuli.py first):
    Ym2612Core / Sn76489Core / SnesDsp / NesApu; Genesis through the engine output path at 44100 Hz
    with the ladder effect on and the Model 1 low-pass off, SNES native 32 kHz, NES through the
    Nes2A03Engine output path at 44100 Hz with console_filter = 0 (5 Hz DC blocker only), once
-   with the engine's ImpulseSum step kernel (``ours``) and once with the integrated-step kernel
-   (``ours_int``) so that the known kernel difference (refcheck F2) is measured separately).
+   with the engine's integrated-step kernel (``ours``) and once with the legacy ImpulseSum kernel
+   the engine used before 2026-09-30 (``ours_imp``, ``--kernel impulse``) so that the known
+   kernel difference (refcheck F2) is measured separately).
 3. Analysis per stimulus, on the channel with more reference energy (levels per channel):
    * Pre-conditioning (``precondition``): idle level removed and the silent lead-in zeroed;
      Genesis references get the 5 Hz coupling capacitor our output path has; then, both
@@ -198,11 +199,11 @@ def render_all(manifest: list[dict], stimuli: str, work: str, chiptool: str) -> 
             if m["chip"] == "genesis":
                 subprocess.run([chiptool, "regs", "genesis", src, os.path.join(work, f"{name}.ours.wav")], check=True)
             else:
-                # Engine output path (ImpulseSum kernel), and the integrated-step kernel of the
-                # F2 fix for the separate measurement of that known output-path difference.
+                # Engine output path (integrated-step kernel), and the legacy ImpulseSum kernel for
+                # the separate measurement of that known output-path difference (F2).
                 subprocess.run([chiptool, "regs", "nes", src, os.path.join(work, f"{name}.ours.wav")], check=True)
-                subprocess.run([chiptool, "regs", "nes", src, os.path.join(work, f"{name}.ours_int.wav"),
-                                "--kernel", "integrated"], check=True)
+                subprocess.run([chiptool, "regs", "nes", src, os.path.join(work, f"{name}.ours_imp.wav"),
+                                "--kernel", "impulse"], check=True)
                 if m.get("nsf"):
                     # Third NES renderer: Game Music Emu's NSF player (same writes, frame-quantised).
                     subprocess.run([ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "libgme",
@@ -1317,8 +1318,8 @@ COMPARISONS = [
     ("NES: ours vs NSFPlay core (VGMPlay)", "nes", "ours", "ref_nsfplay"),
     ("NES: ours vs MAME core (VGMPlay)", "nes", "ours", "ref_nesmame"),
     ("NES: reference vs reference: MAME core against NSFPlay core", "nes", "ref_nesmame", "ref_nsfplay"),
-    ("NES: ours with the integrated-step kernel vs NSFPlay core", "nes", "ours_int", "ref_nsfplay"),
-    ("NES: ours (engine, ImpulseSum kernel) vs ours with the integrated-step kernel (F2 measurement)", "nes", "ours", "ours_int"),
+    ("NES: ours with the legacy ImpulseSum kernel vs NSFPlay core", "nes", "ours_imp", "ref_nsfplay"),
+    ("NES: ours with the legacy ImpulseSum kernel vs ours (engine, integrated-step kernel) (F2 measurement)", "nes", "ours_imp", "ours"),
     ("NES: ours vs Game Music Emu NSF player (FFmpeg libgme; NSF subset)", "nes", "ours", "ref_gmensf"),
 ]
 NES_TIMING_KINDS = {"env", "ssg", "gate", "sweep", "segments"}

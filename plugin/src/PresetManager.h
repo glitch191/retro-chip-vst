@@ -59,7 +59,8 @@ struct UserSample
 //
 // Applying a preset sets every engine parameter of its chip (values from the preset,
 // engine defaults for keys the preset omits), the preset-managed globals (arpeggiator,
-// glide, poly_channels: preset values or defaults, poly_channels 0 = the chip's mask),
+// glide, poly_channels, preset_gain: preset values or defaults, poly_channels 0 = the
+// chip's mask, preset_gain 0 dB),
 // loads the referenced samples into the slots and sets the chip last, each write in its
 // own change gesture. Unknown keys are logged and ignored. Other globals (raw output,
 // voice mode, master gain, UI scale) are left alone.

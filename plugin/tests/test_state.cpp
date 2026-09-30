@@ -66,6 +66,7 @@ TEST_CASE ("State round trip restores parameters, preset name, MIDI learn and us
 {
     auto source = rcvtest::makeProcessor();
     const auto expected = setEveryParameterAwayFromDefault (*source);
+    REQUIRE (expected.count (rcv::ParamIds::presetGain) == 1);   // preset_gain goes through the round trip too
 
     const juce::String presetName ("Plugin Test Preset");
     const juce::String presetCategory ("Test Category");
@@ -334,6 +335,41 @@ TEST_CASE ("Applying a preset sets the chip after every engine parameter, in ges
         CHECK (std::find (recorder.gestureStarts.begin(), recorder.gestureStarts.end(), index) != recorder.gestureStarts.end());
     }
     CHECK (proc->selectedChip() == chipdsp::ChipId::Genesis);
+}
+
+TEST_CASE ("preset_gain is preset-managed: applied, reset to 0 dB when missing, exported, kept by the state", "[state][presets]")
+{
+    auto proc = rcvtest::makeProcessor();
+    auto& pm = proc->presetManager();
+
+    rcv::Preset loud;
+    loud.name = "Gain Test";
+    loud.chip = chipdsp::ChipId::Nes;
+    loud.global.emplace_back (rcv::ParamIds::presetGain, 14.5f);
+    pm.apply (loud);
+    CHECK (rcvtest::getRaw (*proc, rcv::ParamIds::presetGain) == 14.5f);
+
+    // Exported presets carry it in "global".
+    const auto captured = pm.captureCurrent();
+    const float* exported = captured.globalValue (rcv::ParamIds::presetGain);
+    REQUIRE (exported != nullptr);
+    CHECK (*exported == 14.5f);
+
+    // The plugin state keeps it.
+    juce::MemoryBlock state;
+    proc->getStateInformation (state);
+    auto restored = rcvtest::makeProcessor();
+    restored->setStateInformation (state.getData(), static_cast<int> (state.getSize()));
+    CHECK (rcvtest::getRaw (*restored, rcv::ParamIds::presetGain) == 14.5f);
+
+    // A preset without it returns to the default, and master_gain is never touched.
+    rcvtest::setRaw (*proc, rcv::ParamIds::masterGain, -3.0f);
+    rcv::Preset plain;
+    plain.name = "Plain";
+    plain.chip = chipdsp::ChipId::Snes;
+    pm.apply (plain);
+    CHECK (rcvtest::getRaw (*proc, rcv::ParamIds::presetGain) == 0.0f);
+    CHECK (rcvtest::getRaw (*proc, rcv::ParamIds::masterGain) == -3.0f);
 }
 
 TEST_CASE ("Invalid state data leaves the processor untouched", "[state]")

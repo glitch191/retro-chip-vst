@@ -659,18 +659,20 @@ Decision: `model1_lowpass` = first-order 3.39 kHz (VA0-VA2); the VA3-VA6 2.84 kH
 documented but not exposed; Model 2 is not modelled.
 Alternative: a biquad fitted to a Model 2 recording.
 
-### Genesis and SNES: resampler kernel [integration, refcheck F2]
+### All chips: resampler kernel [integration, refcheck F2]
 Ambiguity: none in the hardware; the host-rate conversion must not colour the chip output.
 The original kernel (sampled windowed-sinc impulses summed by a discrete running sum)
 boosted the top octave by (w/2)/sin(w/2), w = 2 pi f / host rate: +0.94 dB at 11.2 kHz and
 +1.48 dB at 14 kHz at 44.1 kHz, measured on PSG squares and seen against both reference
 emulators.
 Sources: `docs/research/refcheck-report.md` finding F2.
-Decision: the Genesis (FM and PSG) and SNES engines use the `IntegratedStep` kernel (taps =
-first differences of the integrated windowed sinc: exact band-limited steps, flat pass band).
-The NES keeps the `ImpulseSum` kernel so its output does not change (product-owner decision
-2026-09-29); its top octave keeps the boost.
-Alternative: switch the NES too (changes only its top octave, by the formula above).
+Decision: every engine (NES, Genesis FM and PSG, SNES) uses the `IntegratedStep` kernel
+(taps = first differences of the integrated windowed sinc: exact band-limited steps, flat
+pass band). The NES kept the `ImpulseSum` kernel until 2026-09-30 and was switched by a
+product-owner decision; its top octave lost the boost (-0.9 dB at 11 kHz), and the NES
+refcheck against NSFPlay moved by the formula. `ImpulseSum` stays only for
+`chiptool regs nes --kernel impulse` (the F2 measurement).
+Alternative: keep the legacy kernel on the NES (top-octave boost by the formula above).
 
 ### Genesis: output coupling capacitor [genesis 37]
 Ambiguity: no source gives the high-pass.
@@ -690,8 +692,9 @@ Alternative: start from 0 and let the 5 Hz DC blocker settle (audible click).
 ### Genesis: output level [integration]
 Ambiguity: none in the hardware.
 Sources: research genesis "Console low-pass filters and levels".
-Decision: hardware-relative: one FM channel is about -26 dBFS RMS; `master_gain`
-compensates.
+Decision: hardware-relative at the chip output: one FM channel is about -26 dBFS RMS.
+Each factory preset carries a `preset_gain` (see "Presets: playing level (preset_gain)")
+applied after the chip; `master_gain` stays the user's control.
 Alternative: normalise each chip.
 
 ## Plugin layer and presets
@@ -785,9 +788,31 @@ breaking the hardware-relative mix (six full-scale FM channels map to 1.0, so on
 tops out near -15.6 dBFS).
 Sources: `docs/research/genesis-sound-design.md`, "Genesis: output level" above.
 Decision: the loudest carrier sits at TL 0-10 (with a headroom rule on multi-carrier
-algorithms so the 9-bit channel sum does not clamp); `master_gain` compensates.
-Alternative: a preset-managed output gain, or a different `master_gain` default (plugin
-decisions).
+algorithms so the 9-bit channel sum does not clamp); the preset-managed `preset_gain`
+(2026-09-30) brings the preset to the common playing level after the chip.
+Alternative: a different `master_gain` default (plugin decision).
+
+### Presets: playing level (preset_gain) [integration, plugin.md]
+Ambiguity: single voices came out at about -30 dBFS RMS (Genesis PSG about -45) because the
+mix is hardware-relative; "one common playing level" needs a measure of a preset's level
+and a rule for sounds that decay during the hold.
+Sources: product-owner decision 2026-09-30; docs/PRESET_SPECS.md ("Playing level").
+Decision: a preset-managed global `preset_gain` (-24..+36 dB, default 0, no panel control)
+multiplies the main and channel outputs after the chip, in the same ramp as `master_gain`,
+so channel ratios and the NES mixer curve are untouched. The generator sets it from the
+`chiptool features` long pass (C4, velocity 100, held 1.4 s): stereo RMS over the 10 ms
+windows of the hold within 20 dB of the loudest window (the part where the note sounds) to
+-18 dBFS, peak of either channel over both passes at or below -1 dBFS, rounded to 0.5 dB.
+Results on 2026-09-30: NES +7.0..+27.0 dB (median +15.0), SNES -11.5..+11.5 (median -0.5),
+Genesis +2.5..+36.0 (median +12.5); 40 Genesis PSG presets stop at the +36 dB bound
+(still below the target), 118 presets are limited by the peak ceiling. Level variants
+("Level Soft", ghost notes) now play at the common level unless the peak or the bound
+limits them. The measure is taken at velocity 100: at velocity 127 the peak rises by a
+median 1.6 / 2.1 / 3.0 dB (NES / SNES / Genesis, max 2.6 / 2.8 / 6.0 dB on every fourth
+preset), and 30 of those 262 presets reach 0 dBFS on a single C4 (open: a velocity-127 peak
+pass would lower the peak-limited presets by that amount).
+Alternative: RMS over the whole hold (percussive presets would all sit at the peak
+ceiling), or loudness weighting (ITU-R BS.1770) instead of plain RMS.
 
 ### Presets: Genesis white noise on the tone-3 clock [integration, genesis-sound-design Decision 4]
 Ambiguity: the old seed assumed that white noise on rate 3 shifts at 16 times the key

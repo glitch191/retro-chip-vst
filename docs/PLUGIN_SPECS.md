@@ -30,6 +30,7 @@ Global parameters (ids fixed):
 | `voice_mode` | choice | MIDI channel, Poly | Poly |
 | `poly_channels` | int | bit mask of hardware channels usable by Poly/arp, 10 bits; 0 = chip default | 0 = chip default (NES: pulses+triangle, SNES: all, Genesis: FM 1..6) |
 | `master_gain` | float dB | -24..+12 | 0 |
+| `preset_gain` | float dB | -24..+36; the preset's playing-level correction, set by presets, no panel control | 0 |
 | `arp_enabled` | bool | | off |
 | `arp_pattern` | choice | Up, Down, Up-Down, As played, Random | Up |
 | `arp_octaves` | int | 1..4 | 1 |
@@ -61,7 +62,10 @@ and the crossfade.
   3. Split the block at MIDI event sample offsets. For each sub-block: route events
      (arp first, then allocator/MIDI-channel mode, then glide), call the engine(s),
      accumulate into the main bus, and into per-channel buses when the host enabled them.
-  4. Feed the visualiser ring buffers with the main and per-channel signals.
+  4. Apply the output gain, `master_gain` + `preset_gain` in dB, as one linear ramp per
+     slice on the main and per-channel signals (after the chip, so the channel ratios and
+     the NES mixer are unchanged).
+  5. Feed the visualiser ring buffers with the main and per-channel signals.
 * MIDI CC/pitch bend: pitch bend (+/- 2 semitones default, `bend_range` fixed constant)
   goes through `setChannelPitch`; sustain pedal (CC 64) holds note-offs; all other CCs go
   to `MidiLearn`. All Sound Off (120), Reset All Controllers (121) and All Notes Off (123)
@@ -147,7 +151,8 @@ API: `loadBanks()`, `categories(chip)`, `subcategories(chip, category)`,
 substring over name and tags), `apply(const Preset&)` (sets parameters through the
 APVTS on the message thread, then loads samples), `current()`, `exportCurrent(File)`,
 `importFile(File)`, and `next()/previous()` inside the current filtered list. `apply` writes
-the engine parameters, the preset-managed globals and the samples first and the `chip`
+the engine parameters, the preset-managed globals (`arp_*`, `glide_*`, `poly_channels`,
+`preset_gain`; a missing key takes the default) and the samples first and the `chip`
 last, each write in its own change gesture.
 
 ## Randomizer (`Randomizer.h/.cpp`)
@@ -160,7 +165,7 @@ re-drawn with probability `amount`, and so are integer 0..1 switches without lab
 Parameters never leave `[minValue, maxValue]`; the `sample`/`dac_sample` slot parameters,
 `clock`, `chip_revision`, `console_filter`, `model1_lowpass` (the Genesis console output
 filter, the counterpart of `console_filter`) and `main_volume`/`master_gain` are excluded.
-Global performance parameters are untouched.
+Global parameters (performance settings, `preset_gain`) are untouched.
 The UI exposes `amount` (default 0.3) and a `Randomize` button.
 
 ## MIDI learn (`MidiLearn.h/.cpp`)

@@ -89,3 +89,19 @@ into docs/HARDWARE_NOTES.md.
   runs its own timer while a text field has focus.
 * Decision: the editor's look and feel creates a caret that does not blink; it shows while
   the field has focus.
+
+### Per-preset playing level (preset_gain)
+
+* Point: single voices played at about -30 dBFS RMS (Genesis PSG about -45) because the mix
+  is hardware-relative, and the product owner asked (2026-09-30) for one common playing
+  level per preset without touching the chip mix. Open: where the gain acts, and how a
+  preset's level is measured when the note decays during the hold.
+* Decision: a global `preset_gain` (-24..+36 dB, default 0), preset-managed like `arp_*`,
+  `glide_*` and `poly_channels` (a preset without it resets it to 0 dB), not on the panel,
+  never randomized. EngineHost adds it to `master_gain` in dB and applies the sum after the
+  chip output in the existing gain ramp, on the main and channel buses, so channel ratios
+  and the NES non-linear mixer are unchanged. The generator's measure is the stereo RMS of
+  the 10 ms windows of the held C4 within 20 dB of the loudest one, targeted at -18 dBFS,
+  with the sample peak kept at or below -1 dBFS (docs/PRESET_SPECS.md, "Playing level").
+* Alternative: RMS over the whole hold (percussive sounds would all end at the peak
+  ceiling), a loudness model (ITU-R BS.1770 K-weighting), or a per-chip gain.

@@ -13,7 +13,8 @@
       "arp_sync_division": 5,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES Arp Fifth Interval Duty12",
     "params": {
@@ -109,7 +110,8 @@
       "arp_sync_division": 5,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Arp Fifth Interval Duty12 OctUp",
     "params": {
@@ -206,7 +208,8 @@
       "arp_sync_division": 5,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Arp Fifth Interval Duty25",
     "params": {
@@ -302,7 +305,8 @@
       "arp_sync_division": 5,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES Arp Fifth Interval Duty25 OctUp",
     "params": {
@@ -399,7 +403,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Octave Interval Duty12",
     "params": {
@@ -494,7 +499,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Octave Interval Duty12 OctUp",
     "params": {
@@ -590,7 +596,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Octave Interval Duty25",
     "params": {
@@ -685,7 +692,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES Arp Octave Interval Duty25 OctUp",
     "params": {
@@ -781,7 +789,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Octave Interval Duty50",
     "params": {
@@ -876,7 +885,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Arp Octave Interval Duty50 OctUp",
     "params": {
@@ -972,7 +982,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Arp Warble Interval Duty25",
     "params": {
@@ -1067,7 +1078,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.0
     },
     "name": "NES Arp Warble Interval Duty25 OctUp",
     "params": {
@@ -1163,7 +1175,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Arp Warble Interval Duty50",
     "params": {
@@ -1258,7 +1271,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.0
     },
     "name": "NES Arp Warble Interval Duty50 OctUp",
     "params": {
@@ -1354,7 +1368,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Wide Interval Duty25",
     "params": {
@@ -1450,7 +1465,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Wide Interval Duty25 OctDown",
     "params": {
@@ -1547,7 +1563,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Wide Interval Duty50",
     "params": {
@@ -1643,7 +1660,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 20.0
     },
     "name": "NES Arp Wide Interval Duty50 OctDown",
     "params": {
@@ -1740,7 +1758,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.0
     },
     "name": "NES Arp Bounce Triad Duty25",
     "params": {
@@ -1837,7 +1856,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Arp Bounce Triad Duty25 OctUp",
     "params": {
@@ -1935,7 +1955,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.0
     },
     "name": "NES Arp Bounce Triad Duty50",
     "params": {
@@ -2032,7 +2053,8 @@
       "arp_sync_division": 4,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Arp Bounce Triad Duty50 OctUp",
     "params": {
@@ -2130,7 +2152,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 2
+      "poly_channels": 2,
+      "preset_gain": 13.5
     },
     "name": "NES Arp Down Triad Duty25",
     "params": {
@@ -2227,7 +2250,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 2
+      "poly_channels": 2,
+      "preset_gain": 11.5
     },
     "name": "NES Arp Down Triad Duty25 OctUp",
     "params": {
@@ -2325,7 +2349,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 2
+      "poly_channels": 2,
+      "preset_gain": 13.5
     },
     "name": "NES Arp Down Triad Duty50",
     "params": {
@@ -2422,7 +2447,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 2
+      "poly_channels": 2,
+      "preset_gain": 10.5
     },
     "name": "NES Arp Down Triad Duty50 OctUp",
     "params": {
@@ -2520,7 +2546,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 3
+      "poly_channels": 3,
+      "preset_gain": 19.0
     },
     "name": "NES Arp Echo Triad Duty12 LongRelease",
     "params": {
@@ -2616,7 +2643,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 3
+      "poly_channels": 3,
+      "preset_gain": 19.0
     },
     "name": "NES Arp Echo Triad Duty12 ShortRelease",
     "params": {
@@ -2712,7 +2740,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 3
+      "poly_channels": 3,
+      "preset_gain": 18.0
     },
     "name": "NES Arp Echo Triad Duty25 LongRelease",
     "params": {
@@ -2808,7 +2837,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 3
+      "poly_channels": 3,
+      "preset_gain": 18.0
     },
     "name": "NES Arp Echo Triad Duty25 ShortRelease",
     "params": {
@@ -2904,7 +2934,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 3
+      "poly_channels": 3,
+      "preset_gain": 18.0
     },
     "name": "NES Arp Echo Triad Duty50 LongRelease",
     "params": {
@@ -3000,7 +3031,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 3
+      "poly_channels": 3,
+      "preset_gain": 18.0
     },
     "name": "NES Arp Echo Triad Duty50 ShortRelease",
     "params": {
@@ -3096,7 +3128,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Arp Frame Chord Duty12",
     "params": {
@@ -3193,7 +3226,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Arp Frame Chord Duty12 OctUp",
     "params": {
@@ -3291,7 +3325,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Arp Frame Chord Duty25",
     "params": {
@@ -3388,7 +3423,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Arp Frame Chord Duty25 OctUp",
     "params": {
@@ -3486,7 +3522,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Arp Frame Chord Duty50",
     "params": {
@@ -3583,7 +3620,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 12.5
     },
     "name": "NES Arp Frame Chord Duty50 OctUp",
     "params": {
@@ -3681,7 +3719,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Random Triad Duty25",
     "params": {
@@ -3777,7 +3816,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Random Triad Duty25 OctUp",
     "params": {
@@ -3874,7 +3914,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Random Triad Duty50",
     "params": {
@@ -3970,7 +4011,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.0
     },
     "name": "NES Arp Random Triad Duty50 OctUp",
     "params": {
@@ -4067,7 +4109,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES Arp Slow Chord Duty25",
     "params": {
@@ -4163,7 +4206,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Arp Slow Chord Duty25 OctUp",
     "params": {
@@ -4260,7 +4304,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.0
     },
     "name": "NES Arp Slow Chord Duty50",
     "params": {
@@ -4356,7 +4401,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES Arp Slow Chord Duty50 OctUp",
     "params": {
@@ -4453,7 +4499,8 @@
       "arp_sync_division": 1,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Arp Triangle Triad Length Medium",
     "params": {
@@ -4548,7 +4595,8 @@
       "arp_sync_division": 1,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 17.0
     },
     "name": "NES Arp Triangle Triad Length Medium OctDown",
     "params": {
@@ -4644,7 +4692,8 @@
       "arp_sync_division": 1,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Arp Triangle Triad Length Short",
     "params": {
@@ -4739,7 +4788,8 @@
       "arp_sync_division": 1,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 17.0
     },
     "name": "NES Arp Triangle Triad Length Short OctDown",
     "params": {
@@ -4835,7 +4885,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Up Triad Duty12",
     "params": {
@@ -4931,7 +4982,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Up Triad Duty12 OctUp",
     "params": {
@@ -5028,7 +5080,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Up Triad Duty25",
     "params": {
@@ -5124,7 +5177,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES Arp Up Triad Duty25 OctUp",
     "params": {
@@ -5221,7 +5275,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.5
     },
     "name": "NES Arp Up Triad Duty50",
     "params": {
@@ -5317,7 +5372,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.0
     },
     "name": "NES Arp Up Triad Duty50 OctUp",
     "params": {
@@ -5414,7 +5470,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Bass Growl Pulse Depth Deep",
     "params": {
@@ -5506,7 +5563,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Bass Growl Pulse Depth Deep OctDown",
     "params": {
@@ -5599,7 +5657,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Bass Growl Pulse Depth Rough",
     "params": {
@@ -5691,7 +5750,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Bass Growl Pulse Depth Rough OctDown",
     "params": {
@@ -5784,7 +5844,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Bass Pluck Pulse Duty25 OctDown LongDecay",
     "params": {
@@ -5879,7 +5940,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Bass Pluck Pulse Duty25 OctDown MidDecay",
     "params": {
@@ -5974,7 +6036,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Bass Pluck Pulse Duty25 OctDown ShortDecay",
     "params": {
@@ -6069,7 +6132,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Bass Pluck Pulse Duty50 OctDown LongDecay",
     "params": {
@@ -6164,7 +6228,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Bass Pluck Pulse Duty50 OctDown MidDecay",
     "params": {
@@ -6259,7 +6324,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Bass Pluck Pulse Duty50 OctDown ShortDecay",
     "params": {
@@ -6354,7 +6420,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Bass Pulse Duty25 OctDown Shape Plucked",
     "params": {
@@ -6447,7 +6514,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Bass Pulse Duty25 Shape Plucked",
     "params": {
@@ -6539,7 +6607,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.0
     },
     "name": "NES Bass Pulse Duty50 OctDown Shape Plucked",
     "params": {
@@ -6632,7 +6701,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES Bass Pulse Duty50 OctDown Shape Sustained",
     "params": {
@@ -6725,7 +6795,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Bass Pulse Duty50 Shape Plucked",
     "params": {
@@ -6817,7 +6888,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Punch Triangle Drop Hard",
     "params": {
@@ -6909,7 +6981,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Punch Triangle Drop Hard Attack 1 Frame",
     "params": {
@@ -7002,7 +7075,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Punch Triangle Drop Light",
     "params": {
@@ -7094,7 +7168,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Punch Triangle Drop Light Attack 1 Frame",
     "params": {
@@ -7187,7 +7262,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 60.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Slide Triangle Scoop Small",
     "params": {
@@ -7279,7 +7355,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 60.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 16.5
     },
     "name": "NES Bass Slide Triangle Scoop Small OctDown",
     "params": {
@@ -7372,7 +7449,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 60.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Slide Triangle Scoop Wide",
     "params": {
@@ -7464,7 +7542,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 60.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 16.5
     },
     "name": "NES Bass Slide Triangle Scoop Wide OctDown",
     "params": {
@@ -7557,7 +7636,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Triangle",
     "params": {
@@ -7648,7 +7728,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.5
     },
     "name": "NES Bass Triangle Down1",
     "params": {
@@ -7740,7 +7821,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.5
     },
     "name": "NES Bass Triangle Down2",
     "params": {
@@ -7832,7 +7914,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 12.0
     },
     "name": "NES Bass Triangle Down3",
     "params": {
@@ -7924,7 +8007,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 12.5
     },
     "name": "NES Bass Triangle Down4",
     "params": {
@@ -8016,7 +8100,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 13.0
     },
     "name": "NES Bass Triangle Down5",
     "params": {
@@ -8108,7 +8193,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 13.5
     },
     "name": "NES Bass Triangle Down6",
     "params": {
@@ -8200,7 +8286,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.5
     },
     "name": "NES Bass Triangle Up1",
     "params": {
@@ -8292,7 +8379,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.0
     },
     "name": "NES Bass Triangle Up2",
     "params": {
@@ -8384,7 +8472,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.0
     },
     "name": "NES Bass Triangle Up3",
     "params": {
@@ -8476,7 +8565,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 9.5
     },
     "name": "NES Bass Triangle Up4",
     "params": {
@@ -8568,7 +8658,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 9.0
     },
     "name": "NES Bass Triangle Up5",
     "params": {
@@ -8660,7 +8751,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Warm Triangle Vibrato Fast Depth Light",
     "params": {
@@ -8753,7 +8845,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Warm Triangle Vibrato Fast Depth Wide",
     "params": {
@@ -8846,7 +8939,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Warm Triangle Vibrato Slow Depth Light",
     "params": {
@@ -8939,7 +9033,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Warm Triangle Vibrato Slow Depth Wide",
     "params": {
@@ -9032,7 +9127,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 12.0
     },
     "name": "NES Bass Gated Triangle Gate2",
     "params": {
@@ -9125,7 +9221,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 18.0
     },
     "name": "NES Bass Gated Triangle Gate2 OctDown",
     "params": {
@@ -9219,7 +9316,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.5
     },
     "name": "NES Bass Gated Triangle Gate3",
     "params": {
@@ -9312,7 +9410,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 17.5
     },
     "name": "NES Bass Gated Triangle Gate3 OctDown",
     "params": {
@@ -9406,7 +9505,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 12.0
     },
     "name": "NES Bass Gated Triangle Gate4",
     "params": {
@@ -9499,7 +9599,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 18.5
     },
     "name": "NES Bass Gated Triangle Gate4 OctDown",
     "params": {
@@ -9593,7 +9694,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.5
     },
     "name": "NES Bass Gated Triangle Gate6",
     "params": {
@@ -9686,7 +9788,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 17.5
     },
     "name": "NES Bass Gated Triangle Gate6 OctDown",
     "params": {
@@ -9780,7 +9883,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Staccato Triangle Length Long",
     "params": {
@@ -9873,7 +9977,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 17.0
     },
     "name": "NES Bass Staccato Triangle Length Long OctDown",
     "params": {
@@ -9967,7 +10072,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.5
     },
     "name": "NES Bass Staccato Triangle Length Medium",
     "params": {
@@ -10060,7 +10166,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 17.0
     },
     "name": "NES Bass Staccato Triangle Length Medium OctDown",
     "params": {
@@ -10154,7 +10261,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.5
     },
     "name": "NES Bass Staccato Triangle Length Short",
     "params": {
@@ -10247,7 +10355,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 17.5
     },
     "name": "NES Bass Staccato Triangle Length Short OctDown",
     "params": {
@@ -10341,7 +10450,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.5
     },
     "name": "NES Bass Thump Triangle Length Long Drop Hard",
     "params": {
@@ -10434,7 +10544,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Thump Triangle Length Long Drop Light",
     "params": {
@@ -10527,7 +10638,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.0
     },
     "name": "NES Bass Thump Triangle Length Short Drop Hard",
     "params": {
@@ -10620,7 +10732,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Bass Thump Triangle Length Short Drop Light",
     "params": {
@@ -10713,7 +10826,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Clap Rate11",
     "params": {
@@ -10808,7 +10922,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Clap Rate15",
     "params": {
@@ -10903,7 +11018,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Crash Rate11",
     "params": {
@@ -10999,7 +11115,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Crash Rate15",
     "params": {
@@ -11095,7 +11212,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Hat Closed Rate11",
     "params": {
@@ -11191,7 +11309,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Hat Closed Rate15",
     "params": {
@@ -11287,7 +11406,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Hat Open Rate11",
     "params": {
@@ -11383,7 +11503,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Hat Open Rate15",
     "params": {
@@ -11479,7 +11600,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Kick 808 Rate11",
     "params": {
@@ -11575,7 +11697,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Kick 808 Rate15",
     "params": {
@@ -11671,7 +11794,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Kick Long Rate11",
     "params": {
@@ -11766,7 +11890,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Kick Long Rate15",
     "params": {
@@ -11861,7 +11986,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Kick Short Rate11",
     "params": {
@@ -11956,7 +12082,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Kick Short Rate15",
     "params": {
@@ -12051,7 +12178,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Rim Rate11",
     "params": {
@@ -12146,7 +12274,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Rim Rate15",
     "params": {
@@ -12241,7 +12370,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Snare Noisy Rate11",
     "params": {
@@ -12336,7 +12466,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Snare Noisy Rate15",
     "params": {
@@ -12431,7 +12562,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Snare Tight Rate11",
     "params": {
@@ -12526,7 +12658,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Snare Tight Rate15",
     "params": {
@@ -12621,7 +12754,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Tom High Rate11",
     "params": {
@@ -12716,7 +12850,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Tom High Rate11 Keyed",
     "params": {
@@ -12811,7 +12946,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Tom High Rate15",
     "params": {
@@ -12906,7 +13042,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Tom Low Rate11",
     "params": {
@@ -13001,7 +13138,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Tom Low Rate11 Keyed",
     "params": {
@@ -13096,7 +13234,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES Drums DMC Tom Low Rate15",
     "params": {
@@ -13191,7 +13330,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 25.5
     },
     "name": "NES Drums Closed Hat Period0 SoftDecay",
     "params": {
@@ -13285,7 +13425,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 24.5
     },
     "name": "NES Drums Closed Hat Period0 TightDecay",
     "params": {
@@ -13379,7 +13520,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 17.5
     },
     "name": "NES Drums Closed Hat Period3 SoftDecay",
     "params": {
@@ -13473,7 +13615,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 16.5
     },
     "name": "NES Drums Closed Hat Period3 TightDecay",
     "params": {
@@ -13567,7 +13710,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 15.5
     },
     "name": "NES Drums Closed Hat Period5 SoftDecay",
     "params": {
@@ -13661,7 +13805,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 15.0
     },
     "name": "NES Drums Closed Hat Period5 TightDecay",
     "params": {
@@ -13755,7 +13900,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 27.0
     },
     "name": "NES Drums Metal Hat Period0 RingDecay",
     "params": {
@@ -13849,7 +13995,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 26.5
     },
     "name": "NES Drums Metal Hat Period0 TightDecay",
     "params": {
@@ -13943,7 +14090,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 24.0
     },
     "name": "NES Drums Metal Hat Period1 RingDecay",
     "params": {
@@ -14037,7 +14185,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 22.5
     },
     "name": "NES Drums Metal Hat Period1 TightDecay",
     "params": {
@@ -14131,7 +14280,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 22.0
     },
     "name": "NES Drums Open Hat Period0 LongDecay",
     "params": {
@@ -14226,7 +14376,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 22.0
     },
     "name": "NES Drums Open Hat Period0 MidDecay",
     "params": {
@@ -14321,7 +14472,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.5
     },
     "name": "NES Drums Open Hat Period3 LongDecay",
     "params": {
@@ -14416,7 +14568,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.5
     },
     "name": "NES Drums Open Hat Period3 MidDecay",
     "params": {
@@ -14511,7 +14664,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 14.0
     },
     "name": "NES Drums Noise Kick Period11 BoomDecay",
     "params": {
@@ -14604,7 +14758,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.5
     },
     "name": "NES Drums Noise Kick Period11 TightDecay",
     "params": {
@@ -14697,7 +14852,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 14.5
     },
     "name": "NES Drums Noise Kick Period14 BoomDecay",
     "params": {
@@ -14790,7 +14946,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.0
     },
     "name": "NES Drums Noise Kick Period14 TightDecay",
     "params": {
@@ -14883,7 +15040,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.0
     },
     "name": "NES Drums Triangle Thump Drop Fast",
     "params": {
@@ -14975,7 +15133,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 16.5
     },
     "name": "NES Drums Triangle Thump Drop Fast OctDown",
     "params": {
@@ -15068,7 +15227,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 9.5
     },
     "name": "NES Drums Triangle Thump Drop Slow",
     "params": {
@@ -15160,7 +15320,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 16.5
     },
     "name": "NES Drums Triangle Thump Drop Slow OctDown",
     "params": {
@@ -15253,7 +15414,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 14.5
     },
     "name": "NES Drums Metal Snare Period5 Tail Loose",
     "params": {
@@ -15347,7 +15509,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 14.5
     },
     "name": "NES Drums Metal Snare Period5 Tail Tight",
     "params": {
@@ -15441,7 +15604,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.5
     },
     "name": "NES Drums Metal Snare Period7 Tail Loose",
     "params": {
@@ -15535,7 +15699,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.5
     },
     "name": "NES Drums Metal Snare Period7 Tail Tight",
     "params": {
@@ -15629,7 +15794,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 15.0
     },
     "name": "NES Drums Noise Snare Period4 Tail Loose",
     "params": {
@@ -15722,7 +15888,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 16.5
     },
     "name": "NES Drums Noise Snare Period4 Tail Tight",
     "params": {
@@ -15815,7 +15982,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 14.0
     },
     "name": "NES Drums Noise Snare Period6 Tail Loose",
     "params": {
@@ -15908,7 +16076,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.5
     },
     "name": "NES Drums Noise Snare Period6 Tail Tight",
     "params": {
@@ -16001,7 +16170,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.0
     },
     "name": "NES Drums Noise Snare Period8 Tail Loose",
     "params": {
@@ -16094,7 +16264,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.0
     },
     "name": "NES Drums Noise Snare Period8 Tail Tight",
     "params": {
@@ -16187,7 +16358,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 12.0
     },
     "name": "NES Drums Rattle Clap Period5 Rate Fast",
     "params": {
@@ -16281,7 +16453,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 11.5
     },
     "name": "NES Drums Rattle Clap Period5 Rate Slow",
     "params": {
@@ -16375,7 +16548,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 11.5
     },
     "name": "NES Drums Rattle Clap Period8 Rate Fast",
     "params": {
@@ -16469,7 +16643,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 11.5
     },
     "name": "NES Drums Rattle Clap Period8 Rate Slow",
     "params": {
@@ -16563,7 +16738,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead High Duty12 OctUp",
     "params": {
@@ -16658,7 +16834,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Lead High Duty12 OctUp2",
     "params": {
@@ -16753,7 +16930,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES Lead High Duty25 OctUp",
     "params": {
@@ -16848,7 +17026,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead High Duty25 OctUp2",
     "params": {
@@ -16943,7 +17122,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.0
     },
     "name": "NES Lead High Duty50 OctUp",
     "params": {
@@ -17038,7 +17218,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 12.5
     },
     "name": "NES Lead High Duty50 OctUp2",
     "params": {
@@ -17133,7 +17314,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Low Duty25 OctDown",
     "params": {
@@ -17228,7 +17410,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 20.0
     },
     "name": "NES Lead Low Duty25 OctDown2",
     "params": {
@@ -17323,7 +17506,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Low Duty50 OctDown",
     "params": {
@@ -17418,7 +17602,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 20.0
     },
     "name": "NES Lead Low Duty50 OctDown2",
     "params": {
@@ -17513,7 +17698,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Blip Duty12",
     "params": {
@@ -17605,7 +17791,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 19.0
     },
     "name": "NES Lead Blip Duty12 OctUp",
     "params": {
@@ -17698,7 +17885,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Blip Duty25",
     "params": {
@@ -17790,7 +17978,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Blip Duty25 OctUp",
     "params": {
@@ -17883,7 +18072,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Blip Duty50",
     "params": {
@@ -17975,7 +18165,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Blip Duty50 OctUp",
     "params": {
@@ -18068,7 +18259,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES Lead Pluck Duty12 LongDecay",
     "params": {
@@ -18162,7 +18354,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES Lead Pluck Duty12 MidDecay",
     "params": {
@@ -18256,7 +18449,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES Lead Pluck Duty12 ShortDecay",
     "params": {
@@ -18350,7 +18544,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Pluck Duty25 LongDecay",
     "params": {
@@ -18444,7 +18639,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Pluck Duty25 MidDecay",
     "params": {
@@ -18538,7 +18734,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Pluck Duty25 ShortDecay",
     "params": {
@@ -18632,7 +18829,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Pluck Duty50 LongDecay",
     "params": {
@@ -18726,7 +18924,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.0
     },
     "name": "NES Lead Pluck Duty50 MidDecay",
     "params": {
@@ -18820,7 +19019,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Pluck Duty50 ShortDecay",
     "params": {
@@ -18914,7 +19114,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES Lead Soft Duty12 LongRelease",
     "params": {
@@ -19007,7 +19208,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES Lead Soft Duty12 ShortRelease",
     "params": {
@@ -19100,7 +19302,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Soft Duty25 LongRelease",
     "params": {
@@ -19193,7 +19396,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Soft Duty25 ShortRelease",
     "params": {
@@ -19286,7 +19490,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Lead Soft Duty50 LongRelease",
     "params": {
@@ -19379,7 +19584,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Lead Soft Duty50 ShortRelease",
     "params": {
@@ -19472,7 +19678,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Square Duty12",
     "params": {
@@ -19564,7 +19771,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Square Duty12 OctDown",
     "params": {
@@ -19657,7 +19865,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Square Duty12 OctUp",
     "params": {
@@ -19750,7 +19959,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Square Duty25",
     "params": {
@@ -19842,7 +20052,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Square Duty25 OctDown",
     "params": {
@@ -19935,7 +20146,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Square Duty25 OctUp",
     "params": {
@@ -20028,7 +20240,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Square Duty50",
     "params": {
@@ -20120,7 +20333,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Square Duty50 OctDown",
     "params": {
@@ -20213,7 +20427,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 12.5
     },
     "name": "NES Lead Square Duty50 OctUp",
     "params": {
@@ -20306,7 +20521,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Square Duty75",
     "params": {
@@ -20398,7 +20614,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 18.5
     },
     "name": "NES Lead Square Duty75 OctDown",
     "params": {
@@ -20491,7 +20708,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Square Duty75 OctUp",
     "params": {
@@ -20584,7 +20802,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Bend Scoop Above",
     "params": {
@@ -20677,7 +20896,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Bend Scoop Short",
     "params": {
@@ -20770,7 +20990,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Bend Scoop Slow",
     "params": {
@@ -20863,7 +21084,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Bend Scoop Wide",
     "params": {
@@ -20956,7 +21178,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Bent Duty12 Sweep Droop",
     "params": {
@@ -21049,7 +21272,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.0
     },
     "name": "NES Lead Bent Duty12 Sweep Fast Droop",
     "params": {
@@ -21142,7 +21366,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES Lead Bent Duty12 Sweep Rise",
     "params": {
@@ -21235,7 +21460,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Bent Duty25 Sweep Droop",
     "params": {
@@ -21328,7 +21554,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Bent Duty25 Sweep Fast Droop",
     "params": {
@@ -21421,7 +21648,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Bent Duty25 Sweep Rise",
     "params": {
@@ -21514,7 +21742,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 80.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Glide Duty25",
     "params": {
@@ -21607,7 +21836,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 80.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.5
     },
     "name": "NES Lead Glide Duty25 OctUp",
     "params": {
@@ -21701,7 +21931,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 80.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Glide Duty50",
     "params": {
@@ -21794,7 +22025,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 80.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 12.5
     },
     "name": "NES Lead Glide Duty50 OctUp",
     "params": {
@@ -21888,7 +22120,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Cutting Duty12 Vibrato Fast Deep",
     "params": {
@@ -21981,7 +22214,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Cutting Duty12 Vibrato Fast Shallow",
     "params": {
@@ -22074,7 +22308,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Cutting Duty12 Vibrato Slow Deep",
     "params": {
@@ -22167,7 +22402,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES Lead Cutting Duty12 Vibrato Slow Shallow",
     "params": {
@@ -22260,7 +22496,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Cutting Duty25 Vibrato Fast Deep",
     "params": {
@@ -22353,7 +22590,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Cutting Duty25 Vibrato Fast Shallow",
     "params": {
@@ -22446,7 +22684,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Cutting Duty25 Vibrato Slow Deep",
     "params": {
@@ -22539,7 +22778,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Cutting Duty25 Vibrato Slow Shallow",
     "params": {
@@ -22632,7 +22872,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Lead Flute Vibrato Fast",
     "params": {
@@ -22725,7 +22966,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 7.0
     },
     "name": "NES Lead Flute Vibrato Fast OctUp",
     "params": {
@@ -22819,7 +23061,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 11.0
     },
     "name": "NES Lead Flute Vibrato Slow",
     "params": {
@@ -22912,7 +23155,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 7.0
     },
     "name": "NES Lead Flute Vibrato Slow OctUp",
     "params": {
@@ -23006,7 +23250,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Held Duty25 Vibrato Delayed Deep",
     "params": {
@@ -23100,7 +23345,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Held Duty25 Vibrato Delayed Shallow",
     "params": {
@@ -23194,7 +23440,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Held Duty25 Vibrato Late Deep",
     "params": {
@@ -23288,7 +23535,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES Lead Held Duty25 Vibrato Late Shallow",
     "params": {
@@ -23382,7 +23630,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Held Duty50 Vibrato Delayed Deep",
     "params": {
@@ -23476,7 +23725,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Held Duty50 Vibrato Delayed Shallow",
     "params": {
@@ -23570,7 +23820,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Held Duty50 Vibrato Late Deep",
     "params": {
@@ -23664,7 +23915,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES Lead Held Duty50 Vibrato Late Shallow",
     "params": {
@@ -23758,7 +24010,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 23.0
     },
     "name": "NES SFX Buzz Tone Length Held",
     "params": {
@@ -23851,7 +24104,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 27.0
     },
     "name": "NES SFX Buzz Tone Length Held Fall In",
     "params": {
@@ -23945,7 +24199,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 23.0
     },
     "name": "NES SFX Buzz Tone Length Short",
     "params": {
@@ -24038,7 +24293,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 27.0
     },
     "name": "NES SFX Buzz Tone Length Short Fall In",
     "params": {
@@ -24132,7 +24388,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Explosion Period12 LongDecay",
     "params": {
@@ -24226,7 +24483,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Explosion Period12 MidDecay",
     "params": {
@@ -24320,7 +24578,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 12.5
     },
     "name": "NES SFX Explosion Period14 LongDecay",
     "params": {
@@ -24414,7 +24673,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Explosion Period14 MidDecay",
     "params": {
@@ -24508,7 +24768,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 15.5
     },
     "name": "NES SFX Noise Burst Period12 Length Long",
     "params": {
@@ -24601,7 +24862,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 15.0
     },
     "name": "NES SFX Noise Burst Period12 Length Short",
     "params": {
@@ -24694,7 +24956,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 16.0
     },
     "name": "NES SFX Noise Burst Period3 Length Long",
     "params": {
@@ -24787,7 +25050,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 15.5
     },
     "name": "NES SFX Noise Burst Period3 Length Short",
     "params": {
@@ -24880,7 +25144,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 14.0
     },
     "name": "NES SFX Noise Burst Period8 Length Long",
     "params": {
@@ -24973,7 +25238,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 13.5
     },
     "name": "NES SFX Noise Burst Period8 Length Short",
     "params": {
@@ -25066,7 +25332,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 25.0
     },
     "name": "NES SFX Rumble Mode Long Swell Fast",
     "params": {
@@ -25160,7 +25427,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 25.0
     },
     "name": "NES SFX Rumble Mode Long Swell Slow",
     "params": {
@@ -25254,7 +25522,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 27.0
     },
     "name": "NES SFX Rumble Mode Metal Swell Fast",
     "params": {
@@ -25348,7 +25617,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 8
+      "poly_channels": 8,
+      "preset_gain": 27.0
     },
     "name": "NES SFX Rumble Mode Metal Swell Slow",
     "params": {
@@ -25442,7 +25712,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Sample Burst Rate12",
     "params": {
@@ -25537,7 +25808,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Sample Burst Rate15",
     "params": {
@@ -25632,7 +25904,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Sample Burst Rate9",
     "params": {
@@ -25727,7 +26000,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES SFX Fall Sweep Fast",
     "params": {
@@ -25820,7 +26094,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.5
     },
     "name": "NES SFX Fall Sweep Medium Long",
     "params": {
@@ -25913,7 +26188,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 15.0
     },
     "name": "NES SFX Fall Sweep Medium Short",
     "params": {
@@ -26006,7 +26282,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES SFX Fall Sweep Slow Long",
     "params": {
@@ -26099,7 +26376,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES SFX Fall Sweep Slow Short",
     "params": {
@@ -26192,7 +26470,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.5
     },
     "name": "NES SFX Triangle Drop Fall Fast",
     "params": {
@@ -26284,7 +26563,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Triangle Drop Fall Fast OctDown",
     "params": {
@@ -26377,7 +26657,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 10.5
     },
     "name": "NES SFX Triangle Drop Fall Slow",
     "params": {
@@ -26469,7 +26750,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 4
+      "poly_channels": 4,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Triangle Drop Fall Slow OctDown",
     "params": {
@@ -26562,7 +26844,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.5
     },
     "name": "NES SFX Whistle Drop Duty12",
     "params": {
@@ -26656,7 +26939,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES SFX Whistle Drop Duty12 OctUp",
     "params": {
@@ -26751,7 +27035,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Whistle Drop Duty25",
     "params": {
@@ -26845,7 +27130,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES SFX Whistle Drop Duty25 OctUp",
     "params": {
@@ -26940,7 +27226,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Jump Length Long",
     "params": {
@@ -27033,7 +27320,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES SFX Jump Length Long OctUp",
     "params": {
@@ -27127,7 +27415,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.0
     },
     "name": "NES SFX Jump Length Short",
     "params": {
@@ -27220,7 +27509,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES SFX Jump Length Short OctUp",
     "params": {
@@ -27314,7 +27604,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.0
     },
     "name": "NES SFX Power Up Sweep Crawl Duty25",
     "params": {
@@ -27409,7 +27700,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 12.5
     },
     "name": "NES SFX Power Up Sweep Crawl Duty50",
     "params": {
@@ -27504,7 +27796,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Power Up Sweep Slow Duty25",
     "params": {
@@ -27599,7 +27892,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 10.5
     },
     "name": "NES SFX Power Up Sweep Slow Duty50",
     "params": {
@@ -27694,7 +27988,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 10.0
     },
     "name": "NES SFX Rise Sweep Fast",
     "params": {
@@ -27787,7 +28082,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.0
     },
     "name": "NES SFX Rise Sweep Medium",
     "params": {
@@ -27880,7 +28176,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES SFX Rise Sweep Slow",
     "params": {
@@ -27973,7 +28270,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 17.0
     },
     "name": "NES SFX Blip Zap Duty12 OctUp",
     "params": {
@@ -28067,7 +28365,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Blip Zap Duty12 OctUp2",
     "params": {
@@ -28161,7 +28460,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 14.5
     },
     "name": "NES SFX Blip Zap Duty50 OctUp",
     "params": {
@@ -28255,7 +28555,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 13.0
     },
     "name": "NES SFX Blip Zap Duty50 OctUp2",
     "params": {
@@ -28349,7 +28650,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Laser Zap Fall Fast OctUp",
     "params": {
@@ -28443,7 +28745,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Laser Zap Fall Fast OctUp2",
     "params": {
@@ -28537,7 +28840,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Laser Zap Fall Slow OctUp",
     "params": {
@@ -28631,7 +28935,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.5
     },
     "name": "NES SFX Laser Zap Fall Slow OctUp2",
     "params": {
@@ -28725,7 +29030,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES SFX Siren Zap Wobble 15Hz Narrow",
     "params": {
@@ -28819,7 +29125,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES SFX Siren Zap Wobble 15Hz Wide",
     "params": {
@@ -28913,7 +29220,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 1
+      "poly_channels": 1,
+      "preset_gain": 16.0
     },
     "name": "NES SFX Siren Zap Wobble 2Hz Deep",
     "params": {
@@ -29007,7 +29315,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Voice Blip Rate11",
     "params": {
@@ -29103,7 +29412,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Voice Blip Rate7",
     "params": {
@@ -29199,7 +29509,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 16
+      "poly_channels": 16,
+      "preset_gain": 11.5
     },
     "name": "NES SFX Voice Blip Rate9",
     "params": {

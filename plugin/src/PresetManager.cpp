@@ -614,7 +614,8 @@ float PresetManager::nativeValue (const ParamInfo& info) const
 
 bool PresetManager::isPresetManagedGlobal (const juce::String& id)
 {
-    return id.startsWith ("arp_") || id.startsWith ("glide_") || id == juce::String (ParamIds::polyChannels);
+    return id.startsWith ("arp_") || id.startsWith ("glide_") || id == juce::String (ParamIds::polyChannels)
+        || id == juce::String (ParamIds::presetGain);
 }
 
 void PresetManager::apply (const Preset& preset)

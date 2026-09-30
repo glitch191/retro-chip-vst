@@ -26,7 +26,7 @@ renders: `python tools\refcheck\fracnull.py [--ref ref_mame] fm_alg0 fm_alg7 ...
 |---|---|
 | S-DSP | Bit-exact with Game Music Emu apart from its +2.91 dB player gain and our documented output inversion: nulls 72 to 81 dB on every static stimulus (pitch 0x0123 to 0x3FFF, looped BRR sine/saw/noise with filters 0-3, VxVOL including negative, echo with EDL 3, EFB 0x50 and three FIR presets, fixed release). ADSR and GAIN null at 44 to 61 dB and noise at 31 to 53 dB because the SPC format stores neither the global rate counter nor the noise LFSR (phase at key-on differs). PMON: the FM sidebands of snes_pmon_fast agree to three decimals (modulation index 5.92 on both sides). No suspected S-DSP bug. |
 | SN76489 | Tones (periods 30 to 1016), attenuation steps 1 to 14, channels 1 to 3 and all eight noise modes match the MAME SN76496 core (after the F2 fix, one deviation left: psg_tone_p0030 H5 at 18.6 kHz, above the analysis band). |
-| 2A03 (NES) | Against the NSFPlay core of VGMPlay (run of 2026-09-30, section "NES (2A03)" below): pulse pitch 0.00 cents at every period from t = 8 to $7FF, duties, volume steps, the non-linear pulse mixer and its intermodulation (within 0.05 dB), envelope staircase, length counter, linear counter, sweep trajectories and the t < 8 mute, noise (long and short mode, all 16 periods), DMC rates, loop, one-shot length and $4011 all agree. Every remaining deviation is a documented reference behaviour, the known step-kernel difference (F2, measured separately) or a measurement limit. No suspected 2A03 bug; one new ambiguity (A27, envelope decay level at power-up). The triangle / noise / DMC cross-compression of the documented mixer cannot be checked: none of the three references models it. |
+| 2A03 (NES) | Against the NSFPlay core of VGMPlay (run of 2026-09-30, section "NES (2A03)" below): pulse pitch 0.00 cents at every period from t = 8 to $7FF, duties, volume steps, the non-linear pulse mixer and its intermodulation (within 0.05 dB), envelope staircase, length counter, linear counter, sweep trajectories and the t < 8 mute, noise (long and short mode, all 16 periods), DMC rates, loop, one-shot length and $4011 all agree. Every remaining deviation is a documented reference behaviour (including the top-octave droop of the NSFPlay render, which the engine no longer adds a kernel boost to; F2, measured separately) or a measurement limit. No suspected 2A03 bug; one new ambiguity (A27, envelope decay level at power-up). The triangle / noise / DMC cross-compression of the documented mixer cannot be checked: none of the three references models it. |
 | YM2612 | Against Nuked OPN2: TL steps down to TL 112, MUL, DT at blocks 2 and 6 (pitch 0.00 cents), feedback 0 to 5, attack/decay/sustain/release rates, rate scaling, SSG-EG 8 to F, LFO AM and PM depths, pan, channel 6 in bank 1, the ladder effect (odd harmonics of a pure sine at -44.8 dB on both) and the DAC all agree. The 2026-09-29 run found one core deviation (F1, operator pipeline) and one output-path deviation (F2); both are fixed and all eight algorithms are now within 0.11 dB of Nuked. |
 
 ### Findings F1 and F2: fixes and before / after (rerun of 2026-09-30)
@@ -63,14 +63,16 @@ carriers differ; its own reference-vs-reference values are 19.13 / 10.26 / 9.45 
 Deviations beyond the thresholds against Nuked on fm_alg0..3: 8 before, 0 after.
 
 **F2. Output path: the band-limited step synthesiser boosted the top octave. Fixed for the
-Genesis and the SNES; the NES keeps it (product-owner decision).**
+Genesis and the SNES on 2026-09-30, and for the NES later the same day (product-owner
+decision).**
 Cause: the kernel was sampled windowed-sinc impulses integrated by a discrete running sum,
 which filters every step by `H(w) / (1 - e^-jw)` instead of `H(w) / (jw)`: a gain of
 `(w/2) / sin(w/2)`, `w = 2 pi f / fs`. Fix: `BandLimitedStepSynth::Kernel::IntegratedStep`
 (taps = first differences of the integrated windowed sinc, so the running sum gives exact
 band-limited steps), used by `GenesisEngine` (FM, PSG, per-channel buses), `SnesDspEngine`
-(main and per-voice, 32 kHz -> host) and `chiptool regs`. `Nes2A03Engine` keeps the default
-`ImpulseSum` kernel so the NES output does not change. Regression tests
+(main and per-voice, 32 kHz -> host), `Nes2A03Engine` (main and per-channel, since the
+second decision) and `chiptool regs`. The legacy `ImpulseSum` kernel remains only for
+`chiptool regs nes --kernel impulse`, the NES F2 measurement below. Regression tests
 (`dsp/tests/test_core_band_limited_step_synth.cpp`): exact settling and centring for every
 phase at 32, 53.27 and 223.7 kHz; square-wave fundamentals flat within 0.05 dB up to 13.98 kHz
 from a 1.79 MHz source and up to 11.19 kHz from 32 kHz, while the impulse-sum kernel matches
@@ -138,6 +140,12 @@ attack curve); reference vs reference 279 (unchanged); ours vs Game Music Emu 5 
 
 ### NES (2A03): run of 2026-09-30
 
+Updated after the NES switch to the integrated-step kernel (2026-09-30, second run): "ours"
+is now the engine with that kernel, and the legacy ImpulseSum render (`ours_imp`,
+`chiptool regs nes --kernel impulse`) is compared separately. The tables of "NES: ours vs
+NSFPlay core" are identical to those of the previous run's "ours with the integrated-step
+kernel vs NSFPlay core"; only the kernel-dependent figures below changed.
+
 122 stimuli (VGM 1.61, NES APU at 1789773 Hz; 11 PAL variants at 1662607 Hz), all generated
 by `make_stimuli.py` from our own register writes and DMC bytes; 23 of them also as NSF with
 our own 6502 replay program. References (black boxes, `reference-emulators.md`): the NSFPlay
@@ -146,9 +154,11 @@ player (second opinion), Game Music Emu's NSF player through FFmpeg (third opini
 subset). Our side: `chiptool regs nes`, i.e. NesApu fed at the CPU cycle of each write and
 rendered through the Nes2A03Engine output path with console_filter = 0 (5 Hz DC blocker only;
 the references apply no console filter either and get the same 5 Hz coupling in compare.py).
-One gain constant per comparison from nes_pulse_ref (NSFPlay -0.045 dB: its pulse path has our
+One gain constant per comparison from nes_pulse_ref (NSFPlay -0.023 dB: its pulse path has our
 scale), one time base from nes_dmc_direct (a $4011 square whose edges depend on the write times
-only; lag +1 sample, null 34.5 dB). Reproduce (after building chiptool):
+only; lag +1 sample, null 19.3 dB at that integer lag: the integrated-step kernel centres each
+step on its event, a fractional latency the whole-sample alignment leaves, as on the FM
+stimuli; 34.5 dB with the legacy kernel). Reproduce (after building chiptool):
 
 ```powershell
 python tools\refcheck\make_stimuli.py
@@ -166,7 +176,7 @@ formula, with intermodulation probes at f2 - f1, f1 + f2, 2f1 - f2 and 2f2 - f1.
 
 | Area | Result against NSFPlay (and the documented behaviour) |
 |---|---|
-| Pulse pitch, duty, pulse 2 | 0.00 cents at t = 8, 12, 20, 50, 120, 253, 400, $3FF, $400, $7FF, NTSC and PAL; duty harmonics within 0.25 dB; pulse 2 = pulse 1. |
+| Pulse pitch, duty, pulse 2 | 0.00 cents at t = 8, 12, 20, 50, 120, 253, 400, $3FF, $400, $7FF, NTSC and PAL; duty harmonics within 0.13 dB (0.25 dB with the legacy kernel); pulse 2 = pulse 1. |
 | Pulse mutes | t = 7 and the sweep target 2t > $7FF with the sweep disabled: silent on both (MAME plays both at full level). |
 | Volume 15..0 | Each step within 0.05 dB of NSFPlay and of the formula (volume 1: -22.16 dB ours and formula, -22.19 dB NSFPlay). |
 | Pulse mixer | p1 + p2 combinations 15 + 15, 8 + 8, 4 + 4, 15 + 4 within 0.02 dB of NSFPlay and 0.04 dB of the formula (+1.77 dB for 15 + 15 instead of +3.01 dB linear); intermodulation at f2 - f1 and f1 + f2 at -24.0 / -28.8 / -34.4 / -32.2 dB on ours, NSFPlay and the formula, within 0.4 dB (the third-order products are below -72 dB on all three). |
@@ -175,31 +185,31 @@ formula, with intermodulation probes at f2 - f1, f1 + f2, 2f1 - f2 and 2f2 - f1.
 | Triangle linear counter | Start at the first quarter frame (4.17 ms) and end after 16, 64, 127 quarter frames within 0.05 ms on both sides; length index 0 ends at 83.3 ms on both. |
 | Sweep | Down sweeps (shifts 1..7, both pulses, ones' vs two's complement) and up sweeps (1..7): pitch tracks within 0.1..0.9 cents median of NSFPlay and 0.05..1.6 cents of the documented trajectory; the t < 8 mute at the end of down sweeps within 0.07 ms on both. |
 | Triangle | Pitch 0.00 cents; waveform identical (all harmonics offset by the same level difference, see below). |
-| Noise | Short-mode pitch 0.00 cents for every period with f0 above 90 Hz (the 93-step loop is the same on both sides: the init keeps the LFSR in short mode, nulls up to 12 dB); long-mode levels within 0.3 dB after the kernel correction. PAL short-mode pitches 0.00 to -0.01 cents: the PAL noise table (A19 entries included) agrees. |
-| DMC | Pitch 0.00 cents at rates 0, 4, 8, 12, 15 (NTSC) and 4 (PAL, the irregular 276, A19), 15 (PAL); one-shot end within 0.4 ms of NSFPlay and of the nominal 1025 x 8 bits (the output unit's bit phase adds up to 8 bits = 0.24 ms); $4011 square null 34.5 dB. |
+| Noise | Short-mode pitch 0.00 cents for every period with f0 above 90 Hz (the 93-step loop is the same on both sides: the init keeps the LFSR in short mode, nulls up to 12 dB); long-mode levels within 0.3 dB with the engine's integrated-step kernel. PAL short-mode pitches 0.00 to -0.01 cents: the PAL noise table (A19 entries included) agrees. |
+| DMC | Pitch 0.00 cents at rates 0, 4, 8, 12, 15 (NTSC) and 4 (PAL, the irregular 276, A19), 15 (PAL); one-shot end within 0.4 ms of NSFPlay and of the nominal 1025 x 8 bits (the output unit's bit phase adds up to 8 bits = 0.24 ms); $4011 square null 19.3 dB at the integer lag (34.5 dB with the legacy kernel, see the time base above). |
 | 5-step mode, PAL frame counter | Ours on the documented schedule (immediate clock, 192 / 96 Hz, PAL 200 / 100 Hz): gate ends within 0.1 ms, envelope steps within 0.75 ms; NSFPlay differs (below). |
 
-**Known output-path difference F2 (not a new finding), measured separately.** Our NES output
-still uses the ImpulseSum step kernel (product-owner decision of the F2 fix). The comparison
-"ours (engine) vs ours with the integrated-step kernel" measures it on the NES stimuli; it
-follows the formula `(w/2) / sin(w/2)` to 0.03 dB:
+**Known output-path difference F2 (not a new finding), measured separately.** The NES engine
+used the ImpulseSum step kernel until 2026-09-30 and now uses the integrated-step kernel
+(product-owner decision). The comparison "ours with the legacy ImpulseSum kernel vs ours
+(engine)" measures the difference on the NES stimuli; it follows the formula
+`(w/2) / sin(w/2)` to 0.03 dB:
 
 | Component | 6.58 kHz | 8.60 kHz | 10.97 kHz | 12.43 kHz | 15.98 kHz | 18.64 kHz |
 |---|---|---|---|---|---|---|
-| ours - ours integrated (dB) | +0.30 | +0.53 | +0.88 | +1.14 | +1.94 | +2.70 |
+| legacy ImpulseSum - ours (engine) (dB) | +0.30 | +0.53 | +0.88 | +1.14 | +1.94 | +2.70 |
 | formula (dB) | +0.32 | +0.55 | +0.90 | +1.17 | +1.96 | +2.72 |
-| ours - NSFPlay (dB) | +0.60 | +1.06 | +1.76 | +2.29 | +3.88 | |
-| ours integrated - NSFPlay (dB) | +0.30 | +0.53 | +0.88 | +1.15 | +1.94 | |
+| legacy ImpulseSum - NSFPlay (dB) | +0.60 | +1.06 | +1.76 | +2.29 | +3.88 | |
+| ours (engine) - NSFPlay (dB) | +0.30 | +0.53 | +0.88 | +1.15 | +1.94 | |
 
-(stimuli nes_pulse_t0050 H3 / H5, t0012, t0008, t0020 H3, nes_tri_t0002.) After the kernel
-correction the difference to NSFPlay is the same curve again: the NSFPlay render droops by
+(stimuli nes_pulse_t0050 H3 / H5, t0012, t0008, t0020 H3, nes_tri_t0002.) With the engine
+kernel the difference to NSFPlay is the same curve again: the NSFPlay render droops by
 `sin(w/2) / (w/2)`, the response of an average over each output sample, which is a property
-of that renderer (the MAME core shows the same order, +1.99 dB at 12.43 kHz before correction).
-The fast long-mode noise stimuli (periods 0..4) are +0.4..+0.7 dB against NSFPlay with the
-engine kernel and -0.2..+0.2 dB with the integrated kernel: the same effect on broadband
-content. The NES-specific consequence of keeping the ImpulseSum kernel is this top-octave
-boost; everything else in the tables is independent of it (the two "ours" renders differ by
-the formula only: 0.02 dB at 2 kHz, 0.18 dB at 5 kHz).
+of that renderer (the MAME core shows the same order, +1.99 dB at 12.43 kHz with the legacy
+kernel). The fast long-mode noise stimuli (periods 0..4) were +0.4..+0.7 dB against NSFPlay
+with the legacy kernel and are -0.2..+0.2 dB with the engine kernel: the same effect on
+broadband content. Everything else in the tables is independent of the kernel (the two
+renders differ by the formula only: 0.02 dB at 2 kHz, 0.18 dB at 5 kHz).
 
 **Suspected 2A03 engine bugs: none.** Where the references agree with each other against
 us, the documented behaviour sides with us or the point is undocumented (A27). The deviations:
@@ -232,11 +242,11 @@ Thresholds: pitch 1 cent, harmonics 1 dB (bins within 60 dB of H1), envelope tim
 
 | comparison | chip | calibration stimulus | gain ref/ours (dB) |
 |---|---|---|---|
-| NES: ours (engine, ImpulseSum kernel) vs ours with the integrated-step kernel (F2 measurement) | 2a03 | nes_pulse_ref | -0.022 |
-| NES: ours vs Game Music Emu NSF player (FFmpeg libgme; NSF subset) | 2a03 | nes_pulse_ref | +6.419 |
-| NES: ours vs MAME core (VGMPlay) | 2a03 | nes_pulse_ref | +3.873 |
-| NES: ours vs NSFPlay core (VGMPlay) | 2a03 | nes_pulse_ref | -0.045 |
-| NES: ours with the integrated-step kernel vs NSFPlay core | 2a03 | nes_pulse_ref | -0.023 |
+| NES: ours vs Game Music Emu NSF player (FFmpeg libgme; NSF subset) | 2a03 | nes_pulse_ref | +6.441 |
+| NES: ours vs MAME core (VGMPlay) | 2a03 | nes_pulse_ref | +3.895 |
+| NES: ours vs NSFPlay core (VGMPlay) | 2a03 | nes_pulse_ref | -0.023 |
+| NES: ours with the legacy ImpulseSum kernel vs NSFPlay core | 2a03 | nes_pulse_ref | -0.045 |
+| NES: ours with the legacy ImpulseSum kernel vs ours (engine, integrated-step kernel) (F2 measurement) | 2a03 | nes_pulse_ref | -0.022 |
 | NES: reference vs reference: MAME core against NSFPlay core | 2a03 | nes_pulse_ref | -3.918 |
 | ours vs Game Music Emu SPC (FFmpeg libgme) | sdsp | snes_sine_ref | +2.913 |
 | ours vs MAME/GPGX YM2612 + Maxim SN76489 (VGMPlay) | sn76489 | psg_tone_ref | +19.624 |
@@ -835,128 +845,128 @@ Reference time-base correction: `ref_nuked` YM2612 renders resampled by 1.000132
 
 | stimulus | lag (smp) | null (dB) | pitch (cents) | level L / R (dB) | max harm (dB) | max env timing (%) | env shape (dB) | spectral (dB) | devs |
 |---|---|---|---|---|---|---|---|---|---|
-| nes_pulse_ref | -12 | 18.5 | +0.00 | +0.00 / +0.00 | 0.19 |  | 0.31 | 1.27 | 0 |
-| nes_pulse_duty0 | -12 | 14.9 | +0.00 | +0.05 / +0.05 | 0.25 |  | 0.63 | 3.91 | 0 |
-| nes_pulse_duty1 | -12 | 16.9 | +0.00 | +0.01 / +0.01 | 0.25 |  | 0.76 | 2.00 | 0 |
-| nes_pulse_duty3 | -12 | 17.5 | +0.00 | +0.01 / +0.01 | 0.25 |  | 6.55 | 0.92 | 0 |
-| nes_pulse2_ref | -12 | 18.2 | +0.00 | -0.00 / -0.00 | 0.19 |  | 0.39 | 3.29 | 0 |
-| nes_pulse_t0008 | +36 | 9.8 | +0.00 | +2.27 / +2.27 | 2.29 |  | 2.25 | 7.84 | 3 |
-| nes_pulse_t0012 | +26 | 15.1 | +0.00 | +1.06 / +1.06 | 1.06 |  | 1.11 | 6.82 | 3 |
-| nes_pulse_t0020 | +0 | 18.7 | +0.00 | +0.45 / +0.45 | 3.88 |  | 0.43 | 6.69 | 1 |
-| nes_pulse_t0050 | +59 | 14.9 | +0.00 | +0.17 / +0.17 | 3.57 |  | 1.17 | 3.71 | 2 |
-| nes_pulse_t0120 | -5 | 25.7 | +0.00 | +0.05 / +0.05 | 0.99 |  | 0.18 | 5.15 | 0 |
-| nes_pulse_t0400 | -19 | 23.0 | +0.00 | -0.01 / -0.01 | 0.05 |  | 0.59 | 4.40 | 0 |
-| nes_pulse_t1023 | -49 | 24.8 | +0.00 | -0.03 / -0.03 | 0.04 |  | 0.06 | 1.06 | 0 |
-| nes_pulse_t1024 | -50 | 21.7 | +0.00 | -0.03 / -0.03 | 0.04 |  | 0.53 | 4.22 | 0 |
-| nes_pulse_t2047 | -100 | 15.4 | +0.00 | -0.03 / -0.03 | 0.04 |  | 1.53 | 1.39 | 0 |
+| nes_pulse_ref | -11 | 27.7 | +0.00 | +0.00 / +0.00 | 0.10 |  | 0.31 | 0.99 | 0 |
+| nes_pulse_duty0 | -11 | 25.5 | +0.00 | +0.02 / +0.02 | 0.13 |  | 0.63 | 3.96 | 0 |
+| nes_pulse_duty1 | -11 | 24.8 | +0.00 | +0.01 / +0.01 | 0.13 |  | 0.76 | 1.84 | 0 |
+| nes_pulse_duty3 | -11 | 29.2 | +0.00 | +0.01 / +0.01 | 0.13 |  | 6.57 | 0.50 | 0 |
+| nes_pulse2_ref | -11 | 26.1 | +0.00 | -0.00 / -0.00 | 0.10 |  | 0.38 | 3.20 | 0 |
+| nes_pulse_t0008 | +1 | 16.1 | +0.00 | +1.13 / +1.13 | 1.15 |  | 1.08 | 7.70 | 3 |
+| nes_pulse_t0012 | +11 | 19.4 | +0.00 | +0.53 / +0.53 | 0.53 |  | 0.54 | 7.45 | 2 |
+| nes_pulse_t0020 | +17 | 21.9 | +0.00 | +0.22 / +0.22 | 1.94 |  | 0.32 | 7.36 | 1 |
+| nes_pulse_t0050 | -1 | 25.5 | +0.00 | +0.08 / +0.08 | 1.78 |  | 0.07 | 3.39 | 1 |
+| nes_pulse_t0120 | +43 | 19.4 | +0.00 | +0.02 / +0.02 | 0.50 |  | 0.63 | 4.94 | 0 |
+| nes_pulse_t0400 | -18 | 21.8 | +0.00 | -0.01 / -0.01 | 0.03 |  | 0.59 | 4.35 | 0 |
+| nes_pulse_t1023 | -49 | 33.5 | +0.00 | -0.01 / -0.01 | 0.02 |  | 0.05 | 0.70 | 0 |
+| nes_pulse_t1024 | -49 | 23.9 | +0.00 | -0.01 / -0.01 | 0.02 |  | 0.53 | 4.14 | 0 |
+| nes_pulse_t2047 | -99 | 15.1 | +0.00 | -0.01 / -0.01 | 0.02 |  | 1.53 | 1.13 | 0 |
 | nes_pulse_t0007_mute | +0 | 0.0 |  | +0.00 / +0.00 |  |  | 0.00 | 0.00 | 0 |
 | nes_pulse_sweepmute | +0 | 0.0 |  | +0.00 / +0.00 |  |  | 0.00 | 0.00 | 0 |
-| nes_pulse_vol | +1 | 0.1 |  | +0.00 / +0.00 |  |  | 0.33 | 0.93 | 0 |
-| nes_env_v00 | +1 | 0.2 |  | +0.14 / +0.14 |  |  | 40.89 | 3.06 | 1 |
-| nes_env_v03 | +1 | 0.2 |  | +0.13 / +0.13 |  |  | 23.79 | 4.91 | 1 |
-| nes_env_v07 | +1 | 0.2 |  | +0.13 / +0.13 |  |  | 17.38 | 5.48 | 1 |
-| nes_env_v15 | +1 | 0.1 |  | +0.13 / +0.13 |  |  | 12.49 | 6.09 | 1 |
-| nes_env_loop_v01 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 12.73 | 1.58 | 0 |
-| nes_env_loop_v03 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 12.75 | 2.39 | 0 |
-| nes_env5_v03 | +1 | 0.1 |  | +0.05 / +0.05 |  |  | 2.62 | 5.20 | 2 |
-| nes_env5_v07 | +1 | 0.1 |  | +0.13 / +0.13 |  |  | 1.89 | 5.86 | 2 |
-| nes_env_retrig | +1 | 3.9 |  | +0.12 / +0.12 |  |  | 0.14 | 2.76 | 0 |
-| nes_sweep_up_s1 | +1 | -1.7 |  | +0.04 / +0.04 |  |  | 25.93 | 5.18 | 1 |
-| nes_sweep_up_s2 | +1 | -2.2 |  | +0.04 / +0.04 |  |  | 17.03 | 2.17 | 1 |
-| nes_sweep_up_s3 | +1 | -2.3 |  | +0.04 / +0.04 |  |  | 11.45 | 1.30 | 1 |
-| nes_sweep_up_s4 | +1 | -2.6 |  | -0.01 / -0.01 |  |  | 3.37 | 1.06 | 0 |
-| nes_sweep_up_s5 | +1 | -1.8 |  | -0.01 / -0.01 |  |  | 1.06 | 1.06 | 0 |
-| nes_sweep_up_s6 | +1 | -1.7 |  | -0.01 / -0.01 |  |  | 0.89 | 0.93 | 0 |
-| nes_sweep_up_s7 | +1 | -0.8 |  | +0.01 / +0.01 |  |  | 0.18 | 1.34 | 0 |
-| nes_sweep_down_s1_p1 | +1 | -2.6 |  | -0.16 / -0.16 |  |  | 0.38 | 0.96 | 1 |
-| nes_sweep_down_s1_p2 | +1 | 0.3 |  | -0.16 / -0.16 |  |  | 0.87 | 0.90 | 1 |
-| nes_sweep_down_s2_p1 | +1 | 2.0 |  | -0.22 / -0.22 |  |  | 0.73 | 0.76 | 1 |
-| nes_sweep_down_s2_p2 | +1 | 2.1 |  | -0.21 / -0.21 |  |  | 0.61 | 0.86 | 1 |
-| nes_sweep_down_s3_p1 | +1 | 3.3 |  | +0.11 / +0.11 |  |  | 0.39 | 0.85 | 0 |
-| nes_sweep_down_s3_p2 | +1 | 6.0 |  | +0.08 / +0.08 |  |  | 0.37 | 0.87 | 0 |
-| nes_sweep_down_s4_p1 | +1 | 5.0 |  | +0.01 / +0.01 |  |  | 0.44 | 0.91 | 0 |
-| nes_sweep_down_s4_p2 | +1 | 5.5 |  | +0.00 / +0.00 |  |  | 0.45 | 0.91 | 0 |
-| nes_sweep_down_s5_p1 | +1 | 4.1 |  | -0.01 / -0.01 |  |  | 0.52 | 0.87 | 0 |
-| nes_sweep_down_s5_p2 | +1 | 3.7 |  | -0.01 / -0.01 |  |  | 0.56 | 0.87 | 0 |
-| nes_sweep_down_s6_p1 | +1 | 4.1 |  | -0.00 / -0.00 |  |  | 0.55 | 0.86 | 0 |
-| nes_sweep_down_s6_p2 | +1 | 3.7 |  | -0.01 / -0.01 |  |  | 0.56 | 0.89 | 0 |
-| nes_sweep_down_s7_p1 | +1 | 2.0 |  | -0.03 / -0.03 |  |  | 0.72 | 0.92 | 0 |
-| nes_sweep_down_s7_p2 | +1 | 1.5 |  | -0.02 / -0.02 |  |  | 0.82 | 0.95 | 0 |
-| nes_sweep5_down_s2_p1 | +1 | -3.1 |  | +0.12 / +0.12 |  |  | 0.62 | 5.88 | 1 |
-| nes_len_i00 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.23 | 2.28 | 0 |
-| nes_len_i04 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.17 | 4.07 | 0 |
-| nes_len_i10 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.15 | 4.62 | 0 |
-| nes_len_i00_halt | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.14 | 5.25 | 0 |
-| nes_len5_i04 | +1 | 0.1 |  | +0.12 / +0.12 |  |  | 5.44 | 3.99 | 1 |
-| nes_tri_t0002 | +1 inv | 6.6 | +0.00 | +5.24 / +5.24 | 6.56 |  | 4.89 | 10.36 | 3 |
-| nes_tri_t0008 | +8 inv | 7.3 | +0.00 | +3.01 / +3.01 | 6.29 |  | 2.95 | 4.22 | 5 |
-| nes_tri_t0032 | +1 inv | 9.1 | +0.00 | +2.50 / +2.50 | 8.75 |  | 2.46 | 2.71 | 11 |
-| nes_tri_t0126 | -1 inv | 9.2 | +0.00 | +2.47 / +2.47 | 3.86 |  | 2.64 | 2.94 | 12 |
-| nes_tri_t0383 | -3 inv | 9.3 | +0.00 | +2.46 / +2.46 | 3.97 |  | 2.45 | 2.99 | 12 |
-| nes_tri_t0767 | -12 inv | 9.2 | +0.00 | +2.45 / +2.45 | 4.07 |  | 2.53 | 3.05 | 12 |
-| nes_tri_ultra_t0 | +1 inv | 7.0 |  | +2.14 / +2.14 |  |  | 68.22 | 4.83 | 4 |
-| nes_tri_ultra_t1 | +1 inv | 6.8 |  | +2.14 / +2.14 |  |  | 68.06 | 6.25 | 4 |
-| nes_tri_lin016 | +1 inv | 8.9 |  | +2.51 / +2.51 |  |  | 3.42 | 4.39 | 2 |
-| nes_tri_lin064 | +1 inv | 9.1 |  | +2.51 / +2.51 |  |  | 2.94 | 4.10 | 2 |
-| nes_tri_lin127 | +1 inv | 9.1 |  | +2.51 / +2.51 |  |  | 2.41 | 4.09 | 2 |
-| nes_tri_len_i00 | +1 inv | 9.2 |  | +2.51 / +2.51 |  |  | 2.02 | 4.34 | 2 |
-| nes_tri5_lin064 | +1 | -3.6 |  | +2.51 / +2.51 |  |  | 3.41 | 8.02 | 4 |
-| nes_noise_l00 | +2 inv | 2.8 |  | +0.42 / +0.42 |  |  | 0.66 | 0.64 | 0 |
-| nes_noise_l01 | +4 inv | 4.2 |  | +0.51 / +0.51 |  |  | 0.83 | 0.64 | 2 |
-| nes_noise_l02 | +6 inv | 6.8 |  | +0.59 / +0.59 |  |  | 0.80 | 0.67 | 2 |
-| nes_noise_l03 | +11 inv | 6.0 |  | +0.72 / +0.72 |  |  | 0.99 | 0.85 | 2 |
-| nes_noise_l04 | +22 inv | 6.4 |  | +0.54 / +0.54 |  |  | 0.68 | 0.92 | 2 |
-| nes_noise_l05 | +32 inv | 13.6 |  | +0.25 / +0.25 |  |  | 1.88 | 0.65 | 0 |
-| nes_noise_l06 | +42 inv | 16.4 |  | +0.03 / +0.03 |  |  | 0.64 | 0.80 | 0 |
-| nes_noise_l07 | -4 inv | -2.9 |  | -0.06 / -0.06 |  |  | 0.78 | 0.82 | 0 |
-| nes_noise_l08 | -74 inv | -2.9 |  | -0.08 / -0.08 |  |  | 7.83 | 0.86 | 0 |
-| nes_noise_l09 | -93 inv | -2.8 |  | -0.14 / -0.14 |  |  | 9.04 | 0.84 | 0 |
-| nes_noise_l10 | -9 inv | -2.8 |  | -0.19 / -0.19 |  |  | 1.18 | 0.83 | 0 |
-| nes_noise_l11 | -23 inv | -2.7 |  | -0.22 / -0.22 |  |  | 1.29 | 0.84 | 0 |
-| nes_noise_l12 | -112 | -2.7 |  | -0.26 / -0.26 |  |  | 2.50 | 0.83 | 0 |
-| nes_noise_l13 | -150 | -2.7 |  | -0.31 / -0.31 |  |  | 3.56 | 0.84 | 0 |
-| nes_noise_l14 | -350 | -2.6 |  | -0.33 / -0.33 |  |  | 6.34 | 0.86 | 0 |
-| nes_noise_l15 | -637 | -2.8 |  | +0.18 / +0.18 |  |  | 11.49 | 0.82 | 0 |
-| nes_noise_s00 | +39 inv | 1.1 | +0.00 | +0.70 / +0.70 | 2.87 |  | 4.10 | 13.24 | 5 |
-| nes_noise_s01 | +22 inv | 3.3 | +0.00 | +0.20 / +0.20 | 4.06 |  | 3.96 | 12.86 | 5 |
-| nes_noise_s02 | +43 inv | 5.3 | +0.00 | +0.32 / +0.32 | 1.89 |  | 3.65 | 12.15 | 3 |
-| nes_noise_s03 | -62 inv | 9.0 | -0.00 | +0.67 / +0.67 | 0.29 |  | 9.71 | 7.90 | 2 |
-| nes_noise_s04 | +22 inv | 5.4 | +0.01 | +0.71 / +0.71 | 0.30 |  | 3.57 | 8.40 | 2 |
-| nes_noise_s05 | +32 inv | 11.9 | +0.01 | +0.38 / +0.38 | 0.31 |  | 3.43 | 6.96 | 0 |
-| nes_noise_s06 | +42 inv | 14.4 | -0.00 | +0.09 / +0.09 | 0.30 |  | 3.45 | 6.35 | 0 |
-| nes_noise_s07 | -66 inv | -1.0 | +0.01 | +0.03 / +0.03 | 0.30 |  | 9.01 | 4.96 | 0 |
-| nes_noise_s08 | +6 inv | -0.9 | +0.01 | -0.02 / -0.02 | 0.30 |  | 3.00 | 4.69 | 0 |
-| nes_noise_s09 | +26 inv | -0.9 |  | -0.10 / -0.10 |  |  | 4.16 | 4.39 | 0 |
-| nes_noise_s10 | -102 inv | -0.8 |  | -0.18 / -0.18 |  |  | 8.98 | 1.09 | 0 |
-| nes_noise_s11 | -99 inv | -0.8 |  | -0.26 / -0.26 |  |  | 7.51 | 1.71 | 0 |
-| nes_noise_s12 | -149 inv | -0.6 |  | -0.34 / -0.34 |  |  | 9.60 | 0.80 | 0 |
-| nes_noise_s13 | -199 inv | -0.5 |  | -0.35 / -0.35 |  |  | 12.68 | 0.81 | 0 |
-| nes_noise_s14 | -249 inv | -0.5 |  | -0.30 / -0.30 |  |  | 12.37 | 0.91 | 0 |
-| nes_noise_s15 | -602 | -1.6 |  | -0.63 / -0.63 |  |  | 14.52 | 1.00 | 2 |
-| nes_dmc_r00_loop | +43 inv | 10.9 | +0.00 | +0.09 / +0.09 | 1.97 |  | 0.44 | 1.02 | 4 |
-| nes_dmc_r04_loop | +38 inv | 13.4 | +0.00 | +0.09 / +0.09 | 1.77 |  | 3.11 | 1.80 | 4 |
-| nes_dmc_r08_loop | +29 inv | 15.1 | +0.00 | +0.09 / +0.09 | 2.06 |  | 0.18 | 0.94 | 3 |
-| nes_dmc_r12_loop | +21 inv | 16.5 | +0.00 | +0.09 / +0.09 | 2.84 |  | 0.16 | 1.21 | 3 |
-| nes_dmc_r15_loop | +16 inv | 17.2 | +0.00 | +0.11 / +0.11 | 5.01 |  | 3.29 | 5.60 | 3 |
-| nes_dmc_r15_oneshot | +1 | -1.7 |  | +0.10 / +0.10 |  |  | 0.47 | 2.84 | 0 |
-| nes_dmc_direct | +1 inv | 34.5 | -0.00 | +0.10 / +0.10 | 0.16 |  | 0.10 | 2.36 | 0 |
-| nes_mix_pulse | +1 | 0.0 |  | +0.01 / +0.01 |  |  | 0.29 | 1.07 | 0 |
-| nes_mix_tri_dmc | +1 inv | 8.8 |  | -2.19 / -2.19 |  |  | 3.69 | 1.50 | 10 |
-| nes_mix_noise_dmc | +1 inv | -1.7 |  | -3.90 / -3.90 |  |  | 4.50 | 2.57 | 6 |
-| nes_mix_tri_noise | +1 inv | 0.2 |  | +0.85 / +0.85 |  |  | 4.55 | 1.48 | 6 |
-| nes_mix_pulse_tri | +1 | -4.2 |  | +1.47 / +1.47 |  |  | 5.25 | 4.05 | 6 |
-| nes_pal_pulse_ref | -12 | 18.9 | +0.00 | -0.00 / -0.00 | 0.16 |  | 0.22 | 3.50 | 0 |
-| nes_pal_tri_t0126 | +22 inv | 9.1 | -0.00 | +2.46 / +2.46 | 4.04 |  | 4.68 | 4.81 | 12 |
-| nes_pal_env_v03 | +1 | -0.1 |  | +0.17 / +0.17 |  |  | 27.11 | 5.70 | 3 |
-| nes_pal_len_i04 | +1 | -0.3 |  | +0.48 / +0.48 |  |  | 11.45 | 4.62 | 1 |
-| nes_pal_sweep_down_s2_p1 | +1 | -3.2 |  | +0.65 / +0.65 |  |  | 7.14 | 2.22 | 3 |
-| nes_pal_noise_s02 | +36 inv | 4.9 | -0.00 | +0.54 / +0.54 | 2.24 |  | 3.80 | 12.57 | 5 |
-| nes_pal_noise_s05 | +45 inv | -1.3 | -0.00 | +0.40 / +0.40 | 0.30 |  | 3.25 | 7.19 | 0 |
-| nes_pal_noise_s08 | +26 inv | -1.0 | -0.00 | -0.03 / -0.03 | 0.30 |  | 3.28 | 4.33 | 0 |
-| nes_pal_noise_s11 | -12 inv | -0.8 |  | -0.23 / -0.23 |  |  | 5.74 | 1.57 | 0 |
-| nes_pal_noise_l08 | +21 inv | -2.9 |  | -0.08 / -0.08 |  |  | 0.71 | 0.85 | 0 |
-| nes_pal_dmc_r04_loop | +46 inv | 13.3 | +0.00 | +0.09 / +0.09 | 1.94 |  | 0.33 | 1.03 | 4 |
-| nes_pal_dmc_r15_loop | +10 inv | 19.0 | +0.00 | +0.11 / +0.11 | 3.29 |  | 0.13 | 3.17 | 5 |
+| nes_pulse_vol | +1 | 0.3 |  | +0.00 / +0.00 |  |  | 0.32 | 0.50 | 0 |
+| nes_env_v00 | +1 | 1.0 |  | +0.07 / +0.07 |  |  | 40.86 | 3.33 | 1 |
+| nes_env_v03 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 23.77 | 5.12 | 1 |
+| nes_env_v07 | +1 | 1.0 |  | +0.07 / +0.07 |  |  | 17.37 | 5.64 | 1 |
+| nes_env_v15 | +1 | 1.0 |  | +0.07 / +0.07 |  |  | 12.48 | 6.41 | 1 |
+| nes_env_loop_v01 | +1 | 1.1 |  | +0.05 / +0.05 |  |  | 12.72 | 1.78 | 0 |
+| nes_env_loop_v03 | +1 | 1.0 |  | +0.05 / +0.05 |  |  | 12.74 | 2.67 | 0 |
+| nes_env5_v03 | +1 | 1.0 |  | -0.01 / -0.01 |  |  | 2.61 | 5.38 | 2 |
+| nes_env5_v07 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 1.88 | 6.02 | 2 |
+| nes_env_retrig | +1 | 6.8 |  | +0.06 / +0.06 |  |  | 0.13 | 3.06 | 0 |
+| nes_sweep_up_s1 | +1 | -1.6 |  | +0.03 / +0.03 |  |  | 25.91 | 5.10 | 1 |
+| nes_sweep_up_s2 | +1 | -2.1 |  | +0.03 / +0.03 |  |  | 17.02 | 1.98 | 1 |
+| nes_sweep_up_s3 | +1 | -2.2 |  | +0.03 / +0.03 |  |  | 11.45 | 1.01 | 1 |
+| nes_sweep_up_s4 | +1 | -2.5 |  | -0.00 / -0.00 |  |  | 3.37 | 0.68 | 0 |
+| nes_sweep_up_s5 | +1 | -1.7 |  | -0.01 / -0.01 |  |  | 1.05 | 0.66 | 0 |
+| nes_sweep_up_s6 | +1 | -1.6 |  | -0.01 / -0.01 |  |  | 0.88 | 0.54 | 0 |
+| nes_sweep_up_s7 | +1 | -0.6 |  | +0.01 / +0.01 |  |  | 0.17 | 1.08 | 0 |
+| nes_sweep_down_s1_p1 | +1 | -3.0 |  | -0.15 / -0.15 |  |  | 0.29 | 0.53 | 1 |
+| nes_sweep_down_s1_p2 | +1 | -1.0 |  | -0.15 / -0.15 |  |  | 0.47 | 0.44 | 1 |
+| nes_sweep_down_s2_p1 | +1 | 1.7 |  | -0.20 / -0.20 |  |  | 0.44 | 0.56 | 1 |
+| nes_sweep_down_s2_p2 | +1 | 1.8 |  | -0.19 / -0.19 |  |  | 0.39 | 0.37 | 1 |
+| nes_sweep_down_s3_p1 | +1 | 2.6 |  | +0.05 / +0.05 |  |  | 0.35 | 0.38 | 0 |
+| nes_sweep_down_s3_p2 | +1 | 4.9 |  | +0.04 / +0.04 |  |  | 0.35 | 0.39 | 0 |
+| nes_sweep_down_s4_p1 | +1 | 4.8 |  | +0.01 / +0.01 |  |  | 0.43 | 0.43 | 0 |
+| nes_sweep_down_s4_p2 | +1 | 5.4 |  | +0.00 / +0.00 |  |  | 0.44 | 0.44 | 0 |
+| nes_sweep_down_s5_p1 | +1 | 4.2 |  | -0.00 / -0.00 |  |  | 0.52 | 0.39 | 0 |
+| nes_sweep_down_s5_p2 | +1 | 3.9 |  | -0.00 / -0.00 |  |  | 0.55 | 0.39 | 0 |
+| nes_sweep_down_s6_p1 | +1 | 4.1 |  | -0.00 / -0.00 |  |  | 0.54 | 0.38 | 0 |
+| nes_sweep_down_s6_p2 | +1 | 3.9 |  | -0.01 / -0.01 |  |  | 0.55 | 0.41 | 0 |
+| nes_sweep_down_s7_p1 | +1 | 2.1 |  | -0.02 / -0.02 |  |  | 0.71 | 0.44 | 0 |
+| nes_sweep_down_s7_p2 | +1 | 1.6 |  | -0.01 / -0.01 |  |  | 0.81 | 0.51 | 0 |
+| nes_sweep5_down_s2_p1 | +1 | -3.0 |  | -0.00 / -0.00 |  |  | 0.54 | 5.78 | 1 |
+| nes_len_i00 | +1 | 1.1 |  | +0.05 / +0.05 |  |  | 0.18 | 2.55 | 0 |
+| nes_len_i04 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 0.11 | 4.30 | 0 |
+| nes_len_i10 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 0.10 | 4.90 | 0 |
+| nes_len_i00_halt | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 0.09 | 5.53 | 0 |
+| nes_len5_i04 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 5.44 | 4.20 | 1 |
+| nes_tri_t0002 | +4 inv | 6.7 | +0.00 | +2.41 / +2.41 | 3.86 |  | 2.34 | 8.02 | 3 |
+| nes_tri_t0008 | +44 inv | 7.8 | +0.00 | +2.75 / +2.75 | 3.59 |  | 2.70 | 4.65 | 5 |
+| nes_tri_t0032 | +2 inv | 8.5 | +0.00 | +2.50 / +2.50 | 6.99 |  | 2.46 | 2.48 | 11 |
+| nes_tri_t0126 | -1 inv | 9.2 | +0.00 | +2.49 / +2.49 | 3.77 |  | 2.66 | 2.75 | 12 |
+| nes_tri_t0383 | -2 inv | 9.2 | +0.00 | +2.48 / +2.48 | 3.96 |  | 2.47 | 2.99 | 12 |
+| nes_tri_t0767 | -12 inv | 9.1 | +0.00 | +2.47 / +2.47 | 4.10 |  | 2.55 | 2.79 | 12 |
+| nes_tri_ultra_t0 | +1 inv | 7.2 |  | +2.16 / +2.16 |  |  | 68.21 | 4.81 | 4 |
+| nes_tri_ultra_t1 | +1 inv | 7.0 |  | +2.16 / +2.16 |  |  | 68.05 | 6.40 | 4 |
+| nes_tri_lin016 | +1 inv | 8.3 |  | +2.51 / +2.51 |  |  | 3.43 | 4.41 | 2 |
+| nes_tri_lin064 | +1 inv | 8.4 |  | +2.50 / +2.50 |  |  | 2.94 | 4.19 | 2 |
+| nes_tri_lin127 | +1 inv | 8.4 |  | +2.50 / +2.50 |  |  | 2.40 | 4.15 | 2 |
+| nes_tri_len_i00 | +1 inv | 8.5 |  | +2.50 / +2.50 |  |  | 2.02 | 4.25 | 2 |
+| nes_tri5_lin064 | +1 | -4.2 |  | +2.51 / +2.51 |  |  | 3.41 | 8.05 | 4 |
+| nes_noise_l00 | +3 inv | 5.0 |  | -0.17 / -0.17 |  |  | 0.55 | 0.41 | 0 |
+| nes_noise_l01 | +4 inv | 6.4 |  | -0.08 / -0.08 |  |  | 0.65 | 0.36 | 0 |
+| nes_noise_l02 | +7 inv | 6.6 |  | +0.01 / +0.01 |  |  | 0.55 | 0.31 | 0 |
+| nes_noise_l03 | +12 inv | 10.6 |  | +0.17 / +0.17 |  |  | 0.89 | 0.47 | 0 |
+| nes_noise_l04 | +22 inv | 15.0 |  | +0.11 / +0.11 |  |  | 0.44 | 0.47 | 0 |
+| nes_noise_l05 | +32 inv | 9.9 |  | -0.02 / -0.02 |  |  | 1.85 | 0.41 | 0 |
+| nes_noise_l06 | +43 inv | 10.6 |  | -0.12 / -0.12 |  |  | 0.66 | 0.41 | 0 |
+| nes_noise_l07 | -3 inv | -2.9 |  | -0.17 / -0.17 |  |  | 0.79 | 0.37 | 0 |
+| nes_noise_l08 | -73 inv | -2.8 |  | -0.18 / -0.18 |  |  | 7.71 | 0.43 | 0 |
+| nes_noise_l09 | -92 inv | -2.8 |  | -0.21 / -0.21 |  |  | 8.84 | 0.42 | 0 |
+| nes_noise_l10 | -9 inv | -2.7 |  | -0.23 / -0.23 |  |  | 1.18 | 0.40 | 0 |
+| nes_noise_l11 | -22 inv | -2.7 |  | -0.24 / -0.24 |  |  | 1.29 | 0.42 | 0 |
+| nes_noise_l12 | -112 | -2.7 |  | -0.27 / -0.27 |  |  | 2.50 | 0.46 | 0 |
+| nes_noise_l13 | -149 | -2.7 |  | -0.31 / -0.31 |  |  | 3.55 | 0.44 | 0 |
+| nes_noise_l14 | -350 | -2.6 |  | -0.32 / -0.32 |  |  | 6.34 | 0.55 | 0 |
+| nes_noise_l15 | -637 | -2.8 |  | +0.20 / +0.20 |  |  | 11.50 | 0.38 | 0 |
+| nes_noise_s00 | +58 inv | 1.4 | +0.00 | -0.04 / -0.04 | 1.31 |  | 3.87 | 13.75 | 1 |
+| nes_noise_s01 | +59 inv | 3.5 | +0.00 | -0.43 / -0.43 | 1.89 |  | 3.77 | 13.69 | 2 |
+| nes_noise_s02 | -30 inv | 5.8 | -0.00 | -0.28 / -0.28 | 0.82 |  | 7.36 | 11.09 | 0 |
+| nes_noise_s03 | +12 inv | 8.2 | +0.00 | +0.11 / +0.11 | 0.27 |  | 3.65 | 8.90 | 0 |
+| nes_noise_s04 | +22 inv | 13.0 | +0.00 | +0.20 / +0.20 | 0.28 |  | 3.51 | 8.35 | 0 |
+| nes_noise_s05 | +32 inv | 8.6 | +0.00 | +0.04 / +0.04 | 0.29 |  | 3.42 | 6.94 | 0 |
+| nes_noise_s06 | +43 inv | 9.4 | -0.00 | -0.09 / -0.09 | 0.28 |  | 3.41 | 6.33 | 0 |
+| nes_noise_s07 | +41 inv | -0.9 | +0.01 | -0.14 / -0.14 | 0.28 |  | 3.59 | 4.97 | 0 |
+| nes_noise_s08 | -53 inv | -0.9 | +0.00 | -0.14 / -0.14 | 0.28 |  | 5.91 | 4.66 | 0 |
+| nes_noise_s09 | -86 inv | -0.8 |  | -0.19 / -0.19 |  |  | 10.24 | 3.78 | 0 |
+| nes_noise_s10 | -101 inv | -0.8 |  | -0.23 / -0.23 |  |  | 8.98 | 0.81 | 0 |
+| nes_noise_s11 | -136 inv | -0.7 |  | -0.26 / -0.26 |  |  | 11.04 | 1.54 | 0 |
+| nes_noise_s12 | -149 inv | -0.6 |  | -0.35 / -0.35 |  |  | 9.61 | 0.37 | 0 |
+| nes_noise_s13 | -199 inv | -0.5 |  | -0.36 / -0.36 |  |  | 12.69 | 0.40 | 0 |
+| nes_noise_s14 | -249 inv | -0.5 |  | -0.29 / -0.29 |  |  | 12.37 | 0.55 | 0 |
+| nes_noise_s15 | -602 | -1.6 |  | -0.62 / -0.62 |  |  | 14.51 | 0.54 | 2 |
+| nes_dmc_r00_loop | +44 inv | 11.0 | +0.00 | +0.11 / +0.11 | 1.97 |  | 0.44 | 0.83 | 4 |
+| nes_dmc_r04_loop | +39 inv | 13.6 | +0.00 | +0.11 / +0.11 | 1.77 |  | 3.14 | 1.61 | 4 |
+| nes_dmc_r08_loop | +29 inv | 14.8 | +0.00 | +0.11 / +0.11 | 2.05 |  | 0.19 | 0.95 | 4 |
+| nes_dmc_r12_loop | +21 inv | 16.2 | +0.00 | +0.11 / +0.11 | 2.78 |  | 0.17 | 0.98 | 2 |
+| nes_dmc_r15_loop | +16 inv | 16.4 | +0.00 | +0.12 / +0.12 | 4.61 |  | 3.28 | 5.70 | 2 |
+| nes_dmc_r15_oneshot | +1 | -1.4 |  | +0.12 / +0.12 |  |  | 0.48 | 3.00 | 0 |
+| nes_dmc_direct | +1 inv | 19.3 | -0.00 | +0.10 / +0.10 | 0.11 |  | 0.10 | 2.41 | 0 |
+| nes_mix_pulse | +1 | 0.3 |  | +0.01 / +0.01 |  |  | 0.29 | 0.73 | 0 |
+| nes_mix_tri_dmc | +1 inv | 9.0 |  | -2.18 / -2.18 |  |  | 3.68 | 1.55 | 10 |
+| nes_mix_noise_dmc | +1 inv | -1.7 |  | -3.99 / -3.99 |  |  | 4.56 | 2.67 | 6 |
+| nes_mix_tri_noise | +1 inv | 0.3 |  | +0.81 / +0.81 |  |  | 4.56 | 1.13 | 6 |
+| nes_mix_pulse_tri | +1 | -4.2 |  | +1.48 / +1.48 |  |  | 5.26 | 3.98 | 6 |
+| nes_pal_pulse_ref | -12 | 27.8 | +0.00 | -0.00 / -0.00 | 0.08 |  | 0.23 | 3.42 | 0 |
+| nes_pal_tri_t0126 | +23 inv | 9.0 | -0.00 | +2.48 / +2.48 | 3.93 |  | 4.69 | 4.72 | 12 |
+| nes_pal_env_v03 | +1 | 0.7 |  | +0.11 / +0.11 |  |  | 27.11 | 6.03 | 3 |
+| nes_pal_len_i04 | +1 | 0.4 |  | +0.42 / +0.42 |  |  | 11.43 | 5.01 | 1 |
+| nes_pal_sweep_down_s2_p1 | +1 | -3.1 |  | +0.52 / +0.52 |  |  | 7.02 | 2.07 | 3 |
+| nes_pal_noise_s02 | +37 inv | 3.4 | -0.00 | -0.06 / -0.06 | 1.02 |  | 3.81 | 12.62 | 1 |
+| nes_pal_noise_s05 | +45 inv | -1.2 | -0.00 | +0.05 / +0.05 | 0.27 |  | 3.23 | 7.17 | 0 |
+| nes_pal_noise_s08 | -93 inv | -0.9 | +0.00 | -0.15 / -0.15 | 0.28 |  | 10.04 | 4.52 | 0 |
+| nes_pal_noise_s11 | -11 inv | -0.8 |  | -0.26 / -0.26 |  |  | 5.74 | 1.40 | 0 |
+| nes_pal_noise_l08 | +21 inv | -2.8 |  | -0.18 / -0.18 |  |  | 0.72 | 0.41 | 0 |
+| nes_pal_dmc_r04_loop | +46 inv | 13.2 | +0.00 | +0.11 / +0.11 | 1.92 |  | 0.33 | 0.76 | 4 |
+| nes_pal_dmc_r15_loop | +11 inv | 19.3 | +0.00 | +0.12 / +0.12 | 3.92 |  | 0.14 | 3.36 | 4 |
 
 #### 2a03 mixer and multi-segment stimuli
 
@@ -964,68 +974,68 @@ Levels after the global gain. 're first' = level relative to the first segment o
 
 | stimulus | segment | ref (dBFS) | ours - ref (dB) | ours re first | ref re first | formula re first |
 |---|---|---|---|---|---|---|
-| nes_pulse_vol | volume 15 | -22.62 | -0.01 | +0.00 | +0.00 | +0.00 |
+| nes_pulse_vol | volume 15 | -22.62 | -0.02 | +0.00 | +0.00 | +0.00 |
 | nes_pulse_vol | volume 14 | -23.11 | -0.03 | -0.51 | -0.49 | -0.51 |
-| nes_pulse_vol | volume 13 | -23.64 | -0.04 | -1.05 | -1.02 | -1.06 |
-| nes_pulse_vol | volume 12 | -24.26 | -0.00 | -1.63 | -1.64 | -1.66 |
+| nes_pulse_vol | volume 13 | -23.64 | -0.04 | -1.04 | -1.02 | -1.06 |
+| nes_pulse_vol | volume 12 | -24.26 | +0.00 | -1.62 | -1.64 | -1.66 |
 | nes_pulse_vol | volume 11 | -24.94 | +0.02 | -2.28 | -2.32 | -2.33 |
 | nes_pulse_vol | volume 10 | -25.69 | +0.03 | -3.03 | -3.07 | -3.06 |
-| nes_pulse_vol | volume 9 | -26.51 | +0.01 | -3.87 | -3.89 | -3.88 |
+| nes_pulse_vol | volume 9 | -26.51 | +0.00 | -3.87 | -3.89 | -3.88 |
 | nes_pulse_vol | volume 8 | -27.43 | -0.02 | -4.81 | -4.81 | -4.80 |
-| nes_pulse_vol | volume 7 | -28.47 | -0.03 | -5.86 | -5.85 | -5.87 |
+| nes_pulse_vol | volume 7 | -28.47 | -0.02 | -5.86 | -5.85 | -5.87 |
 | nes_pulse_vol | volume 6 | -29.71 | -0.01 | -7.08 | -7.09 | -7.11 |
 | nes_pulse_vol | volume 5 | -31.19 | +0.02 | -8.54 | -8.57 | -8.59 |
 | nes_pulse_vol | volume 4 | -33.06 | +0.03 | -10.39 | -10.44 | -10.43 |
 | nes_pulse_vol | volume 3 | -35.48 | +0.04 | -12.80 | -12.85 | -12.82 |
 | nes_pulse_vol | volume 2 | -38.89 | +0.02 | -16.24 | -16.27 | -16.24 |
-| nes_pulse_vol | volume 1 | -44.81 | +0.02 | -22.16 | -22.19 | -22.16 |
-| nes_pulse_vol | volume 0 | -75.39 | +0.67 |  |  |  |
-| nes_tri_ultra_t0 | t = 126 (440 Hz) | -24.95 | +2.47 | +0.00 | +0.00 | +0.00 |
-| nes_tri_ultra_t0 | t = 0 (ultrasonic) | -39.68 | -64.60 |  |  |  |
-| nes_tri_ultra_t0 | switch pop (peak) (peak) | -28.26 | +0.41 |  |  |  |
-| nes_tri_ultra_t1 | t = 126 (440 Hz) | -24.95 | +2.47 | +0.00 | +0.00 | +0.00 |
-| nes_tri_ultra_t1 | t = 1 (ultrasonic) | -39.67 | -64.62 |  |  |  |
-| nes_tri_ultra_t1 | switch pop (peak) (peak) | -26.60 | -1.25 |  |  |  |
+| nes_pulse_vol | volume 1 | -44.81 | +0.02 | -22.15 | -22.19 | -22.16 |
+| nes_pulse_vol | volume 0 | -75.39 | +0.71 |  |  |  |
+| nes_tri_ultra_t0 | t = 126 (440 Hz) | -24.95 | +2.49 | +0.00 | +0.00 | +0.00 |
+| nes_tri_ultra_t0 | t = 0 (ultrasonic) | -39.68 | -64.58 |  |  |  |
+| nes_tri_ultra_t0 | switch pop (peak) (peak) | -28.26 | +0.38 |  |  |  |
+| nes_tri_ultra_t1 | t = 126 (440 Hz) | -24.95 | +2.49 | +0.00 | +0.00 | +0.00 |
+| nes_tri_ultra_t1 | t = 1 (ultrasonic) | -39.67 | -64.59 |  |  |  |
+| nes_tri_ultra_t1 | switch pop (peak) (peak) | -26.60 | -1.27 |  |  |  |
 | nes_mix_pulse | p1 15 | -22.61 | +0.00 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse | p2 15 | -22.63 | +0.01 | -0.01 | -0.02 | +0.00 |
-| nes_mix_pulse | p1 15 + p2 15 | -20.84 | -0.00 | +1.77 | +1.77 | +1.81 |
+| nes_mix_pulse | p2 15 | -22.63 | +0.00 | -0.02 | -0.02 | +0.00 |
+| nes_mix_pulse | p1 15 + p2 15 | -20.84 | -0.01 | +1.76 | +1.77 | +1.81 |
 | nes_mix_pulse | p1 8 + p2 8 | -25.14 | +0.02 | -2.51 | -2.53 | -2.52 |
-| nes_mix_pulse | p1 4 + p2 4 | -30.42 | +0.02 | -7.79 | -7.81 | -7.81 |
-| nes_mix_pulse | p1 15 + p2 4 | -22.69 | +0.01 | -0.07 | -0.08 | -0.06 |
-| nes_mix_tri_dmc | tri, dmc 0 | -24.94 | +2.47 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_dmc | tri, dmc 32 | -24.37 | -0.22 | -2.12 | +0.57 | -2.13 |
-| nes_mix_tri_dmc | tri, dmc 64 | -24.36 | -2.14 | -4.02 | +0.59 | -4.02 |
-| nes_mix_tri_dmc | tri, dmc 96 | -24.56 | -3.65 | -5.74 | +0.38 | -5.73 |
-| nes_mix_tri_dmc | tri, dmc 127 | -24.83 | -4.88 | -7.24 | +0.11 | -7.23 |
-| nes_mix_noise_dmc | noise, dmc 0 | -24.18 | -0.10 | +0.00 | +0.00 | +0.00 |
-| nes_mix_noise_dmc | noise, dmc 64 | -23.57 | -4.16 | -3.45 | +0.61 | -3.57 |
-| nes_mix_noise_dmc | noise, dmc 127 | -24.15 | -6.51 | -6.37 | +0.04 | -6.48 |
-| nes_mix_tri_noise | tri alone | -24.94 | +2.47 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_noise | tri + noise | -22.33 | +2.31 | +2.45 | +2.61 | +2.54 |
-| nes_mix_tri_noise | tri + noise, dmc 64 | -22.05 | -1.78 | -1.36 | +2.89 | -1.31 |
+| nes_mix_pulse | p1 4 + p2 4 | -30.42 | +0.02 | -7.80 | -7.81 | -7.81 |
+| nes_mix_pulse | p1 15 + p2 4 | -22.69 | +0.01 | -0.08 | -0.08 | -0.06 |
+| nes_mix_tri_dmc | tri, dmc 0 | -24.94 | +2.49 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_dmc | tri, dmc 32 | -24.37 | -0.21 | -2.12 | +0.57 | -2.13 |
+| nes_mix_tri_dmc | tri, dmc 64 | -24.36 | -2.12 | -4.02 | +0.59 | -4.02 |
+| nes_mix_tri_dmc | tri, dmc 96 | -24.56 | -3.63 | -5.74 | +0.38 | -5.73 |
+| nes_mix_tri_dmc | tri, dmc 127 | -24.83 | -4.86 | -7.24 | +0.11 | -7.23 |
+| nes_mix_noise_dmc | noise, dmc 0 | -24.18 | -0.19 | +0.00 | +0.00 | +0.00 |
+| nes_mix_noise_dmc | noise, dmc 64 | -23.57 | -4.26 | -3.46 | +0.61 | -3.57 |
+| nes_mix_noise_dmc | noise, dmc 127 | -24.15 | -6.61 | -6.38 | +0.04 | -6.48 |
+| nes_mix_tri_noise | tri alone | -24.94 | +2.49 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_noise | tri + noise | -22.33 | +2.26 | +2.38 | +2.61 | +2.54 |
+| nes_mix_tri_noise | tri + noise, dmc 64 | -22.05 | -1.82 | -1.42 | +2.89 | -1.31 |
 | nes_mix_pulse_tri | p1 alone | -22.61 | +0.00 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse_tri | tri alone | -24.95 | +2.46 | +0.12 | -2.34 | +0.11 |
-| nes_mix_pulse_tri | p1 + tri | -20.64 | +1.09 | +3.05 | +1.97 | +3.07 |
+| nes_mix_pulse_tri | tri alone | -24.95 | +2.48 | +0.14 | -2.34 | +0.11 |
+| nes_mix_pulse_tri | p1 + tri | -20.64 | +1.10 | +3.06 | +1.97 | +3.07 |
 
 Intermodulation products (component amplitude in dB re sqrt(2) x segment RMS; no linear component exists at these frequencies):
 
 | stimulus | segment | Hz | ours | ref | formula |
 |---|---|---|---|---|---|
 | nes_mix_pulse | p1 15 + p2 15 | 116.1 | -24.0 | -24.0 | -24.0 |
-| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -82.8 | -86.6 | -72.1 |
-| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.6 | -73.8 | -83.3 |
+| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -81.9 | -86.6 | -72.1 |
+| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.2 | -73.8 | -83.3 |
 | nes_mix_pulse | p1 15 + p2 15 | 996.9 | -24.0 | -23.9 | -24.0 |
 | nes_mix_pulse | p1 8 + p2 8 | 116.1 | -28.8 | -28.8 | -28.8 |
-| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -98.0 | -85.7 | -74.4 |
-| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.5 | -89.0 | -81.9 |
+| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -90.7 | -85.7 | -74.4 |
+| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.4 | -89.0 | -81.9 |
 | nes_mix_pulse | p1 8 + p2 8 | 996.9 | -28.8 | -28.7 | -28.8 |
-| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.5 | -34.1 | -34.4 |
-| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -83.0 | -112.9 | -76.1 |
-| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -81.3 | -85.4 | -80.0 |
+| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.4 | -34.1 | -34.4 |
+| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -93.0 | -112.9 | -76.1 |
+| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -84.0 | -85.4 | -80.0 |
 | nes_mix_pulse | p1 4 + p2 4 | 996.9 | -34.4 | -34.1 | -34.4 |
 | nes_mix_pulse | p1 15 + p2 4 | 116.1 | -32.2 | -32.1 | -32.2 |
-| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -84.7 | -83.5 | -73.8 |
-| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.8 | -79.9 | -93.9 |
+| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -85.8 | -83.5 | -73.8 |
+| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.9 | -79.9 | -93.9 |
 | nes_mix_pulse | p1 15 + p2 4 | 996.9 | -32.2 | -32.1 | -32.2 |
 
 #### 2a03 frame-sequencer events (ms after the note-start write)
@@ -1034,153 +1044,146 @@ From the edges of the raw renders (largest sample step over 1.1 periods of the t
 
 | stimulus | start ours | start ref | start documented | end ours | end ref | end documented | res |
 |---|---|---|---|---|---|---|---|
-| nes_env_v00 | 4.08 | 0.07 | 4.17 | 66.67 | 66.69 | 66.67 | 0.29 |
-| nes_env_v03 | 4.10 | 0.07 | 4.17 | 254.17 | 254.20 | 254.17 | 0.29 |
-| nes_env_v07 | 4.10 | 0.07 | 4.17 | 504.17 | 504.22 | 504.18 | 0.29 |
-| nes_env_v15 | 4.10 | 0.07 | 4.17 | 1004.20 | 1004.26 | 1004.18 | 0.29 |
-| nes_env5_v03 | 0.00 | 0.07 | 0.00 | 312.47 | 316.69 | 312.46 | 0.29 |
-| nes_env5_v07 | 0.00 | 0.07 | 0.00 | 624.92 | 629.14 | 624.92 | 0.29 |
-| nes_env_retrig | 4.10 | 4.15 | 4.17 | 66.67 | 66.69 | 66.67 | 0.29 |
-| nes_sweep_up_s1 | -0.05 | 0.14 | 0.00 | 341.70 | 402.34 | 341.67 | 4.35 |
-| nes_sweep_up_s2 | -0.05 | 0.14 | 0.00 | 555.53 | 608.39 | 558.34 | 6.63 |
-| nes_sweep_up_s3 | -0.05 | 0.14 | 0.00 | 734.85 | 773.04 | 741.68 | 7.47 |
-| nes_sweep_up_s4 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s5 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s6 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s7 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_down_s1_p1 | -0.05 | 1.13 | 0.00 | 408.30 | 408.37 | 408.34 | 0.07 |
+| nes_env_v00 | 4.17 | 0.07 | 4.17 | 66.67 | 66.69 | 66.67 | 0.29 |
+| nes_env_v03 | 4.17 | 0.07 | 4.17 | 254.20 | 254.20 | 254.17 | 0.29 |
+| nes_env_v07 | 4.17 | 0.07 | 4.17 | 504.20 | 504.22 | 504.18 | 0.29 |
+| nes_env_v15 | 4.17 | 0.07 | 4.17 | 1004.20 | 1004.26 | 1004.18 | 0.29 |
+| nes_env5_v03 | -0.02 | 0.07 | 0.00 | 312.47 | 316.69 | 312.46 | 0.29 |
+| nes_env5_v07 | -0.02 | 0.07 | 0.00 | 624.94 | 629.14 | 624.92 | 0.29 |
+| nes_env_retrig | 4.17 | 4.15 | 4.17 | 66.69 | 66.69 | 66.67 | 0.29 |
+| nes_sweep_up_s1 | -0.02 | 0.14 | 0.00 | 341.72 | 402.34 | 341.67 | 4.35 |
+| nes_sweep_up_s2 | -0.02 | 0.14 | 0.00 | 555.56 | 608.39 | 558.34 | 6.63 |
+| nes_sweep_up_s3 | -0.02 | 0.14 | 0.00 | 734.88 | 773.04 | 741.68 | 7.47 |
+| nes_sweep_up_s4 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s5 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s6 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s7 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_down_s1_p1 | -0.02 | 1.13 | 0.00 | 408.32 | 408.37 | 408.34 | 0.07 |
 | nes_sweep_down_s1_p2 | -0.02 | 1.13 | 0.00 | 475.01 | 475.06 | 475.01 | 0.04 |
-| nes_sweep_down_s2_p1 | -0.02 | 1.13 | 0.00 | 808.34 | 808.41 | 808.35 | 0.04 |
-| nes_sweep_down_s2_p2 | -0.02 | 1.13 | 0.00 | 858.34 | 858.41 | 858.35 | 0.04 |
+| nes_sweep_down_s2_p1 | -0.02 | 1.13 | 0.00 | 808.39 | 808.41 | 808.35 | 0.04 |
+| nes_sweep_down_s2_p2 | -0.02 | 1.13 | 0.00 | 858.39 | 858.41 | 858.35 | 0.04 |
 | nes_sweep_down_s3_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s3_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s4_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s4_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s5_p1 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s5_p2 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_sweep_down_s5_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_sweep_down_s5_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s6_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s6_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s7_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s7_p2 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep5_down_s2_p1 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_len_i00 | -0.05 | 0.07 | 0.00 | 83.31 | 83.33 | 83.34 | 0.29 |
-| nes_len_i04 | -0.05 | 0.07 | 0.00 | 333.33 | 333.36 | 333.34 | 0.29 |
-| nes_len_i10 | -0.05 | 0.07 | 0.00 | 499.80 | 499.84 | 500.01 | 0.29 |
-| nes_len_i00_halt | -0.05 | 0.07 | 0.00 |  |  |  | 0.29 |
-| nes_len5_i04 | -0.05 | 0.07 | 0.00 | 404.17 | 416.71 | 404.11 | 0.29 |
-| nes_tri_lin016 | 4.17 | 4.17 | 4.17 | 70.84 | 70.84 | 70.84 | 0.29 |
-| nes_tri_lin064 | 4.17 | 4.17 | 4.17 | 270.84 | 270.86 | 270.84 | 0.29 |
-| nes_tri_lin127 | 4.17 | 4.17 | 4.17 | 533.36 | 533.38 | 533.34 | 0.29 |
-| nes_tri_len_i00 | 4.17 | 4.17 | 4.17 | 83.33 | 83.33 | 83.34 | 0.29 |
-| nes_tri5_lin064 | 0.00 | 4.17 | 0.00 | 333.29 | 337.53 | 333.29 | 0.29 |
-| nes_dmc_r15_oneshot | -0.20 | 0.00 | 0.00 | 247.78 | 247.44 | 247.41 a | 0.51 |
-| nes_pal_env_v03 | 4.94 | 0.07 | 5.00 | 305.03 | 273.63 | 305.02 | 0.31 |
-| nes_pal_len_i04 | 0.00 | 0.07 | 0.00 | 400.07 | 358.84 | 400.02 | 0.31 |
-| nes_pal_sweep_down_s2_p1 | -0.07 | 1.22 | 0.00 |  |  |  | 4.93 |
+| nes_sweep_down_s7_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_sweep5_down_s2_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_len_i00 | -0.02 | 0.07 | 0.00 | 83.27 | 83.33 | 83.34 | 0.29 |
+| nes_len_i04 | -0.02 | 0.07 | 0.00 | 333.29 | 333.36 | 333.34 | 0.29 |
+| nes_len_i10 | -0.02 | 0.07 | 0.00 | 499.82 | 499.84 | 500.01 | 0.29 |
+| nes_len_i00_halt | -0.02 | 0.07 | 0.00 |  |  |  | 0.29 |
+| nes_len5_i04 | -0.02 | 0.07 | 0.00 | 404.15 | 416.71 | 404.11 | 0.29 |
+| nes_tri_lin016 | 4.20 | 4.17 | 4.17 | 70.82 | 70.84 | 70.84 | 0.29 |
+| nes_tri_lin064 | 4.20 | 4.17 | 4.17 | 270.86 | 270.86 | 270.84 | 0.29 |
+| nes_tri_lin127 | 4.20 | 4.17 | 4.17 | 533.36 | 533.38 | 533.34 | 0.29 |
+| nes_tri_len_i00 | 4.20 | 4.17 | 4.17 | 83.33 | 83.33 | 83.34 | 0.29 |
+| nes_tri5_lin064 | 0.02 | 4.17 | 0.00 | 333.33 | 337.53 | 333.29 | 0.29 |
+| nes_dmc_r15_oneshot | -0.23 | 0.00 | 0.00 | 247.82 | 247.44 | 247.41 a | 0.51 |
+| nes_pal_env_v03 | 4.99 | 0.07 | 5.00 | 305.03 | 273.63 | 305.02 | 0.31 |
+| nes_pal_len_i04 | -0.02 | 0.07 | 0.00 | 400.07 | 358.84 | 400.02 | 0.31 |
+| nes_pal_sweep_down_s2_p1 | -0.02 | 1.22 | 0.00 |  |  |  | 4.93 |
 
 #### 2a03 envelope staircase (worst step-time difference, ms; steps found of documented)
 
 | stimulus | steps ours / ref / doc | ours - documented | ref - documented (worst / median) | ours - ref |
 |---|---|---|---|---|
-| nes_env_v00 | 15 / 15 / 15 | +0.94 | +0.98 / +0.19 | -0.41 |
-| nes_env_v03 | 15 / 15 / 15 | +0.69 | +0.72 / +0.17 | +0.27 |
-| nes_env_v07 | 15 / 15 / 15 | +0.69 | +0.73 / +0.17 | +0.27 |
-| nes_env_v15 | 15 / 15 / 15 | +0.68 | +0.75 / +0.15 | +0.27 |
-| nes_env_loop_v01 | 113 / 113 / 113 | +0.82 | -0.98 / +0.14 | -0.43 |
+| nes_env_v00 | 15 / 15 / 15 | +0.96 | +0.98 / +0.19 | -0.41 |
+| nes_env_v03 | 15 / 15 / 15 | +0.69 | +0.72 / +0.17 | +0.29 |
+| nes_env_v07 | 15 / 15 / 15 | +0.69 | +0.73 / +0.17 | +0.29 |
+| nes_env_v15 | 15 / 15 / 15 | +0.70 | +0.75 / +0.15 | -0.41 |
+| nes_env_loop_v01 | 113 / 113 / 113 | +0.82 | -0.98 / +0.14 | -0.41 |
 | nes_env_loop_v03 | 56 / 56 / 56 | +0.98 | +1.05 / +0.17 | -0.41 |
 | nes_env5_v03 | 15 / 15 / 15 | +0.68 | +5.22 / +4.33 | -4.54 |
 | nes_env5_v07 | 15 / 15 / 15 | +0.69 | +5.21 / +4.39 | -4.54 |
 | nes_env_retrig | 15 / 15 / 15 | +0.96 | +0.98 / +0.10 | -0.39 |
-| nes_pal_env_v03 | 15 / 15 / 15 | +0.73 | -9.03 / -9.02 | +9.75 |
+| nes_pal_env_v03 | 15 / 15 / 15 | +0.75 | -9.03 / -9.02 | +9.77 |
 
 #### 2a03 sweeps (frame-wise pitch, |cents|: median / 90th percentile / max)
 
 | stimulus | ours vs ref | ours vs documented | ref vs documented |
 |---|---|---|---|
-| nes_sweep_up_s1 | 0.27 / 2.55 / 12.2 | 0.21 / 1.73 / 15.1 | 0.20 / 0.81 / 5.3 |
-| nes_sweep_up_s2 | 0.35 / 4.96 / 25.8 | 0.21 / 5.04 / 19.1 | 0.28 / 2.71 / 7.4 |
-| nes_sweep_up_s3 | 0.50 / 4.51 / 16.1 | 0.40 / 5.13 / 19.6 | 0.33 / 4.14 / 21.9 |
-| nes_sweep_up_s4 | 0.43 / 3.81 / 10.3 | 0.30 / 3.34 / 9.1 | 0.32 / 3.39 / 8.1 |
-| nes_sweep_up_s5 | 0.47 / 3.01 / 8.2 | 0.31 / 2.04 / 4.3 | 0.36 / 2.01 / 4.3 |
-| nes_sweep_up_s6 | 0.79 / 2.29 / 4.6 | 0.57 / 1.47 / 2.6 | 0.72 / 1.65 / 3.2 |
-| nes_sweep_up_s7 | 0.84 / 2.29 / 5.8 | 0.44 / 1.16 / 2.5 | 0.78 / 1.91 / 4.4 |
-| nes_sweep_down_s1_p1 | 0.09 / 0.76 / 386.2 | 0.05 / 1.30 / 398.8 | 0.11 / 0.54 / 12.6 |
-| nes_sweep_down_s1_p2 | 0.16 / 0.48 / 9.7 | 0.07 / 0.47 / 15.3 | 0.12 / 0.56 / 13.4 |
-| nes_sweep_down_s2_p1 | 0.09 / 0.78 / 9.5 | 0.06 / 0.51 / 49.9 | 0.10 / 1.09 / 40.4 |
-| nes_sweep_down_s2_p2 | 0.11 / 0.68 / 9.4 | 0.05 / 0.56 / 49.7 | 0.10 / 0.64 / 40.2 |
-| nes_sweep_down_s3_p1 | 0.13 / 1.69 / 17.2 | 0.10 / 2.73 / 23.5 | 0.14 / 1.69 / 21.8 |
-| nes_sweep_down_s3_p2 | 0.18 / 1.69 / 17.2 | 0.10 / 2.73 / 23.3 | 0.15 / 1.68 / 21.7 |
-| nes_sweep_down_s4_p1 | 0.32 / 2.68 / 8.8 | 0.21 / 3.92 / 44.5 | 0.22 / 3.89 / 42.5 |
-| nes_sweep_down_s4_p2 | 0.35 / 2.64 / 10.6 | 0.22 / 4.44 / 44.2 | 0.27 / 4.15 / 42.3 |
-| nes_sweep_down_s5_p1 | 0.54 / 2.82 / 4.3 | 0.40 / 3.92 / 37.1 | 0.31 / 3.86 / 6.7 |
-| nes_sweep_down_s5_p2 | 0.62 / 2.32 / 8.0 | 0.51 / 3.30 / 36.9 | 0.56 / 3.28 / 6.3 |
-| nes_sweep_down_s6_p1 | 0.74 / 2.13 / 4.1 | 0.65 / 1.87 / 1204.0 | 0.61 / 2.12 / 3.1 |
-| nes_sweep_down_s6_p2 | 0.60 / 3.05 / 7.1 | 0.77 / 1.90 / 3.0 | 0.91 / 2.35 / 5.2 |
-| nes_sweep_down_s7_p1 | 0.85 / 3.48 / 4.0 | 1.43 / 2.49 / 1206.2 | 1.48 / 2.54 / 3.5 |
-| nes_sweep_down_s7_p2 | 0.77 / 0.19 / 0.8 | 1.59 / 1.61 / 2.1 | 1.21 / 1.21 / 1.3 |
-| nes_sweep5_down_s2_p1 | 500.50 / 528.65 / 603.1 | 0.06 / 0.46 / 15.0 | 500.73 / 528.64 / 603.1 |
-| nes_pal_sweep_down_s2_p1 | 498.15 / 897.64 / 8776.9 | 0.05 / 0.67 / 25.4 | 498.12 / 897.63 / 8776.9 |
+| nes_sweep_up_s1 | 0.19 / 2.54 / 12.2 | 0.18 / 1.73 / 15.0 | 0.20 / 0.81 / 5.3 |
+| nes_sweep_up_s2 | 0.26 / 4.97 / 25.8 | 0.20 / 4.92 / 19.0 | 0.28 / 2.71 / 7.4 |
+| nes_sweep_up_s3 | 0.36 / 4.52 / 16.1 | 0.39 / 5.16 / 19.6 | 0.33 / 4.14 / 21.9 |
+| nes_sweep_up_s4 | 0.36 / 3.81 / 10.3 | 0.28 / 3.32 / 9.1 | 0.32 / 3.39 / 8.1 |
+| nes_sweep_up_s5 | 0.42 / 2.50 / 8.2 | 0.31 / 2.07 / 4.3 | 0.36 / 2.01 / 4.3 |
+| nes_sweep_up_s6 | 0.64 / 2.30 / 4.0 | 0.52 / 1.55 / 2.4 | 0.72 / 1.65 / 3.2 |
+| nes_sweep_up_s7 | 0.73 / 2.50 / 5.3 | 0.46 / 1.10 / 2.6 | 0.78 / 1.91 / 4.4 |
+| nes_sweep_down_s1_p1 | 0.13 / 0.75 / 9.7 | 0.05 / 1.30 / 15.3 | 0.11 / 0.54 / 12.6 |
+| nes_sweep_down_s1_p2 | 0.09 / 0.72 / 9.6 | 0.06 / 0.43 / 15.3 | 0.12 / 0.56 / 13.4 |
+| nes_sweep_down_s2_p1 | 0.10 / 0.87 / 9.5 | 0.06 / 0.45 / 49.9 | 0.10 / 1.09 / 40.4 |
+| nes_sweep_down_s2_p2 | 0.10 / 0.80 / 9.4 | 0.05 / 0.53 / 49.6 | 0.10 / 0.64 / 40.2 |
+| nes_sweep_down_s3_p1 | 0.17 / 1.64 / 17.2 | 0.09 / 2.67 / 23.5 | 0.14 / 1.69 / 21.8 |
+| nes_sweep_down_s3_p2 | 0.14 / 1.68 / 17.2 | 0.09 / 2.72 / 23.4 | 0.15 / 1.68 / 21.7 |
+| nes_sweep_down_s4_p1 | 0.31 / 2.66 / 8.8 | 0.17 / 3.91 / 44.4 | 0.22 / 3.89 / 42.5 |
+| nes_sweep_down_s4_p2 | 0.33 / 2.70 / 10.6 | 0.22 / 4.38 / 44.2 | 0.27 / 4.15 / 42.3 |
+| nes_sweep_down_s5_p1 | 0.46 / 2.83 / 4.4 | 0.30 / 3.47 / 37.1 | 0.31 / 3.86 / 6.7 |
+| nes_sweep_down_s5_p2 | 0.72 / 2.39 / 7.9 | 0.53 / 3.37 / 37.0 | 0.56 / 3.28 / 6.3 |
+| nes_sweep_down_s6_p1 | 0.99 / 2.79 / 3.6 | 0.70 / 1.49 / 2.8 | 0.61 / 2.12 / 3.1 |
+| nes_sweep_down_s6_p2 | 0.88 / 2.68 / 4.5 | 0.60 / 1.90 / 3.2 | 0.91 / 2.35 / 5.2 |
+| nes_sweep_down_s7_p1 | 0.71 / 4.25 / 4.3 | 1.18 / 1.70 / 3.1 | 1.48 / 2.54 / 3.5 |
+| nes_sweep_down_s7_p2 | 0.09 / 0.08 / 0.1 | 1.39 / 1.46 / 1.6 | 1.21 / 1.21 / 1.3 |
+| nes_sweep5_down_s2_p1 | 500.53 / 528.63 / 603.2 | 0.05 / 0.35 / 15.0 | 500.73 / 528.64 / 603.1 |
+| nes_pal_sweep_down_s2_p1 | 498.10 / 897.64 / 8776.9 | 0.05 / 0.54 / 25.4 | 498.12 / 897.63 / 8776.9 |
 
 #### Deviations beyond thresholds (NES: ours vs NSFPlay core (VGMPlay))
 
-* **nes_pulse_t0008** (pulse 1, duty 2, constant volume 15, t = 8 (12428.98 Hz)): level L +2.27 dB (ref -24.8 dBFS); level R +2.27 dB (ref -24.8 dBFS); H1 +2.29 dB (ref 0.0, ours 2.3 dB re H1)
-* **nes_pulse_t0012** (pulse 1, duty 2, constant volume 15, t = 12 (8604.68 Hz)): level L +1.06 dB (ref -24.0 dBFS); level R +1.06 dB (ref -24.0 dBFS); H1 +1.06 dB (ref 0.0, ours 1.1 dB re H1)
-* **nes_pulse_t0020** (pulse 1, duty 2, constant volume 15, t = 20 (5326.71 Hz)): H3 +3.88 dB (ref -18.3, ours -14.4 dB re H1)
-* **nes_pulse_t0050** (pulse 1, duty 2, constant volume 15, t = 50 (2193.35 Hz)): H5 +1.76 dB (ref -14.9, ours -13.1 dB re H1); H7 +3.57 dB (ref -22.9, ours -19.3 dB re H1)
-* **nes_env_v00** (pulse 1 (t = 63), decay envelope V = 0, loop off, 4-step (step every 1 quarter frames at 240 Hz)): gate start +4.01 ms (ref 0.07 ms, ours 4.08 ms)
-* **nes_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step (step every 4 quarter frames at 240 Hz)): gate start +4.04 ms (ref 0.07 ms, ours 4.10 ms)
-* **nes_env_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 4-step (step every 8 quarter frames at 240 Hz)): gate start +4.04 ms (ref 0.07 ms, ours 4.10 ms)
-* **nes_env_v15** (pulse 1 (t = 63), decay envelope V = 15, loop off, 4-step (step every 16 quarter frames at 240 Hz)): gate start +4.04 ms (ref 0.07 ms, ours 4.10 ms)
+* **nes_pulse_t0008** (pulse 1, duty 2, constant volume 15, t = 8 (12428.98 Hz)): level L +1.13 dB (ref -24.8 dBFS); level R +1.13 dB (ref -24.8 dBFS); H1 +1.15 dB (ref 0.0, ours 1.1 dB re H1)
+* **nes_pulse_t0012** (pulse 1, duty 2, constant volume 15, t = 12 (8604.68 Hz)): level L +0.53 dB (ref -24.0 dBFS); level R +0.53 dB (ref -24.0 dBFS)
+* **nes_pulse_t0020** (pulse 1, duty 2, constant volume 15, t = 20 (5326.71 Hz)): H3 +1.94 dB (ref -18.3, ours -16.4 dB re H1)
+* **nes_pulse_t0050** (pulse 1, duty 2, constant volume 15, t = 50 (2193.35 Hz)): H7 +1.78 dB (ref -22.9, ours -21.1 dB re H1)
+* **nes_env_v00** (pulse 1 (t = 63), decay envelope V = 0, loop off, 4-step (step every 1 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
+* **nes_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step (step every 4 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
+* **nes_env_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 4-step (step every 8 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
+* **nes_env_v15** (pulse 1 (t = 63), decay envelope V = 15, loop off, 4-step (step every 16 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
 * **nes_env5_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 5-step (step every 4 quarter frames at 192 Hz)): gate end -4.22 ms (ref 316.69 ms, ours 312.47 ms); envelope step timing: worst ours - ref -4.54 ms
-* **nes_env5_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 5-step (step every 8 quarter frames at 192 Hz)): gate end -4.22 ms (ref 629.14 ms, ours 624.92 ms); envelope step timing: worst ours - ref -4.54 ms
-* **nes_sweep_up_s1** (pulse 1, sweep up, shift 1, period P = 7, from t = 128): gate end -60.63 ms (ref 402.34 ms, ours 341.70 ms)
-* **nes_sweep_up_s2** (pulse 1, sweep up, shift 2, period P = 5, from t = 128): gate end -52.86 ms (ref 608.39 ms, ours 555.53 ms)
-* **nes_sweep_up_s3** (pulse 1, sweep up, shift 3, period P = 3, from t = 128): gate end -38.19 ms (ref 773.04 ms, ours 734.85 ms)
-* **nes_sweep_down_s1_p1** (pulse 1, sweep down, shift 1, period P = 7, from t = 1024): gate start -1.18 ms (ref 1.13 ms, ours -0.05 ms)
+* **nes_env5_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 5-step (step every 8 quarter frames at 192 Hz)): gate end -4.20 ms (ref 629.14 ms, ours 624.94 ms); envelope step timing: worst ours - ref -4.54 ms
+* **nes_sweep_up_s1** (pulse 1, sweep up, shift 1, period P = 7, from t = 128): gate end -60.61 ms (ref 402.34 ms, ours 341.72 ms)
+* **nes_sweep_up_s2** (pulse 1, sweep up, shift 2, period P = 5, from t = 128): gate end -52.83 ms (ref 608.39 ms, ours 555.56 ms)
+* **nes_sweep_up_s3** (pulse 1, sweep up, shift 3, period P = 3, from t = 128): gate end -38.16 ms (ref 773.04 ms, ours 734.88 ms)
+* **nes_sweep_down_s1_p1** (pulse 1, sweep down, shift 1, period P = 7, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
 * **nes_sweep_down_s1_p2** (pulse 2, sweep down, shift 1, period P = 7, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
 * **nes_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
 * **nes_sweep_down_s2_p2** (pulse 2, sweep down, shift 2, period P = 5, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
-* **nes_sweep5_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, 5-step): sweep pitch track |ours - ref| median 500.50, p90 528.65, max 603.1 cents
-* **nes_len5_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 96 Hz), halt off, 5-step): gate end -12.54 ms (ref 416.71 ms, ours 404.17 ms)
-* **nes_tri_t0002** (triangle, t = 2 (18643.47 Hz)): level L +5.24 dB (ref -53.9 dBFS); level R +5.24 dB (ref -53.9 dBFS); H1 +6.56 dB (ref 0.0, ours 6.6 dB re H1)
-* **nes_tri_t0008** (triangle, t = 8 (6214.49 Hz)): level L +3.01 dB (ref -25.3 dBFS); level R +3.01 dB (ref -25.3 dBFS); H1 +3.01 dB (ref 0.0, ours 3.0 dB re H1); H2 +4.69 dB (ref -28.1, ours -23.4 dB re H1); H3 +6.29 dB (ref -49.1, ours -42.8 dB re H1)
-* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS); H1 +2.50 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.58 dB (ref -27.1, ours -24.5 dB re H1); H3 +2.78 dB (ref -19.3, ours -16.5 dB re H1); H4 +3.08 dB (ref -39.7, ours -36.6 dB re H1); H5 +3.26 dB (ref -28.8, ours -25.5 dB re H1); H6 +3.30 dB (ref -47.2, ours -43.9 dB re H1); H7 +3.20 dB (ref -34.9, ours -31.7 dB re H1); H8 +5.38 dB (ref -55.3, ours -49.9 dB re H1); H9 +8.75 dB (ref -49.1, ours -40.3 dB re H1)
-* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +2.47 dB (ref -24.9 dBFS); level R +2.47 dB (ref -24.9 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.45 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.50 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.59 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.57 dB (ref -28.6, ours -26.0 dB re H1); H6 +2.49 dB (ref -47.1, ours -44.6 dB re H1); H7 +3.14 dB (ref -35.8, ours -32.6 dB re H1); H8 +2.74 dB (ref -53.3, ours -50.5 dB re H1); H9 +1.91 dB (ref -40.1, ours -38.2 dB re H1); H10 +3.86 dB (ref -59.7, ours -55.9 dB re H1)
-* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +2.46 dB (ref -24.9 dBFS); level R +2.46 dB (ref -24.9 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.43 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.46 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.51 dB (ref -39.5, ours -37.0 dB re H1); H5 +2.44 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.26 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.63 dB (ref -35.3, ours -32.7 dB re H1); H8 +2.55 dB (ref -53.2, ours -50.6 dB re H1); H9 +2.42 dB (ref -40.7, ours -38.3 dB re H1); H10 +3.97 dB (ref -60.2, ours -56.0 dB re H1)
-* **nes_tri_t0767** (triangle, t = 767 (72.83 Hz)): level L +2.45 dB (ref -25.7 dBFS); level R +2.45 dB (ref -25.7 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.43 dB (ref -26.2, ours -23.8 dB re H1); H3 +2.46 dB (ref -18.3, ours -15.9 dB re H1); H4 +2.51 dB (ref -38.6, ours -36.1 dB re H1); H5 +2.44 dB (ref -27.6, ours -25.2 dB re H1); H6 +2.24 dB (ref -46.0, ours -43.8 dB re H1); H7 +2.61 dB (ref -34.5, ours -31.8 dB re H1); H8 +2.54 dB (ref -52.3, ours -49.8 dB re H1); H9 +2.40 dB (ref -39.9, ours -37.5 dB re H1); H10 +4.07 dB (ref -59.3, ours -55.2 dB re H1)
-* **nes_tri_ultra_t0** (triangle t = 126, then $400A = 0 at 0.30 s (ultrasonic: A2)): level L +2.14 dB (ref -29.8 dBFS); level R +2.14 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.47 dB (ref -25.0 dBFS); segment 't = 0 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
-* **nes_tri_ultra_t1** (triangle t = 126, then $400A = 1 at 0.30 s (ultrasonic: A2)): level L +2.14 dB (ref -29.8 dBFS); level R +2.14 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.47 dB (ref -25.0 dBFS); segment 't = 1 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
+* **nes_sweep5_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, 5-step): sweep pitch track |ours - ref| median 500.53, p90 528.63, max 603.2 cents
+* **nes_len5_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 96 Hz), halt off, 5-step): gate end -12.56 ms (ref 416.71 ms, ours 404.15 ms)
+* **nes_tri_t0002** (triangle, t = 2 (18643.47 Hz)): level L +2.41 dB (ref -53.9 dBFS); level R +2.41 dB (ref -53.9 dBFS); H1 +3.86 dB (ref 0.0, ours 3.9 dB re H1)
+* **nes_tri_t0008** (triangle, t = 8 (6214.49 Hz)): level L +2.75 dB (ref -25.3 dBFS); level R +2.75 dB (ref -25.3 dBFS); H1 +2.75 dB (ref 0.0, ours 2.7 dB re H1); H2 +3.55 dB (ref -28.1, ours -24.5 dB re H1); H3 +3.59 dB (ref -49.1, ours -45.5 dB re H1)
+* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS); H1 +2.50 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.52 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.61 dB (ref -19.3, ours -16.7 dB re H1); H4 +2.77 dB (ref -39.7, ours -36.9 dB re H1); H5 +2.75 dB (ref -28.8, ours -26.0 dB re H1); H6 +2.56 dB (ref -47.2, ours -44.6 dB re H1); H7 +2.16 dB (ref -34.9, ours -32.7 dB re H1); H8 +4.02 dB (ref -55.3, ours -51.2 dB re H1); H9 +6.99 dB (ref -49.1, ours -42.1 dB re H1)
+* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +2.49 dB (ref -24.9 dBFS); level R +2.49 dB (ref -24.9 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.47 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.50 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.59 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.56 dB (ref -28.6, ours -26.0 dB re H1); H6 +2.45 dB (ref -47.1, ours -44.6 dB re H1); H7 +3.09 dB (ref -35.8, ours -32.7 dB re H1); H8 +2.67 dB (ref -53.3, ours -50.6 dB re H1); H9 +1.81 dB (ref -40.1, ours -38.3 dB re H1); H10 +3.77 dB (ref -59.7, ours -56.0 dB re H1)
+* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +2.48 dB (ref -24.9 dBFS); level R +2.48 dB (ref -24.9 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.45 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.48 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.53 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.46 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.27 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.64 dB (ref -35.3, ours -32.7 dB re H1); H8 +2.56 dB (ref -53.2, ours -50.6 dB re H1); H9 +2.43 dB (ref -40.7, ours -38.3 dB re H1); H10 +3.96 dB (ref -60.2, ours -56.0 dB re H1)
+* **nes_tri_t0767** (triangle, t = 767 (72.83 Hz)): level L +2.47 dB (ref -25.7 dBFS); level R +2.47 dB (ref -25.7 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.45 dB (ref -26.2, ours -23.8 dB re H1); H3 +2.48 dB (ref -18.3, ours -15.8 dB re H1); H4 +2.53 dB (ref -38.6, ours -36.1 dB re H1); H5 +2.46 dB (ref -27.6, ours -25.2 dB re H1); H6 +2.27 dB (ref -46.0, ours -43.7 dB re H1); H7 +2.63 dB (ref -34.5, ours -31.8 dB re H1); H8 +2.55 dB (ref -52.3, ours -49.8 dB re H1); H9 +2.42 dB (ref -39.9, ours -37.4 dB re H1); H10 +4.10 dB (ref -59.3, ours -55.2 dB re H1)
+* **nes_tri_ultra_t0** (triangle t = 126, then $400A = 0 at 0.30 s (ultrasonic: A2)): level L +2.16 dB (ref -29.8 dBFS); level R +2.16 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.49 dB (ref -25.0 dBFS); segment 't = 0 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
+* **nes_tri_ultra_t1** (triangle t = 126, then $400A = 1 at 0.30 s (ultrasonic: A2)): level L +2.16 dB (ref -29.8 dBFS); level R +2.16 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.49 dB (ref -25.0 dBFS); segment 't = 1 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
 * **nes_tri_lin016** (triangle t = 31, control 0, linear counter 16 quarter frames (240 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
-* **nes_tri_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames (240 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
-* **nes_tri_lin127** (triangle t = 31, control 0, linear counter 127 quarter frames (240 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
-* **nes_tri_len_i00** (triangle t = 31, control 0, linear 127, length index 0 (10 half frames)): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
-* **nes_tri5_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames, 5-step (192 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS); gate start -4.17 ms (ref 4.17 ms, ours 0.00 ms); gate end -4.24 ms (ref 337.53 ms, ours 333.29 ms)
-* **nes_noise_l01** (noise long mode, period index 1 (8 CPU cycles)): level L +0.51 dB (ref -32.7 dBFS); level R +0.51 dB (ref -32.7 dBFS)
-* **nes_noise_l02** (noise long mode, period index 2 (16 CPU cycles)): level L +0.59 dB (ref -29.8 dBFS); level R +0.59 dB (ref -29.8 dBFS)
-* **nes_noise_l03** (noise long mode, period index 3 (32 CPU cycles)): level L +0.72 dB (ref -27.3 dBFS); level R +0.72 dB (ref -27.3 dBFS)
-* **nes_noise_l04** (noise long mode, period index 4 (64 CPU cycles)): level L +0.54 dB (ref -25.1 dBFS); level R +0.54 dB (ref -25.1 dBFS)
-* **nes_noise_s00** (noise short (93-step) mode, period index 0 (4 CPU cycles), f0 4811.22 Hz): level L +0.70 dB (ref -40.9 dBFS); level R +0.70 dB (ref -40.9 dBFS); H2 +1.08 dB (ref -0.5, ours 0.6 dB re H1); H3 +2.87 dB (ref -3.1, ours -0.2 dB re H1); H4 +2.37 dB (ref -37.4, ours -35.1 dB re H1)
-* **nes_noise_s01** (noise short (93-step) mode, period index 1 (8 CPU cycles), f0 2405.61 Hz): H4 +1.08 dB (ref -0.7, ours 0.4 dB re H1); H5 +1.89 dB (ref -1.2, ours 0.7 dB re H1); H6 +2.88 dB (ref -3.3, ours -0.4 dB re H1); H7 +4.06 dB (ref -14.5, ours -10.4 dB re H1); H8 +2.35 dB (ref -37.6, ours -35.3 dB re H1)
-* **nes_noise_s02** (noise short (93-step) mode, period index 2 (16 CPU cycles), f0 1202.80 Hz): H8 +1.08 dB (ref -0.8, ours 0.3 dB re H1); H9 +1.46 dB (ref -1.0, ours 0.4 dB re H1); H10 +1.89 dB (ref -1.4, ours 0.5 dB re H1)
-* **nes_noise_s03** (noise short (93-step) mode, period index 3 (32 CPU cycles), f0 601.40 Hz): level L +0.67 dB (ref -31.9 dBFS); level R +0.67 dB (ref -31.9 dBFS)
-* **nes_noise_s04** (noise short (93-step) mode, period index 4 (64 CPU cycles), f0 300.70 Hz): level L +0.71 dB (ref -27.9 dBFS); level R +0.71 dB (ref -27.9 dBFS)
-* **nes_noise_s15** (noise short (93-step) mode, period index 15 (4068 CPU cycles), f0 4.73 Hz): level L -0.63 dB (ref -26.8 dBFS); level R -0.63 dB (ref -26.8 dBFS)
-* **nes_dmc_r00_loop** (DMC rate 0 (4181.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.07 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.30 dB (ref -42.0, ours -43.3 dB re H1); H8 +1.32 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.97 dB (ref -56.2, ours -58.2 dB re H1)
-* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.05 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.23 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.77 dB (ref -56.6, ours -54.8 dB re H1); H10 -1.31 dB (ref -56.9, ours -58.2 dB re H1)
-* **nes_dmc_r08_loop** (DMC rate 8 (9419.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.04 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.18 dB (ref -42.2, ours -43.4 dB re H1); H8 +2.06 dB (ref -56.8, ours -54.8 dB re H1)
-* **nes_dmc_r12_loop** (DMC rate 12 (16884.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.00 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.05 dB (ref -42.3, ours -43.3 dB re H1); H8 +2.84 dB (ref -57.5, ours -54.7 dB re H1)
-* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H8 +5.01 dB (ref -59.4, ours -54.4 dB re H1); H9 +1.09 dB (ref -37.5, ours -36.4 dB re H1); H10 +2.51 dB (ref -60.5, ours -57.5 dB re H1)
-* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L -2.19 dB (ref -24.6 dBFS); level R -2.19 dB (ref -24.6 dBFS); segment 'tri, dmc 0' level +2.47 dB (ref -24.9 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref +0.57 dB; segment 'tri, dmc 64' level -2.14 dB (ref -24.4 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref +0.59 dB; segment 'tri, dmc 96' level -3.65 dB (ref -24.6 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref +0.38 dB; segment 'tri, dmc 127' level -4.88 dB (ref -24.8 dBFS); segment 'tri, dmc 127' re first segment: ours -7.24, ref +0.11 dB
-* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -3.90 dB (ref -23.7 dBFS); level R -3.90 dB (ref -23.7 dBFS); segment 'noise, dmc 64' level -4.16 dB (ref -23.6 dBFS); segment 'noise, dmc 64' re first segment: ours -3.45, ref +0.61 dB; segment 'noise, dmc 127' level -6.51 dB (ref -24.1 dBFS); segment 'noise, dmc 127' re first segment: ours -6.37, ref +0.04 dB
-* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +0.85 dB (ref -22.3 dBFS); level R +0.85 dB (ref -22.3 dBFS); segment 'tri alone' level +2.47 dB (ref -24.9 dBFS); segment 'tri + noise' level +2.31 dB (ref -22.3 dBFS); segment 'tri + noise, dmc 64' level -1.78 dB (ref -22.1 dBFS); segment 'tri + noise, dmc 64' re first segment: ours -1.36, ref +2.89 dB
-* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +1.47 dB (ref -22.4 dBFS); level R +1.47 dB (ref -22.4 dBFS); segment 'tri alone' level +2.46 dB (ref -25.0 dBFS); segment 'tri alone' re first segment: ours +0.12, ref -2.34 dB; segment 'p1 + tri' level +1.09 dB (ref -20.6 dBFS); segment 'p1 + tri' re first segment: ours +3.05, ref +1.97 dB
-* **nes_pal_tri_t0126** (triangle, t = 126 (409.11 Hz), PAL): level L +2.46 dB (ref -24.9 dBFS); level R +2.46 dB (ref -24.9 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.44 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.48 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.55 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.49 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.34 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.69 dB (ref -35.3, ours -32.6 dB re H1); H8 +2.72 dB (ref -53.3, ours -50.5 dB re H1); H9 +2.61 dB (ref -40.8, ours -38.2 dB re H1); H10 +4.04 dB (ref -60.3, ours -56.0 dB re H1)
-* **nes_pal_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step PAL (step every 4 quarter frames at 200 Hz)): gate start +4.88 ms (ref 0.07 ms, ours 4.94 ms); gate end +31.41 ms (ref 273.63 ms, ours 305.03 ms); envelope step timing: worst ours - ref +9.75 ms
+* **nes_tri_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames (240 Hz), length 254): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS)
+* **nes_tri_lin127** (triangle t = 31, control 0, linear counter 127 quarter frames (240 Hz), length 254): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS)
+* **nes_tri_len_i00** (triangle t = 31, control 0, linear 127, length index 0 (10 half frames)): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS)
+* **nes_tri5_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames, 5-step (192 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS); gate start -4.15 ms (ref 4.17 ms, ours 0.02 ms); gate end -4.20 ms (ref 337.53 ms, ours 333.33 ms)
+* **nes_noise_s00** (noise short (93-step) mode, period index 0 (4 CPU cycles), f0 4811.22 Hz): H3 +1.31 dB (ref -3.1, ours -1.8 dB re H1)
+* **nes_noise_s01** (noise short (93-step) mode, period index 1 (8 CPU cycles), f0 2405.61 Hz): H6 +1.31 dB (ref -3.3, ours -2.0 dB re H1); H7 +1.89 dB (ref -14.5, ours -12.6 dB re H1)
+* **nes_noise_s15** (noise short (93-step) mode, period index 15 (4068 CPU cycles), f0 4.73 Hz): level L -0.62 dB (ref -26.8 dBFS); level R -0.62 dB (ref -26.8 dBFS)
+* **nes_dmc_r00_loop** (DMC rate 0 (4181.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.05 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.29 dB (ref -42.0, ours -43.3 dB re H1); H8 +1.32 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.97 dB (ref -56.2, ours -58.2 dB re H1)
+* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.03 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.22 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.77 dB (ref -56.6, ours -54.8 dB re H1); H10 -1.34 dB (ref -56.9, ours -58.2 dB re H1)
+* **nes_dmc_r08_loop** (DMC rate 8 (9419.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.02 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.17 dB (ref -42.2, ours -43.4 dB re H1); H8 +2.05 dB (ref -56.8, ours -54.8 dB re H1); H10 -1.00 dB (ref -57.2, ours -58.2 dB re H1)
+* **nes_dmc_r12_loop** (DMC rate 12 (16884.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H4 -1.06 dB (ref -42.3, ours -43.3 dB re H1); H8 +2.78 dB (ref -57.5, ours -54.8 dB re H1)
+* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H8 +4.61 dB (ref -59.4, ours -54.8 dB re H1); H10 +1.80 dB (ref -60.5, ours -58.2 dB re H1)
+* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L -2.18 dB (ref -24.6 dBFS); level R -2.18 dB (ref -24.6 dBFS); segment 'tri, dmc 0' level +2.49 dB (ref -24.9 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref +0.57 dB; segment 'tri, dmc 64' level -2.12 dB (ref -24.4 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref +0.59 dB; segment 'tri, dmc 96' level -3.63 dB (ref -24.6 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref +0.38 dB; segment 'tri, dmc 127' level -4.86 dB (ref -24.8 dBFS); segment 'tri, dmc 127' re first segment: ours -7.24, ref +0.11 dB
+* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -3.99 dB (ref -23.7 dBFS); level R -3.99 dB (ref -23.7 dBFS); segment 'noise, dmc 64' level -4.26 dB (ref -23.6 dBFS); segment 'noise, dmc 64' re first segment: ours -3.46, ref +0.61 dB; segment 'noise, dmc 127' level -6.61 dB (ref -24.1 dBFS); segment 'noise, dmc 127' re first segment: ours -6.38, ref +0.04 dB
+* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +0.81 dB (ref -22.3 dBFS); level R +0.81 dB (ref -22.3 dBFS); segment 'tri alone' level +2.49 dB (ref -24.9 dBFS); segment 'tri + noise' level +2.26 dB (ref -22.3 dBFS); segment 'tri + noise, dmc 64' level -1.82 dB (ref -22.1 dBFS); segment 'tri + noise, dmc 64' re first segment: ours -1.42, ref +2.89 dB
+* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +1.48 dB (ref -22.4 dBFS); level R +1.48 dB (ref -22.4 dBFS); segment 'tri alone' level +2.48 dB (ref -25.0 dBFS); segment 'tri alone' re first segment: ours +0.14, ref -2.34 dB; segment 'p1 + tri' level +1.10 dB (ref -20.6 dBFS); segment 'p1 + tri' re first segment: ours +3.06, ref +1.97 dB
+* **nes_pal_tri_t0126** (triangle, t = 126 (409.11 Hz), PAL): level L +2.48 dB (ref -24.9 dBFS); level R +2.48 dB (ref -24.9 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.46 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.49 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.55 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.49 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.32 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.66 dB (ref -35.3, ours -32.7 dB re H1); H8 +2.66 dB (ref -53.3, ours -50.6 dB re H1); H9 +2.53 dB (ref -40.8, ours -38.3 dB re H1); H10 +3.93 dB (ref -60.3, ours -56.1 dB re H1)
+* **nes_pal_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step PAL (step every 4 quarter frames at 200 Hz)): gate start +4.92 ms (ref 0.07 ms, ours 4.99 ms); gate end +31.41 ms (ref 273.63 ms, ours 305.03 ms); envelope step timing: worst ours - ref +9.77 ms
 * **nes_pal_len_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 100 Hz), halt off, PAL): gate end +41.22 ms (ref 358.84 ms, ours 400.07 ms)
-* **nes_pal_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, PAL): level L +0.65 dB (ref -23.4 dBFS); level R +0.65 dB (ref -23.4 dBFS); sweep pitch track |ours - ref| median 498.15, p90 897.64, max 8776.9 cents
-* **nes_pal_noise_s02** (noise short (93-step) mode, period index 2 (14 CPU cycles), f0 1276.96 Hz, PAL): level L +0.54 dB (ref -34.8 dBFS); level R +0.54 dB (ref -34.8 dBFS); H8 +1.33 dB (ref -0.9, ours 0.4 dB re H1); H9 +1.74 dB (ref -1.2, ours 0.5 dB re H1); H10 +2.24 dB (ref -1.7, ours 0.6 dB re H1)
-* **nes_pal_dmc_r04_loop** (DMC rate 4 (6023.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.07 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.30 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.31 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.94 dB (ref -56.2, ours -58.2 dB re H1)
-* **nes_pal_dmc_r15_loop** (DMC rate 15 (33252.1 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.11 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.48 dB (ref -41.8, ours -43.3 dB re H1); H6 -1.19 dB (ref -48.7, ours -49.9 dB re H1); H9 +1.04 dB (ref -37.5, ours -36.4 dB re H1); H10 -3.29 dB (ref -54.3, ours -57.6 dB re H1)
+* **nes_pal_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, PAL): level L +0.52 dB (ref -23.4 dBFS); level R +0.52 dB (ref -23.4 dBFS); sweep pitch track |ours - ref| median 498.10, p90 897.64, max 8776.9 cents
+* **nes_pal_noise_s02** (noise short (93-step) mode, period index 2 (14 CPU cycles), f0 1276.96 Hz, PAL): H10 +1.02 dB (ref -1.7, ours -0.7 dB re H1)
+* **nes_pal_dmc_r04_loop** (DMC rate 4 (6023.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.05 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.28 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.33 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.92 dB (ref -56.2, ours -58.2 dB re H1)
+* **nes_pal_dmc_r15_loop** (DMC rate 15 (33252.1 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.12 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.56 dB (ref -41.8, ours -43.3 dB re H1); H6 -1.42 dB (ref -48.7, ours -50.1 dB re H1); H10 -3.92 dB (ref -54.3, ours -58.2 dB re H1)
 
 #### Test side against the documented schedule and mixer formula (NES: ours vs NSFPlay core (VGMPlay))
 
@@ -1192,128 +1195,128 @@ None.
 
 | stimulus | lag (smp) | null (dB) | pitch (cents) | level L / R (dB) | max harm (dB) | max env timing (%) | env shape (dB) | spectral (dB) | devs |
 |---|---|---|---|---|---|---|---|---|---|
-| nes_pulse_ref | -43 | 12.0 | -0.09 | +0.00 / +0.00 | 0.16 |  | 7.23 | 6.96 | 0 |
-| nes_pulse_duty0 | +7 inv | 10.4 | -0.09 | +0.05 / +0.05 | 0.21 |  | 2.38 | 6.13 | 0 |
-| nes_pulse_duty1 | +7 inv | 12.8 | -0.09 | +0.01 / +0.01 | 0.21 |  | 0.71 | 4.25 | 0 |
-| nes_pulse_duty3 | +32 inv | 12.3 | -0.09 | +0.01 / +0.01 | 0.21 |  | 2.49 | 7.30 | 0 |
-| nes_pulse2_ref | -43 | 14.5 | -0.09 | +0.00 / +0.00 | 0.16 |  | 9.53 | 5.36 | 0 |
-| nes_pulse_t0008 | +35 | -0.7 | -0.09 | +2.27 / +2.27 | 1.99 |  | 5.21 | 9.80 | 3 |
-| nes_pulse_t0012 | +27 inv | 2.8 | -0.09 | +1.06 / +1.06 | 0.92 |  | 4.79 | 10.30 | 2 |
-| nes_pulse_t0020 | +43 inv | 6.8 | -0.09 | +0.45 / +0.45 | 3.38 |  | 5.76 | 9.94 | 1 |
-| nes_pulse_t0050 | -48 | 9.7 | -0.09 | +0.17 / +0.17 | 3.08 |  | 9.58 | 4.99 | 2 |
-| nes_pulse_t0120 | +28 | 14.8 | -0.09 | +0.05 / +0.05 | 0.86 |  | 5.26 | 5.90 | 0 |
-| nes_pulse_t0400 | +11 inv | 18.6 | -0.09 | -0.01 / -0.01 | 0.04 |  | 3.04 | 3.45 | 0 |
-| nes_pulse_t1023 | +26 inv | 18.8 | -0.08 | -0.03 / -0.03 | 0.04 |  | 2.66 | 2.12 | 0 |
-| nes_pulse_t1024 | +26 inv | 18.6 | -0.09 | -0.03 / -0.03 | 0.04 |  | 2.46 | 2.08 | 0 |
-| nes_pulse_t2047 | +52 inv | 15.7 | -0.10 | -0.03 / -0.03 | 0.04 |  | 1.11 | 1.74 | 0 |
+| nes_pulse_ref | +8 inv | 14.9 | -0.09 | +0.00 / +0.00 | 0.07 |  | 3.14 | 6.99 | 0 |
+| nes_pulse_duty0 | +8 inv | 15.0 | -0.09 | +0.02 / +0.02 | 0.09 |  | 2.38 | 6.14 | 0 |
+| nes_pulse_duty1 | +8 inv | 17.3 | -0.09 | +0.01 / +0.01 | 0.09 |  | 0.71 | 4.16 | 0 |
+| nes_pulse_duty3 | +33 inv | 16.5 | -0.09 | +0.01 / +0.01 | 0.09 |  | 2.50 | 7.28 | 0 |
+| nes_pulse2_ref | +8 inv | 18.5 | -0.09 | +0.00 / +0.00 | 0.07 |  | 4.91 | 5.07 | 0 |
+| nes_pulse_t0008 | +55 inv | 0.0 | -0.09 | +1.13 / +1.13 | 0.84 |  | 4.79 | 10.65 | 2 |
+| nes_pulse_t0012 | +48 inv | 3.1 | -0.09 | +0.53 / +0.53 | 0.39 |  | 4.67 | 11.55 | 2 |
+| nes_pulse_t0020 | +60 inv | 6.4 | -0.09 | +0.22 / +0.22 | 1.44 |  | 5.67 | 11.00 | 1 |
+| nes_pulse_t0050 | +43 inv | 10.2 | -0.09 | +0.08 / +0.08 | 1.30 |  | 4.56 | 5.17 | 1 |
+| nes_pulse_t0120 | +52 inv | 11.7 | -0.09 | +0.02 / +0.02 | 0.36 |  | 5.08 | 5.96 | 0 |
+| nes_pulse_t0400 | +11 inv | 15.2 | -0.09 | -0.01 / -0.01 | 0.02 |  | 3.05 | 3.34 | 0 |
+| nes_pulse_t1023 | +27 inv | 21.2 | -0.08 | -0.01 / -0.01 | 0.02 |  | 2.67 | 1.95 | 0 |
+| nes_pulse_t1024 | +27 inv | 21.2 | -0.09 | -0.01 / -0.01 | 0.02 |  | 2.48 | 1.90 | 0 |
+| nes_pulse_t2047 | +52 inv | 15.2 | -0.10 | -0.01 / -0.01 | 0.02 |  | 1.12 | 1.54 | 0 |
 | nes_pulse_t0007_mute | -881 | 0.0 |  | -217.95 / -217.95 |  |  | 217.86 | 289.65 | 3 |
 | nes_pulse_sweepmute | -881 | 0.0 |  | -221.32 / -221.32 |  |  | 218.82 | 314.67 | 3 |
-| nes_pulse_vol | +1 inv | 2.6 |  | +0.50 / +0.50 |  |  | 1.81 | 6.52 | 18 |
-| nes_env_v00 | +1 inv | 1.1 |  | +2.19 / +2.19 |  |  | 52.50 | 13.71 | 5 |
-| nes_env_v03 | +1 inv | 2.0 |  | +1.00 / +1.00 |  |  | 27.79 | 13.44 | 5 |
-| nes_env_v07 | +1 inv | 1.8 |  | +0.83 / +0.83 |  |  | 19.77 | 10.94 | 5 |
-| nes_env_v15 | +1 inv | 1.2 |  | +0.74 / +0.74 |  |  | 14.25 | 9.23 | 5 |
-| nes_env_loop_v01 | +1 inv | -0.0 |  | +0.61 / +0.61 |  |  | 17.65 | 15.95 | 5 |
-| nes_env_loop_v03 | +1 inv | 0.2 |  | +0.45 / +0.45 |  |  | 17.16 | 14.93 | 2 |
-| nes_env5_v03 | +1 inv | 1.1 |  | +0.94 / +0.94 |  |  | 7.24 | 11.85 | 4 |
-| nes_env5_v07 | +1 inv | 0.8 |  | +0.78 / +0.78 |  |  | 5.92 | 10.65 | 4 |
-| nes_env_retrig | +1 inv | 0.0 |  | +2.93 / +2.93 |  |  | 21.47 | 13.74 | 5 |
-| nes_sweep_up_s1 | +1 inv | -2.4 |  | +0.02 / +0.02 |  |  | 4.31 | 1.28 | 2 |
-| nes_sweep_up_s2 | +1 | -2.6 |  | +0.04 / +0.04 |  |  | 3.13 | 1.12 | 1 |
-| nes_sweep_up_s3 | +1 | -3.0 |  | +0.06 / +0.06 |  |  | 1.60 | 1.10 | 1 |
-| nes_sweep_up_s4 | +1 inv | -2.9 |  | -0.01 / -0.01 |  |  | 3.20 | 1.68 | 1 |
-| nes_sweep_up_s5 | +1 | -3.0 |  | -0.02 / -0.02 |  |  | 2.15 | 4.48 | 1 |
-| nes_sweep_up_s6 | +1 | -3.0 |  | -0.01 / -0.01 |  |  | 1.73 | 5.24 | 1 |
-| nes_sweep_up_s7 | +1 inv | -3.0 |  | +0.01 / +0.01 |  |  | 2.24 | 10.56 | 1 |
-| nes_sweep_down_s1_p1 | +1 inv | -1.3 |  | +0.31 / +0.31 |  |  | 26.55 | 7.98 | 2 |
-| nes_sweep_down_s1_p2 | +1 inv | -2.3 |  | +0.31 / +0.31 |  |  | 11.33 | 7.50 | 2 |
-| nes_sweep_down_s2_p1 | +1 | -2.9 |  | +0.04 / +0.04 |  |  | 16.78 | 6.36 | 2 |
-| nes_sweep_down_s2_p2 | +1 | -3.2 |  | +0.05 / +0.05 |  |  | 15.79 | 7.08 | 2 |
-| nes_sweep_down_s3_p1 | +1 | -3.0 |  | +0.09 / +0.09 |  |  | 3.26 | 3.21 | 1 |
-| nes_sweep_down_s3_p2 | +1 | -3.1 |  | +0.11 / +0.11 |  |  | 3.26 | 3.28 | 1 |
-| nes_sweep_down_s4_p1 | +1 | -2.5 |  | +0.01 / +0.01 |  |  | 4.05 | 1.99 | 1 |
-| nes_sweep_down_s4_p2 | +1 | -3.0 |  | +0.01 / +0.01 |  |  | 4.09 | 1.97 | 1 |
-| nes_sweep_down_s5_p1 | +1 inv | -4.0 |  | -0.00 / -0.00 |  |  | 3.19 | 2.88 | 1 |
-| nes_sweep_down_s5_p2 | +1 | -2.9 |  | -0.00 / -0.00 |  |  | 3.18 | 2.93 | 1 |
-| nes_sweep_down_s6_p1 | +1 inv | -2.9 |  | -0.01 / -0.01 |  |  | 3.71 | 2.84 | 1 |
-| nes_sweep_down_s6_p2 | +1 | -3.0 |  | -0.01 / -0.01 |  |  | 3.70 | 2.83 | 1 |
-| nes_sweep_down_s7_p1 | +1 inv | -1.9 |  | -0.02 / -0.02 |  |  | 2.42 | 2.95 | 1 |
-| nes_sweep_down_s7_p2 | +1 inv | -3.0 |  | -0.01 / -0.01 |  |  | 2.62 | 3.42 | 1 |
-| nes_sweep5_down_s2_p1 | +1 inv | -3.5 |  | +1.07 / +1.07 |  |  | 12.41 | 5.36 | 3 |
-| nes_len_i00 | +1 inv | 3.3 |  | +0.12 / +0.12 |  |  | 10.63 | 19.80 | 0 |
-| nes_len_i04 | +1 inv | 2.2 |  | +0.22 / +0.22 |  |  | 11.37 | 12.17 | 1 |
-| nes_len_i10 | +1 inv | 2.1 |  | +0.12 / +0.12 |  |  | 5.41 | 12.86 | 0 |
-| nes_len_i00_halt | +1 inv | 1.6 |  | +0.12 / +0.12 |  |  | 4.75 | 13.83 | 0 |
-| nes_len5_i04 | +1 inv | 0.8 |  | +1.13 / +1.13 |  |  | 12.66 | 12.15 | 3 |
-| nes_tri_t0002 | +1066 | -304.8 |  | +195.29 / +195.29 |  |  | 194.56 | 291.93 | 0 |
-| nes_tri_t0008 | +222 inv | -3.8 | -0.09 | +7.33 / +7.33 | 40.61 |  | 9.22 | 10.89 | 5 |
-| nes_tri_t0032 | +244 inv | -1.7 | -0.09 | +6.80 / +6.80 | 39.73 |  | 8.37 | 13.22 | 11 |
-| nes_tri_t0126 | +210 inv | -1.6 | -0.09 | +6.76 / +6.76 | 39.66 |  | 8.88 | 15.59 | 12 |
-| nes_tri_t0383 | +254 inv | -1.7 | -0.09 | +6.74 / +6.74 | 39.66 |  | 6.68 | 11.48 | 12 |
-| nes_tri_t0767 | +254 inv | -4.5 | -0.09 | +6.77 / +6.77 | 40.50 |  | 7.45 | 11.14 | 12 |
-| nes_tri_ultra_t0 | +1 inv | -3.1 |  | +6.75 / +6.75 |  |  | 25.87 | 8.89 | 3 |
-| nes_tri_ultra_t1 | +1 inv | -3.1 |  | +6.75 / +6.75 |  |  | 25.87 | 8.89 | 3 |
-| nes_tri_lin016 | +1 | -3.5 |  | +6.81 / +6.81 |  |  | 49.79 | 23.42 | 4 |
-| nes_tri_lin064 | +1 | -2.7 |  | +6.80 / +6.80 |  |  | 27.82 | 19.27 | 4 |
-| nes_tri_lin127 | +1 | -2.9 |  | +6.80 / +6.80 |  |  | 20.71 | 19.21 | 4 |
-| nes_tri_len_i00 | +1 | -2.4 |  | +6.80 / +6.80 |  |  | 44.83 | 22.56 | 3 |
-| nes_tri5_lin064 | +1 | -8.0 |  | +7.70 / +7.70 |  |  | 13.40 | 20.84 | 3 |
-| nes_noise_l00 | +1 | -4.7 |  | +2.94 / +2.94 |  |  | 7.73 | 7.13 | 2 |
-| nes_noise_l01 | -61 inv | -4.4 |  | +2.56 / +2.56 |  |  | 11.61 | 4.72 | 2 |
-| nes_noise_l02 | +22 inv | -4.5 |  | +2.49 / +2.49 |  |  | 6.83 | 4.18 | 2 |
-| nes_noise_l03 | +51 | -4.3 |  | +2.28 / +2.28 |  |  | 6.46 | 3.46 | 2 |
-| nes_noise_l04 | -56 | -4.2 |  | +2.10 / +2.10 |  |  | 10.89 | 3.30 | 2 |
-| nes_noise_l05 | +48 | -3.9 |  | +1.79 / +1.79 |  |  | 4.64 | 2.88 | 2 |
-| nes_noise_l06 | -14 | -3.8 |  | +1.54 / +1.54 |  |  | 4.84 | 3.02 | 2 |
-| nes_noise_l07 | -46 | -3.8 |  | +1.41 / +1.41 |  |  | 8.40 | 3.09 | 2 |
-| nes_noise_l08 | -58 | -3.8 |  | +1.40 / +1.40 |  |  | 10.22 | 2.49 | 2 |
-| nes_noise_l09 | +45 inv | -3.6 |  | +1.33 / +1.33 |  |  | 4.35 | 2.42 | 2 |
-| nes_noise_l10 | +30 | -3.6 |  | +1.24 / +1.24 |  |  | 3.51 | 2.30 | 2 |
-| nes_noise_l11 | -62 | -3.4 |  | +1.20 / +1.20 |  |  | 9.03 | 2.24 | 2 |
-| nes_noise_l12 | +58 | -3.4 |  | +0.96 / +0.96 |  |  | 2.59 | 2.16 | 2 |
-| nes_noise_l13 | +65 | -3.5 |  | +0.96 / +0.96 |  |  | 3.54 | 2.06 | 2 |
-| nes_noise_l14 | +2 inv | -3.2 |  | +0.77 / +0.77 |  |  | 5.35 | 1.95 | 2 |
-| nes_noise_l15 | +2 inv | -3.1 |  | +0.40 / +0.40 |  |  | 8.94 | 1.93 | 0 |
-| nes_noise_s00 | +59 | 0.2 | -0.09 | -2.03 / -2.03 | 3.42 |  | 7.33 | 19.03 | 5 |
-| nes_noise_s01 | +26 | -0.2 | -0.09 | -1.20 / -1.20 | 5.95 |  | 6.95 | 18.53 | 8 |
-| nes_noise_s02 | +41 inv | -0.6 | -0.09 | -1.96 / -1.96 | 7.81 |  | 6.63 | 17.63 | 10 |
-| nes_noise_s03 | +8 inv | 0.1 | -0.09 | -2.30 / -2.30 | 7.59 |  | 6.58 | 13.91 | 10 |
-| nes_noise_s04 | -13 | -2.0 | -0.08 | -0.15 / -0.15 | 7.81 |  | 6.62 | 12.22 | 8 |
-| nes_noise_s05 | -20 | -1.6 | -0.08 | -0.26 / -0.26 | 7.85 |  | 7.86 | 10.29 | 7 |
-| nes_noise_s06 | -27 | -1.4 | -0.09 | -0.53 / -0.53 | 7.87 |  | 8.89 | 9.22 | 9 |
-| nes_noise_s07 | -34 | -1.3 | -0.08 | -0.58 / -0.58 | 7.87 |  | 9.29 | 7.21 | 9 |
-| nes_noise_s08 | -44 | -1.5 | -0.09 | -0.59 / -0.59 | 7.88 |  | 8.68 | 5.69 | 9 |
-| nes_noise_s09 | -55 | -1.2 |  | -0.65 / -0.65 |  |  | 10.01 | 5.11 | 2 |
-| nes_noise_s10 | +65 inv | -2.1 |  | -0.68 / -0.68 |  |  | 3.77 | 3.50 | 2 |
-| nes_noise_s11 | +39 | -2.1 |  | -0.71 / -0.71 |  |  | 4.28 | 3.71 | 2 |
-| nes_noise_s12 | +58 | -2.1 |  | -0.69 / -0.69 |  |  | 4.93 | 3.30 | 2 |
-| nes_noise_s13 | +27 inv | -2.2 |  | -0.67 / -0.67 |  |  | 8.82 | 3.31 | 2 |
-| nes_noise_s14 | +52 inv | -2.3 |  | -0.69 / -0.69 |  |  | 8.58 | 3.38 | 2 |
-| nes_noise_s15 | +1 | -2.5 |  | -0.56 / -0.56 |  |  | 10.75 | 3.01 | 2 |
-| nes_dmc_r00_loop | -9 | 9.4 | -0.09 | -0.23 / -0.23 | 18.23 |  | 2.17 | 14.96 | 9 |
-| nes_dmc_r04_loop | +3 | 9.9 | -0.09 | -0.23 / -0.23 | 18.17 |  | 3.40 | 17.88 | 9 |
-| nes_dmc_r08_loop | +6 | 10.0 | -0.09 | -0.26 / -0.26 | 18.13 |  | 1.86 | 20.02 | 9 |
-| nes_dmc_r12_loop | +8 | 9.7 | -0.09 | -0.24 / -0.24 | 17.95 |  | 2.04 | 22.31 | 9 |
-| nes_dmc_r15_loop | +9 | 9.7 | -0.09 | -0.22 / -0.22 | 16.97 |  | 2.98 | 23.24 | 8 |
-| nes_dmc_r15_oneshot | +1 | -1.1 |  | +0.17 / +0.17 |  |  | 4.74 | 10.95 | 0 |
-| nes_dmc_direct | +1 | 19.7 | -0.00 | -0.95 / -0.95 | 0.96 |  | 0.90 | 2.78 | 2 |
-| nes_mix_pulse | +1 inv | 2.4 |  | -0.50 / -0.50 |  |  | 2.87 | 7.76 | 12 |
-| nes_mix_tri_dmc | +1 inv | 0.4 |  | +2.29 / +2.29 |  |  | 12.53 | 2.44 | 10 |
-| nes_mix_noise_dmc | +1 inv | -2.6 |  | -2.33 / -2.33 |  |  | 4.85 | 1.54 | 7 |
-| nes_mix_tri_noise | +1 inv | -3.1 |  | +2.81 / +2.81 |  |  | 18.29 | 2.35 | 6 |
-| nes_mix_pulse_tri | +1 inv | -2.0 |  | +3.06 / +3.06 |  |  | 6.86 | 10.24 | 6 |
-| nes_pal_pulse_ref | +8 inv | 15.6 | -0.13 | -0.00 / -0.00 | 0.10 |  | 4.37 | 5.60 | 0 |
-| nes_pal_tri_t0126 | +248 inv | -1.6 | -0.13 | +6.75 / +6.75 | 39.66 |  | 8.21 | 15.26 | 12 |
-| nes_pal_env_v03 | +1 inv | 0.7 |  | +1.13 / +1.13 |  |  | 31.58 | 12.68 | 5 |
-| nes_pal_len_i04 | +1 inv | 0.6 |  | +1.07 / +1.07 |  |  | 9.00 | 13.75 | 3 |
-| nes_pal_sweep_down_s2_p1 | +1 | -3.3 |  | +0.98 / +0.98 |  |  | 9.98 | 4.94 | 3 |
-| nes_pal_noise_s02 | +35 | -1.9 | +8.59 | -2.47 / -2.47 | 65.10 |  | 6.75 | 21.91 | 13 |
-| nes_pal_noise_s05 | -34 inv | -2.8 | +43.23 | -0.32 / -0.32 | 74.09 |  | 9.00 | 15.72 | 11 |
-| nes_pal_noise_s08 | +16 inv | -2.7 | +65.41 | -0.62 / -0.62 | 65.87 |  | 5.76 | 10.03 | 13 |
-| nes_pal_noise_s11 | +53 inv | -2.6 |  | -0.72 / -0.72 |  |  | 4.15 | 5.59 | 2 |
-| nes_pal_noise_l08 | -26 | -3.7 |  | +1.38 / +1.38 |  |  | 6.41 | 2.82 | 2 |
-| nes_pal_dmc_r04_loop | -73 | -2.9 | +59.52 | -0.23 / -0.23 | 15.15 |  | 4.59 | 16.05 | 9 |
-| nes_pal_dmc_r15_loop | -15 | -3.0 | +15.86 | -0.23 / -0.23 | 68.20 |  | 1.97 | 23.63 | 11 |
+| nes_pulse_vol | +1 inv | 2.3 |  | +0.50 / +0.50 |  |  | 1.81 | 6.48 | 18 |
+| nes_env_v00 | +1 inv | 0.2 |  | +2.13 / +2.13 |  |  | 52.45 | 13.75 | 5 |
+| nes_env_v03 | +1 inv | 0.9 |  | +0.94 / +0.94 |  |  | 27.76 | 13.53 | 5 |
+| nes_env_v07 | +1 inv | 0.8 |  | +0.76 / +0.76 |  |  | 19.75 | 11.02 | 5 |
+| nes_env_v15 | +1 inv | 0.3 |  | +0.67 / +0.67 |  |  | 14.22 | 9.54 | 5 |
+| nes_env_loop_v01 | +1 inv | -0.5 |  | +0.54 / +0.54 |  |  | 17.64 | 15.98 | 5 |
+| nes_env_loop_v03 | +1 inv | -0.4 |  | +0.39 / +0.39 |  |  | 17.14 | 14.98 | 2 |
+| nes_env5_v03 | +1 inv | 0.1 |  | +0.87 / +0.87 |  |  | 7.20 | 11.93 | 4 |
+| nes_env5_v07 | +1 inv | -0.1 |  | +0.72 / +0.72 |  |  | 5.87 | 10.75 | 4 |
+| nes_env_retrig | +1 inv | -0.6 |  | +2.87 / +2.87 |  |  | 21.45 | 13.77 | 5 |
+| nes_sweep_up_s1 | +1 inv | -2.4 |  | +0.01 / +0.01 |  |  | 4.31 | 0.95 | 2 |
+| nes_sweep_up_s2 | +1 | -2.6 |  | +0.03 / +0.03 |  |  | 3.13 | 0.73 | 1 |
+| nes_sweep_up_s3 | +1 | -3.0 |  | +0.04 / +0.04 |  |  | 1.61 | 0.73 | 1 |
+| nes_sweep_up_s4 | +1 inv | -2.9 |  | -0.00 / -0.00 |  |  | 3.20 | 1.45 | 1 |
+| nes_sweep_up_s5 | +1 | -3.0 |  | -0.01 / -0.01 |  |  | 2.15 | 4.39 | 1 |
+| nes_sweep_up_s6 | +1 inv | -3.0 |  | -0.01 / -0.01 |  |  | 1.73 | 5.16 | 1 |
+| nes_sweep_up_s7 | +1 inv | -3.0 |  | -0.00 / -0.00 |  |  | 2.25 | 10.52 | 1 |
+| nes_sweep_down_s1_p1 | +1 inv | -0.9 |  | +0.33 / +0.33 |  |  | 26.54 | 8.10 | 2 |
+| nes_sweep_down_s1_p2 | +1 inv | -2.1 |  | +0.32 / +0.32 |  |  | 11.25 | 7.56 | 2 |
+| nes_sweep_down_s2_p1 | +1 | -2.8 |  | +0.06 / +0.06 |  |  | 16.76 | 6.38 | 2 |
+| nes_sweep_down_s2_p2 | +1 | -3.1 |  | +0.07 / +0.07 |  |  | 15.73 | 7.14 | 2 |
+| nes_sweep_down_s3_p1 | +1 | -3.0 |  | +0.03 / +0.03 |  |  | 3.26 | 3.13 | 1 |
+| nes_sweep_down_s3_p2 | +1 | -3.1 |  | +0.07 / +0.07 |  |  | 3.26 | 3.23 | 1 |
+| nes_sweep_down_s4_p1 | +1 | -2.5 |  | +0.00 / +0.00 |  |  | 4.05 | 1.82 | 1 |
+| nes_sweep_down_s4_p2 | +1 | -3.0 |  | +0.01 / +0.01 |  |  | 4.10 | 1.83 | 1 |
+| nes_sweep_down_s5_p1 | +1 inv | -4.0 |  | +0.00 / +0.00 |  |  | 3.20 | 2.77 | 1 |
+| nes_sweep_down_s5_p2 | +1 | -2.9 |  | +0.00 / +0.00 |  |  | 3.19 | 2.85 | 1 |
+| nes_sweep_down_s6_p1 | +1 inv | -2.9 |  | -0.00 / -0.00 |  |  | 3.72 | 2.72 | 1 |
+| nes_sweep_down_s6_p2 | +1 | -3.0 |  | -0.00 / -0.00 |  |  | 3.70 | 2.75 | 1 |
+| nes_sweep_down_s7_p1 | +1 inv | -1.9 |  | -0.01 / -0.01 |  |  | 2.42 | 2.83 | 1 |
+| nes_sweep_down_s7_p2 | +1 inv | -3.0 |  | -0.00 / -0.00 |  |  | 2.62 | 3.34 | 1 |
+| nes_sweep5_down_s2_p1 | +1 inv | -3.4 |  | +0.95 / +0.95 |  |  | 12.25 | 5.39 | 3 |
+| nes_len_i00 | +1 inv | 2.0 |  | +0.06 / +0.06 |  |  | 10.64 | 19.86 | 0 |
+| nes_len_i04 | +1 inv | 1.2 |  | +0.15 / +0.15 |  |  | 11.37 | 12.26 | 1 |
+| nes_len_i10 | +1 inv | 1.1 |  | +0.06 / +0.06 |  |  | 5.42 | 12.97 | 0 |
+| nes_len_i00_halt | +1 inv | 0.7 |  | +0.06 / +0.06 |  |  | 4.76 | 13.95 | 0 |
+| nes_len5_i04 | +1 inv | 0.1 |  | +1.06 / +1.06 |  |  | 12.64 | 12.23 | 3 |
+| nes_tri_t0002 | +1066 | -304.2 |  | +192.46 / +192.46 |  |  | 192.17 | 289.63 | 0 |
+| nes_tri_t0008 | +219 | -3.3 | -0.09 | +7.06 / +7.06 | 39.47 |  | 9.00 | 10.52 | 5 |
+| nes_tri_t0032 | +244 inv | -1.9 | -0.09 | +6.79 / +6.79 | 39.67 |  | 8.37 | 12.98 | 11 |
+| nes_tri_t0126 | +210 inv | -1.6 | -0.09 | +6.77 / +6.77 | 39.67 |  | 8.90 | 15.52 | 12 |
+| nes_tri_t0383 | +255 inv | -1.7 | -0.09 | +6.76 / +6.76 | 39.68 |  | 6.70 | 11.43 | 12 |
+| nes_tri_t0767 | +255 inv | -4.5 | -0.09 | +6.79 / +6.79 | 40.52 |  | 7.46 | 11.02 | 12 |
+| nes_tri_ultra_t0 | +1 inv | -3.2 |  | +6.77 / +6.77 |  |  | 25.87 | 8.82 | 3 |
+| nes_tri_ultra_t1 | +1 inv | -3.3 |  | +6.77 / +6.77 |  |  | 25.87 | 8.82 | 3 |
+| nes_tri_lin016 | +1 | -3.8 |  | +6.80 / +6.80 |  |  | 49.83 | 23.42 | 4 |
+| nes_tri_lin064 | +1 | -3.2 |  | +6.80 / +6.80 |  |  | 27.84 | 19.27 | 4 |
+| nes_tri_lin127 | +1 | -3.4 |  | +6.80 / +6.80 |  |  | 20.73 | 19.19 | 4 |
+| nes_tri_len_i00 | +1 | -2.9 |  | +6.79 / +6.79 |  |  | 44.87 | 22.57 | 3 |
+| nes_tri5_lin064 | +1 | -7.7 |  | +7.69 / +7.69 |  |  | 13.39 | 20.83 | 3 |
+| nes_noise_l00 | +1 | -4.3 |  | +2.36 / +2.36 |  |  | 7.54 | 7.07 | 2 |
+| nes_noise_l01 | -60 inv | -4.0 |  | +1.97 / +1.97 |  |  | 11.50 | 4.64 | 2 |
+| nes_noise_l02 | +23 inv | -4.1 |  | +1.91 / +1.91 |  |  | 6.65 | 4.09 | 2 |
+| nes_noise_l03 | +52 | -4.0 |  | +1.73 / +1.73 |  |  | 6.31 | 3.32 | 2 |
+| nes_noise_l04 | -55 | -3.9 |  | +1.67 / +1.67 |  |  | 10.77 | 3.13 | 2 |
+| nes_noise_l05 | +49 | -3.8 |  | +1.51 / +1.51 |  |  | 4.60 | 2.75 | 2 |
+| nes_noise_l06 | -14 | -3.8 |  | +1.39 / +1.39 |  |  | 4.81 | 2.86 | 2 |
+| nes_noise_l07 | -45 | -3.7 |  | +1.30 / +1.30 |  |  | 8.38 | 2.92 | 2 |
+| nes_noise_l08 | -58 | -3.7 |  | +1.30 / +1.30 |  |  | 10.22 | 2.28 | 2 |
+| nes_noise_l09 | +46 inv | -3.6 |  | +1.27 / +1.27 |  |  | 4.34 | 2.21 | 2 |
+| nes_noise_l10 | +31 | -3.6 |  | +1.21 / +1.21 |  |  | 3.51 | 2.08 | 2 |
+| nes_noise_l11 | -61 | -3.4 |  | +1.18 / +1.18 |  |  | 9.03 | 2.02 | 2 |
+| nes_noise_l12 | +58 | -3.4 |  | +0.95 / +0.95 |  |  | 2.59 | 1.97 | 2 |
+| nes_noise_l13 | +65 | -3.5 |  | +0.96 / +0.96 |  |  | 3.54 | 1.83 | 2 |
+| nes_noise_l14 | +2 inv | -3.2 |  | +0.78 / +0.78 |  |  | 5.35 | 1.76 | 2 |
+| nes_noise_l15 | +2 inv | -3.1 |  | +0.42 / +0.42 |  |  | 8.93 | 1.76 | 0 |
+| nes_noise_s00 | +32 | 0.4 | -0.09 | -2.77 / -2.77 | 4.09 |  | 7.69 | 18.98 | 6 |
+| nes_noise_s01 | +45 | 0.4 | -0.09 | -1.83 / -1.83 | 8.85 |  | 6.95 | 18.72 | 8 |
+| nes_noise_s02 | -32 inv | -0.6 | -0.09 | -2.55 / -2.55 | 7.36 |  | 9.54 | 17.50 | 9 |
+| nes_noise_s03 | +8 inv | -0.0 | -0.09 | -2.86 / -2.86 | 7.74 |  | 6.79 | 13.93 | 10 |
+| nes_noise_s04 | +14 inv | -1.3 | -0.09 | -0.65 / -0.65 | 7.83 |  | 6.41 | 12.42 | 9 |
+| nes_noise_s05 | -20 | -1.9 | -0.08 | -0.61 / -0.61 | 7.85 |  | 7.90 | 10.30 | 9 |
+| nes_noise_s06 | -27 | -1.6 | -0.09 | -0.71 / -0.71 | 7.86 |  | 8.91 | 9.25 | 9 |
+| nes_noise_s07 | -34 | -1.4 | -0.08 | -0.72 / -0.72 | 7.86 |  | 9.32 | 7.21 | 9 |
+| nes_noise_s08 | -43 | -1.2 | -0.09 | -0.72 / -0.72 | 7.86 |  | 8.69 | 5.68 | 9 |
+| nes_noise_s09 | -55 | -1.3 |  | -0.73 / -0.73 |  |  | 10.03 | 5.09 | 2 |
+| nes_noise_s10 | +30 | -2.1 |  | -0.72 / -0.72 |  |  | 3.89 | 3.45 | 2 |
+| nes_noise_s11 | +39 | -2.2 |  | -0.74 / -0.74 |  |  | 4.29 | 3.64 | 2 |
+| nes_noise_s12 | +58 | -2.1 |  | -0.70 / -0.70 |  |  | 4.93 | 3.21 | 2 |
+| nes_noise_s13 | +27 inv | -2.2 |  | -0.67 / -0.67 |  |  | 8.82 | 3.22 | 2 |
+| nes_noise_s14 | +52 inv | -2.3 |  | -0.68 / -0.68 |  |  | 8.57 | 3.25 | 2 |
+| nes_noise_s15 | +2 | -2.5 |  | -0.54 / -0.54 |  |  | 10.74 | 2.87 | 2 |
+| nes_dmc_r00_loop | -9 | 9.3 | -0.09 | -0.21 / -0.21 | 18.24 |  | 2.17 | 14.99 | 9 |
+| nes_dmc_r04_loop | +4 | 10.0 | -0.09 | -0.21 / -0.21 | 18.20 |  | 3.40 | 17.94 | 9 |
+| nes_dmc_r08_loop | +6 | 9.9 | -0.09 | -0.24 / -0.24 | 18.20 |  | 1.87 | 20.09 | 9 |
+| nes_dmc_r12_loop | +8 | 9.6 | -0.09 | -0.23 / -0.23 | 18.14 |  | 2.05 | 22.37 | 9 |
+| nes_dmc_r15_loop | +10 | 10.0 | -0.09 | -0.21 / -0.21 | 17.67 |  | 3.00 | 23.22 | 9 |
+| nes_dmc_r15_oneshot | +1 | -1.5 |  | +0.18 / +0.18 |  |  | 4.73 | 11.09 | 0 |
+| nes_dmc_direct | +1 | 16.8 | -0.00 | -0.95 / -0.95 | 0.99 |  | 0.91 | 2.90 | 2 |
+| nes_mix_pulse | +1 inv | 2.2 |  | -0.50 / -0.50 |  |  | 2.87 | 7.73 | 14 |
+| nes_mix_tri_dmc | +1 inv | 0.2 |  | +2.31 / +2.31 |  |  | 12.54 | 2.28 | 10 |
+| nes_mix_noise_dmc | +1 inv | -2.6 |  | -2.42 / -2.42 |  |  | 4.89 | 1.53 | 7 |
+| nes_mix_tri_noise | +1 inv | -3.1 |  | +2.77 / +2.77 |  |  | 18.29 | 2.11 | 6 |
+| nes_mix_pulse_tri | +1 inv | -2.2 |  | +3.07 / +3.07 |  |  | 6.87 | 10.22 | 6 |
+| nes_pal_pulse_ref | +8 inv | 12.7 | -0.13 | -0.00 / -0.00 | 0.03 |  | 4.38 | 5.55 | 0 |
+| nes_pal_tri_t0126 | +250 inv | -1.6 | -0.13 | +6.77 / +6.77 | 39.67 |  | 8.18 | 15.17 | 12 |
+| nes_pal_env_v03 | +1 inv | -0.0 |  | +1.07 / +1.07 |  |  | 31.58 | 12.82 | 5 |
+| nes_pal_len_i04 | +1 inv | -0.0 |  | +1.01 / +1.01 |  |  | 8.99 | 13.94 | 3 |
+| nes_pal_sweep_down_s2_p1 | +1 | -3.2 |  | +0.85 / +0.85 |  |  | 9.75 | 5.00 | 3 |
+| nes_pal_noise_s02 | +26 | -1.5 | +8.58 | -3.07 / -3.07 | 65.08 |  | 7.05 | 21.95 | 13 |
+| nes_pal_noise_s05 | -33 inv | -2.6 | +43.24 | -0.67 / -0.67 | 74.09 |  | 9.04 | 15.72 | 13 |
+| nes_pal_noise_s08 | +16 inv | -2.6 | +65.41 | -0.74 / -0.74 | 65.89 |  | 5.78 | 10.01 | 13 |
+| nes_pal_noise_s11 | +53 inv | -2.6 |  | -0.75 / -0.75 |  |  | 4.16 | 5.49 | 2 |
+| nes_pal_noise_l08 | -25 | -3.6 |  | +1.28 / +1.28 |  |  | 6.39 | 2.57 | 2 |
+| nes_pal_dmc_r04_loop | -73 | -2.9 | +59.52 | -0.21 / -0.21 | 15.14 |  | 4.60 | 16.11 | 9 |
+| nes_pal_dmc_r15_loop | -15 | -3.0 | +15.86 | -0.22 / -0.22 | 68.16 |  | 1.97 | 23.82 | 11 |
 
 #### 2a03 mixer and multi-segment stimuli
 
@@ -1322,9 +1325,9 @@ Levels after the global gain. 're first' = level relative to the first segment o
 | stimulus | segment | ref (dBFS) | ours - ref (dB) | ours re first | ref re first | formula re first |
 |---|---|---|---|---|---|---|
 | nes_pulse_vol | volume 15 | -18.70 | -0.02 | +0.00 | +0.00 | +0.00 |
-| nes_pulse_vol | volume 14 | -19.32 | +0.09 | -0.51 | -0.63 | -0.51 |
-| nes_pulse_vol | volume 13 | -19.96 | +0.20 | -1.05 | -1.26 | -1.06 |
-| nes_pulse_vol | volume 12 | -20.64 | +0.29 | -1.63 | -1.94 | -1.66 |
+| nes_pulse_vol | volume 14 | -19.32 | +0.10 | -0.51 | -0.63 | -0.51 |
+| nes_pulse_vol | volume 13 | -19.96 | +0.20 | -1.04 | -1.26 | -1.06 |
+| nes_pulse_vol | volume 12 | -20.64 | +0.30 | -1.62 | -1.94 | -1.66 |
 | nes_pulse_vol | volume 11 | -21.37 | +0.37 | -2.28 | -2.68 | -2.33 |
 | nes_pulse_vol | volume 10 | -22.20 | +0.45 | -3.03 | -3.50 | -3.06 |
 | nes_pulse_vol | volume 9 | -23.13 | +0.54 | -3.87 | -4.43 | -3.88 |
@@ -1335,54 +1338,54 @@ Levels after the global gain. 're first' = level relative to the first segment o
 | nes_pulse_vol | volume 4 | -30.15 | +1.04 | -10.39 | -11.45 | -10.43 |
 | nes_pulse_vol | volume 3 | -32.66 | +1.14 | -12.80 | -13.96 | -12.82 |
 | nes_pulse_vol | volume 2 | -36.19 | +1.23 | -16.24 | -17.50 | -16.24 |
-| nes_pulse_vol | volume 1 | -42.24 | +1.37 | -22.16 | -23.54 | -22.16 |
-| nes_pulse_vol | volume 0 | -86.42 | +15.62 |  |  |  |
-| nes_tri_ultra_t0 | t = 126 (440 Hz) | -25.31 | +6.75 | +0.00 | +0.00 | +0.00 |
-| nes_tri_ultra_t0 | t = 0 (ultrasonic) | -124.52 | +24.15 |  |  |  |
-| nes_tri_ultra_t0 | switch pop (peak) (peak) | -25.77 | +1.84 |  |  |  |
-| nes_tri_ultra_t1 | t = 126 (440 Hz) | -25.31 | +6.75 | +0.00 | +0.00 | +0.00 |
-| nes_tri_ultra_t1 | t = 1 (ultrasonic) | -124.52 | +24.15 |  |  |  |
-| nes_tri_ultra_t1 | switch pop (peak) (peak) | -25.77 | +1.84 |  |  |  |
+| nes_pulse_vol | volume 1 | -42.24 | +1.37 | -22.15 | -23.54 | -22.16 |
+| nes_pulse_vol | volume 0 | -86.42 | +15.66 |  |  |  |
+| nes_tri_ultra_t0 | t = 126 (440 Hz) | -25.31 | +6.77 | +0.00 | +0.00 | +0.00 |
+| nes_tri_ultra_t0 | t = 0 (ultrasonic) | -124.52 | +24.18 |  |  |  |
+| nes_tri_ultra_t0 | switch pop (peak) (peak) | -25.77 | +1.82 |  |  |  |
+| nes_tri_ultra_t1 | t = 126 (440 Hz) | -25.31 | +6.77 | +0.00 | +0.00 | +0.00 |
+| nes_tri_ultra_t1 | t = 1 (ultrasonic) | -124.52 | +24.18 |  |  |  |
+| nes_tri_ultra_t1 | switch pop (peak) (peak) | -25.77 | +1.82 |  |  |  |
 | nes_mix_pulse | p1 15 | -18.70 | +0.01 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse | p2 15 | -18.72 | +0.01 | -0.01 | -0.02 | +0.00 |
-| nes_mix_pulse | p1 15 + p2 15 | -15.72 | -1.21 | +1.77 | +2.98 | +1.81 |
+| nes_mix_pulse | p2 15 | -18.72 | +0.01 | -0.02 | -0.02 | +0.00 |
+| nes_mix_pulse | p1 15 + p2 15 | -15.72 | -1.21 | +1.76 | +2.98 | +1.81 |
 | nes_mix_pulse | p1 8 + p2 8 | -21.13 | -0.07 | -2.51 | -2.43 | -2.52 |
-| nes_mix_pulse | p1 4 + p2 4 | -27.16 | +0.67 | -7.79 | -8.46 | -7.81 |
-| nes_mix_pulse | p1 15 + p2 4 | -18.40 | -0.36 | -0.07 | +0.30 | -0.06 |
-| nes_mix_tri_dmc | tri, dmc 0 | -25.31 | +6.75 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_dmc | tri, dmc 32 | -25.31 | +4.63 | -2.12 | -0.00 | -2.13 |
-| nes_mix_tri_dmc | tri, dmc 64 | -25.32 | +2.74 | -4.02 | -0.01 | -4.02 |
-| nes_mix_tri_dmc | tri, dmc 96 | -25.33 | +1.04 | -5.74 | -0.02 | -5.73 |
-| nes_mix_tri_dmc | tri, dmc 127 | -25.31 | -0.48 | -7.24 | -0.01 | -7.23 |
-| nes_mix_noise_dmc | noise, dmc 0 | -21.74 | +1.37 | +0.00 | +0.00 | +0.00 |
-| nes_mix_noise_dmc | noise, dmc 64 | -21.69 | -2.13 | -3.45 | +0.05 | -3.57 |
-| nes_mix_noise_dmc | noise, dmc 127 | -21.65 | -5.09 | -6.37 | +0.09 | -6.48 |
-| nes_mix_tri_noise | tri alone | -25.31 | +6.75 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_noise | tri + noise | -19.98 | +3.88 | +2.45 | +5.32 | +2.54 |
-| nes_mix_tri_noise | tri + noise, dmc 64 | -20.13 | +0.21 | -1.36 | +5.18 | -1.31 |
+| nes_mix_pulse | p1 4 + p2 4 | -27.16 | +0.67 | -7.80 | -8.46 | -7.81 |
+| nes_mix_pulse | p1 15 + p2 4 | -18.40 | -0.37 | -0.08 | +0.30 | -0.06 |
+| nes_mix_tri_dmc | tri, dmc 0 | -25.31 | +6.77 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_dmc | tri, dmc 32 | -25.31 | +4.65 | -2.12 | -0.00 | -2.13 |
+| nes_mix_tri_dmc | tri, dmc 64 | -25.32 | +2.76 | -4.02 | -0.01 | -4.02 |
+| nes_mix_tri_dmc | tri, dmc 96 | -25.33 | +1.05 | -5.74 | -0.02 | -5.73 |
+| nes_mix_tri_dmc | tri, dmc 127 | -25.31 | -0.47 | -7.24 | -0.01 | -7.23 |
+| nes_mix_noise_dmc | noise, dmc 0 | -21.74 | +1.28 | +0.00 | +0.00 | +0.00 |
+| nes_mix_noise_dmc | noise, dmc 64 | -21.69 | -2.23 | -3.46 | +0.05 | -3.57 |
+| nes_mix_noise_dmc | noise, dmc 127 | -21.65 | -5.19 | -6.38 | +0.09 | -6.48 |
+| nes_mix_tri_noise | tri alone | -25.31 | +6.77 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_noise | tri + noise | -19.98 | +3.83 | +2.38 | +5.32 | +2.54 |
+| nes_mix_tri_noise | tri + noise, dmc 64 | -20.13 | +0.17 | -1.42 | +5.18 | -1.31 |
 | nes_mix_pulse_tri | p1 alone | -18.70 | +0.01 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse_tri | tri alone | -25.32 | +6.75 | +0.12 | -6.62 | +0.11 |
-| nes_mix_pulse_tri | p1 + tri | -17.79 | +2.15 | +3.05 | +0.91 | +3.07 |
+| nes_mix_pulse_tri | tri alone | -25.32 | +6.77 | +0.14 | -6.62 | +0.11 |
+| nes_mix_pulse_tri | p1 + tri | -17.79 | +2.16 | +3.06 | +0.91 | +3.07 |
 
 Intermodulation products (component amplitude in dB re sqrt(2) x segment RMS; no linear component exists at these frequencies):
 
 | stimulus | segment | Hz | ours | ref | formula |
 |---|---|---|---|---|---|
 | nes_mix_pulse | p1 15 + p2 15 | 116.1 | -24.0 | -93.4 | -24.0 |
-| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -82.8 | -74.1 | -72.1 |
-| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.6 | -75.7 | -83.3 |
+| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -81.9 | -74.1 | -72.1 |
+| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.2 | -75.7 | -83.3 |
 | nes_mix_pulse | p1 15 + p2 15 | 996.9 | -24.0 | -89.5 | -24.0 |
 | nes_mix_pulse | p1 8 + p2 8 | 116.1 | -28.8 | -83.5 | -28.8 |
-| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -98.0 | -77.3 | -74.4 |
-| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.5 | -73.3 | -81.9 |
+| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -90.7 | -77.3 | -74.4 |
+| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.4 | -73.3 | -81.9 |
 | nes_mix_pulse | p1 8 + p2 8 | 996.9 | -28.8 | -84.2 | -28.8 |
-| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.5 | -83.4 | -34.4 |
-| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -83.0 | -75.9 | -76.1 |
-| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -81.3 | -79.8 | -80.0 |
+| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.4 | -83.4 | -34.4 |
+| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -93.0 | -75.9 | -76.1 |
+| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -84.0 | -79.8 | -80.0 |
 | nes_mix_pulse | p1 4 + p2 4 | 996.9 | -34.4 | -82.9 | -34.4 |
 | nes_mix_pulse | p1 15 + p2 4 | 116.1 | -32.2 | -84.9 | -32.2 |
-| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -84.7 | -75.9 | -73.8 |
-| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.8 | -77.4 | -93.9 |
+| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -85.8 | -75.9 | -73.8 |
+| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.9 | -77.4 | -93.9 |
 | nes_mix_pulse | p1 15 + p2 4 | 996.9 | -32.2 | -86.6 | -32.2 |
 
 #### 2a03 frame-sequencer events (ms after the note-start write)
@@ -1391,200 +1394,200 @@ From the edges of the raw renders (largest sample step over 1.1 periods of the t
 
 | stimulus | start ours | start ref | start documented | end ours | end ref | end documented | res |
 |---|---|---|---|---|---|---|---|
-| nes_env_v00 | 4.08 | 0.00 | 4.17 | 66.67 | 58.34 | 66.67 | 0.29 |
-| nes_env_v03 | 4.10 | 0.00 | 4.17 | 254.17 | 233.11 | 254.17 | 0.29 |
-| nes_env_v07 | 4.10 | 0.00 | 4.17 | 504.17 | 466.67 | 504.18 | 0.29 |
-| nes_env_v15 | 4.10 | 0.00 | 4.17 | 1004.20 | 933.08 | 1004.18 | 0.29 |
-| nes_env5_v03 | 0.00 | 0.00 | 0.00 | 312.47 | 233.11 | 312.46 | 0.29 |
-| nes_env5_v07 | 0.00 | 0.00 | 0.00 | 624.92 | 466.67 | 624.92 | 0.29 |
-| nes_env_retrig | 4.10 | 0.00 | 4.17 | 66.67 | 58.32 | 66.67 | 0.29 |
-| nes_sweep_up_s1 | -0.05 | 0.00 | 0.00 | 341.70 | 333.33 | 341.67 | 4.35 |
-| nes_sweep_up_s2 | -0.05 | 0.00 | 0.00 | 555.53 | 549.98 | 558.34 | 6.63 |
-| nes_sweep_up_s3 | -0.05 | 0.00 | 0.00 | 734.85 | 733.31 | 741.68 | 7.47 |
-| nes_sweep_up_s4 | -0.05 | 0.00 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s5 | -0.05 | 0.00 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s6 | -0.05 | 0.00 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s7 | -0.05 | 0.00 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_down_s1_p1 | -0.05 | 0.00 | 0.00 | 408.30 | 533.31 | 408.34 | 0.07 |
+| nes_env_v00 | 4.17 | 0.00 | 4.17 | 66.67 | 58.34 | 66.67 | 0.29 |
+| nes_env_v03 | 4.17 | 0.00 | 4.17 | 254.20 | 233.11 | 254.17 | 0.29 |
+| nes_env_v07 | 4.17 | 0.00 | 4.17 | 504.20 | 466.67 | 504.18 | 0.29 |
+| nes_env_v15 | 4.17 | 0.00 | 4.17 | 1004.20 | 933.08 | 1004.18 | 0.29 |
+| nes_env5_v03 | -0.02 | 0.00 | 0.00 | 312.47 | 233.11 | 312.46 | 0.29 |
+| nes_env5_v07 | -0.02 | 0.00 | 0.00 | 624.94 | 466.67 | 624.92 | 0.29 |
+| nes_env_retrig | 4.17 | 0.00 | 4.17 | 66.69 | 58.32 | 66.67 | 0.29 |
+| nes_sweep_up_s1 | -0.02 | 0.00 | 0.00 | 341.72 | 333.33 | 341.67 | 4.35 |
+| nes_sweep_up_s2 | -0.02 | 0.00 | 0.00 | 555.56 | 549.98 | 558.34 | 6.63 |
+| nes_sweep_up_s3 | -0.02 | 0.00 | 0.00 | 734.88 | 733.31 | 741.68 | 7.47 |
+| nes_sweep_up_s4 | -0.02 | 0.00 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s5 | -0.02 | 0.00 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s6 | -0.02 | 0.00 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s7 | -0.02 | 0.00 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_down_s1_p1 | -0.02 | 0.00 | 0.00 | 408.32 | 533.31 | 408.34 | 0.07 |
 | nes_sweep_down_s1_p2 | -0.02 | 0.00 | 0.00 | 475.01 | 533.31 | 475.01 | 0.04 |
-| nes_sweep_down_s2_p1 | -0.02 | 0.00 | 0.00 | 808.34 | 949.95 | 808.35 | 0.04 |
-| nes_sweep_down_s2_p2 | -0.02 | 0.00 | 0.00 | 858.34 | 949.95 | 858.35 | 0.04 |
+| nes_sweep_down_s2_p1 | -0.02 | 0.00 | 0.00 | 808.39 | 949.95 | 808.35 | 0.04 |
+| nes_sweep_down_s2_p2 | -0.02 | 0.00 | 0.00 | 858.39 | 949.95 | 858.35 | 0.04 |
 | nes_sweep_down_s3_p1 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s3_p2 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s4_p1 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s4_p2 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s5_p1 | -0.05 | 0.00 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s5_p2 | -0.05 | 0.00 | 0.00 |  |  |  | 4.58 |
+| nes_sweep_down_s5_p1 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
+| nes_sweep_down_s5_p2 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s6_p1 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s6_p2 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s7_p1 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s7_p2 | -0.05 | 0.00 | 0.00 |  |  |  | 4.58 |
-| nes_sweep5_down_s2_p1 | -0.05 | 0.00 | 0.00 |  |  |  | 4.58 |
-| nes_len_i00 | -0.05 | 0.00 | 0.00 | 83.31 | 83.33 | 83.34 | 0.29 |
-| nes_len_i04 | -0.05 | 0.00 | 0.00 | 333.33 | 316.67 | 333.34 | 0.29 |
-| nes_len_i10 | -0.05 | 0.00 | 0.00 | 499.80 | 499.98 | 500.01 | 0.29 |
-| nes_len_i00_halt | -0.05 | 0.00 | 0.00 |  |  |  | 0.29 |
-| nes_len5_i04 | -0.05 | 0.00 | 0.00 | 404.17 | 316.67 | 404.11 | 0.29 |
-| nes_tri_lin016 | 4.17 | 0.00 | 4.17 | 70.84 | 66.73 | 70.84 | 0.29 |
-| nes_tri_lin064 | 4.17 | 0.00 | 4.17 | 270.84 | 266.73 | 270.84 | 0.29 |
-| nes_tri_lin127 | 4.17 | 0.00 | 4.17 | 533.36 | 529.18 | 533.34 | 0.29 |
-| nes_tri_len_i00 | 4.17 | 0.00 | 4.17 | 83.33 | 83.40 | 83.34 | 0.29 |
-| nes_tri5_lin064 | 0.00 | 0.00 | 0.00 | 333.29 | 266.73 | 333.29 | 0.29 |
-| nes_dmc_r15_oneshot | -0.20 | 0.20 | 0.00 | 247.78 | 247.41 | 247.41 a | 0.51 |
-| nes_pal_env_v03 | 4.94 | 0.00 | 5.00 | 305.03 | 233.33 | 305.02 | 0.31 |
-| nes_pal_len_i04 | 0.00 | 0.00 | 0.00 | 400.07 | 316.64 | 400.02 | 0.31 |
-| nes_pal_sweep_down_s2_p1 | -0.07 | 0.00 | 0.00 |  |  |  | 4.93 |
+| nes_sweep_down_s7_p2 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
+| nes_sweep5_down_s2_p1 | -0.02 | 0.00 | 0.00 |  |  |  | 4.58 |
+| nes_len_i00 | -0.02 | 0.00 | 0.00 | 83.27 | 83.33 | 83.34 | 0.29 |
+| nes_len_i04 | -0.02 | 0.00 | 0.00 | 333.29 | 316.67 | 333.34 | 0.29 |
+| nes_len_i10 | -0.02 | 0.00 | 0.00 | 499.82 | 499.98 | 500.01 | 0.29 |
+| nes_len_i00_halt | -0.02 | 0.00 | 0.00 |  |  |  | 0.29 |
+| nes_len5_i04 | -0.02 | 0.00 | 0.00 | 404.15 | 316.67 | 404.11 | 0.29 |
+| nes_tri_lin016 | 4.20 | 0.00 | 4.17 | 70.82 | 66.73 | 70.84 | 0.29 |
+| nes_tri_lin064 | 4.20 | 0.00 | 4.17 | 270.86 | 266.73 | 270.84 | 0.29 |
+| nes_tri_lin127 | 4.20 | 0.00 | 4.17 | 533.36 | 529.18 | 533.34 | 0.29 |
+| nes_tri_len_i00 | 4.20 | 0.00 | 4.17 | 83.33 | 83.40 | 83.34 | 0.29 |
+| nes_tri5_lin064 | 0.02 | 0.00 | 0.00 | 333.33 | 266.73 | 333.29 | 0.29 |
+| nes_dmc_r15_oneshot | -0.23 | 0.20 | 0.00 | 247.82 | 247.41 | 247.41 a | 0.51 |
+| nes_pal_env_v03 | 4.99 | 0.00 | 5.00 | 305.03 | 233.33 | 305.02 | 0.31 |
+| nes_pal_len_i04 | -0.02 | 0.00 | 0.00 | 400.07 | 316.64 | 400.02 | 0.31 |
+| nes_pal_sweep_down_s2_p1 | -0.02 | 0.00 | 0.00 |  |  |  | 4.93 |
 
 #### 2a03 envelope staircase (worst step-time difference, ms; steps found of documented)
 
 | stimulus | steps ours / ref / doc | ours - documented | ref - documented (worst / median) | ours - ref |
 |---|---|---|---|---|
-| nes_env_v00 | 15 / 15 / 15 | +0.94 | -1.91 / -1.89 | +2.83 |
+| nes_env_v00 | 15 / 15 / 15 | +0.96 | -1.91 / -1.89 | +2.86 |
 | nes_env_v03 | 15 / 15 / 15 | +0.69 | -7.52 / -7.51 | +8.21 |
 | nes_env_v07 | 15 / 15 / 15 | +0.69 | -15.03 / -15.02 | +15.71 |
-| nes_env_v15 | 15 / 15 / 15 | +0.68 | -30.03 / -30.02 | +30.70 |
-| nes_env_loop_v01 | 113 / 106 / 113 | +0.82 | -3.78 / -3.77 | +4.22 |
+| nes_env_v15 | 15 / 15 / 15 | +0.70 | -30.03 / -30.02 | +30.73 |
+| nes_env_loop_v01 | 113 / 106 / 113 | +0.82 | -3.78 / -3.77 | +4.24 |
 | nes_env_loop_v03 | 56 / 56 / 56 | +0.98 | -7.53 / -7.52 | +8.50 |
 | nes_env5_v03 | 15 / 15 / 15 | +0.68 | -9.41 / -9.39 | +10.07 |
 | nes_env5_v07 | 15 / 15 / 15 | +0.69 | -18.78 / -18.77 | +19.46 |
 | nes_env_retrig | 15 / 15 / 15 | +0.96 | -1.91 / -1.89 | +2.86 |
-| nes_pal_env_v03 | 15 / 15 / 15 | +0.73 | -9.03 / -9.02 | +9.75 |
+| nes_pal_env_v03 | 15 / 15 / 15 | +0.75 | -9.03 / -9.02 | +9.77 |
 
 #### 2a03 sweeps (frame-wise pitch, |cents|: median / 90th percentile / max)
 
 | stimulus | ours vs ref | ours vs documented | ref vs documented |
 |---|---|---|---|
-| nes_sweep_up_s1 | 7.83 / 16.53 / 242.6 | 0.23 / 4.23 / 15.3 | 8.12 / 11.90 / 242.9 |
-| nes_sweep_up_s2 | 15.15 / 50.76 / 133.3 | 0.21 / 5.04 / 19.1 | 16.02 / 50.74 / 133.4 |
-| nes_sweep_up_s3 | 40.58 / 75.84 / 2107.6 | 0.40 / 5.13 / 19.6 | 44.57 / 79.83 / 2113.9 |
-| nes_sweep_up_s4 | 68.19 / 97.66 / 140.4 | 0.28 / 4.22 / 11.2 | 70.18 / 97.46 / 137.3 |
-| nes_sweep_up_s5 | 146.27 / 193.42 / 229.0 | 0.31 / 2.04 / 4.3 | 147.53 / 191.28 / 230.0 |
-| nes_sweep_up_s6 | 183.86 / 275.18 / 356.0 | 0.57 / 1.47 / 2.6 | 185.17 / 279.64 / 355.7 |
-| nes_sweep_up_s7 | 144.29 / 368.45 / 436.1 | 0.51 / 1.28 / 2.5 | 144.70 / 367.44 / 436.0 |
-| nes_sweep_down_s1_p1 | 0.25 / 352.93 / 523.0 | 0.05 / 1.12 / 398.3 | 0.19 / 182.86 / 522.9 |
-| nes_sweep_down_s1_p2 | 53.36 / 287.81 / 548.1 | 0.06 / 0.77 / 42.7 | 53.34 / 287.81 / 548.0 |
-| nes_sweep_down_s2_p1 | 24.71 / 138.40 / 184.9 | 0.06 / 0.51 / 49.9 | 15.34 / 138.44 / 185.0 |
-| nes_sweep_down_s2_p2 | 111.80 / 454.35 / 636.9 | 0.05 / 0.56 / 49.7 | 111.70 / 454.39 / 636.9 |
-| nes_sweep_down_s3_p1 | 40.57 / 160.23 / 231.5 | 0.10 / 2.73 / 23.5 | 40.71 / 160.24 / 231.3 |
-| nes_sweep_down_s3_p2 | 91.82 / 274.93 / 414.2 | 0.10 / 2.73 / 23.3 | 91.92 / 274.85 / 414.2 |
-| nes_sweep_down_s4_p1 | 23.68 / 87.76 / 150.8 | 0.21 / 3.92 / 44.5 | 21.27 / 87.57 / 150.7 |
-| nes_sweep_down_s4_p2 | 69.68 / 154.04 / 205.1 | 0.22 / 4.44 / 44.2 | 69.54 / 153.93 / 204.9 |
-| nes_sweep_down_s5_p1 | 28.04 / 87.57 / 117.8 | 0.38 / 4.08 / 6.6 | 24.42 / 84.68 / 117.7 |
-| nes_sweep_down_s5_p2 | 90.59 / 141.21 / 183.2 | 0.51 / 3.30 / 36.9 | 83.89 / 140.83 / 183.1 |
-| nes_sweep_down_s6_p1 | 141.53 / 219.25 / 239.3 | 0.64 / 2.15 / 8652.5 | 135.96 / 217.44 / 238.7 |
-| nes_sweep_down_s6_p2 | 197.79 / 262.10 / 275.8 | 0.77 / 1.90 / 3.0 | 188.33 / 256.18 / 276.8 |
-| nes_sweep_down_s7_p1 | 112.12 / 112.12 / 135.9 | 1.40 / 1.79 / 8835.5 | 105.86 / 137.54 / 139.3 |
-| nes_sweep_down_s7_p2 | 153.86 / 130.94 / 153.9 | 1.11 / 1.55 / 2.1 | 147.22 / 170.07 / 174.9 |
-| nes_sweep5_down_s2_p1 | 949.46 / 1478.36 / 1783.7 | 0.06 / 0.48 / 48.4 | 949.45 / 1478.35 / 1783.7 |
-| nes_pal_sweep_down_s2_p1 | 940.42 / 1441.77 / 1536.6 | 0.05 / 0.64 / 25.4 | 940.34 / 1441.80 / 1536.5 |
+| nes_sweep_up_s1 | 7.89 / 16.52 / 243.2 | 0.24 / 4.20 / 15.3 | 8.12 / 11.90 / 242.9 |
+| nes_sweep_up_s2 | 15.15 / 50.61 / 133.6 | 0.20 / 4.92 / 19.0 | 16.02 / 50.74 / 133.4 |
+| nes_sweep_up_s3 | 40.61 / 75.83 / 2107.6 | 0.39 / 5.16 / 19.6 | 44.57 / 79.83 / 2113.9 |
+| nes_sweep_up_s4 | 68.20 / 98.78 / 140.4 | 0.29 / 4.23 / 11.3 | 70.18 / 97.46 / 137.3 |
+| nes_sweep_up_s5 | 145.51 / 193.39 / 228.9 | 0.31 / 2.07 / 4.3 | 147.53 / 191.28 / 230.0 |
+| nes_sweep_up_s6 | 181.88 / 274.22 / 348.0 | 0.49 / 1.77 / 3.0 | 185.17 / 279.64 / 355.7 |
+| nes_sweep_up_s7 | 144.57 / 367.10 / 436.1 | 0.44 / 1.17 / 2.6 | 144.70 / 367.44 / 436.0 |
+| nes_sweep_down_s1_p1 | 0.20 / 182.85 / 522.8 | 0.05 / 1.04 / 42.8 | 0.19 / 182.86 / 522.9 |
+| nes_sweep_down_s1_p2 | 53.31 / 287.82 / 547.9 | 0.07 / 0.78 / 42.6 | 53.34 / 287.81 / 548.0 |
+| nes_sweep_down_s2_p1 | 24.75 / 138.41 / 185.1 | 0.06 / 0.45 / 49.9 | 15.34 / 138.44 / 185.0 |
+| nes_sweep_down_s2_p2 | 111.62 / 454.39 / 636.9 | 0.05 / 0.53 / 49.6 | 111.70 / 454.39 / 636.9 |
+| nes_sweep_down_s3_p1 | 40.80 / 160.24 / 231.2 | 0.09 / 2.67 / 23.5 | 40.71 / 160.24 / 231.3 |
+| nes_sweep_down_s3_p2 | 92.09 / 274.85 / 414.2 | 0.09 / 2.72 / 23.4 | 91.92 / 274.85 / 414.2 |
+| nes_sweep_down_s4_p1 | 23.81 / 87.32 / 150.6 | 0.17 / 3.91 / 44.4 | 21.27 / 87.57 / 150.7 |
+| nes_sweep_down_s4_p2 | 69.50 / 153.89 / 204.8 | 0.22 / 4.38 / 44.2 | 69.54 / 153.93 / 204.9 |
+| nes_sweep_down_s5_p1 | 27.55 / 87.31 / 117.8 | 0.35 / 3.90 / 14.1 | 24.42 / 84.68 / 117.7 |
+| nes_sweep_down_s5_p2 | 90.43 / 141.04 / 183.0 | 0.53 / 3.37 / 37.0 | 83.89 / 140.83 / 183.1 |
+| nes_sweep_down_s6_p1 | 141.60 / 220.89 / 239.0 | 0.60 / 1.61 / 3.8 | 135.96 / 217.44 / 238.7 |
+| nes_sweep_down_s6_p2 | 197.78 / 261.86 / 278.4 | 0.60 / 1.90 / 3.2 | 188.33 / 256.18 / 276.8 |
+| nes_sweep_down_s7_p1 | 109.23 / 109.23 / 138.1 | 0.86 / 1.50 / 1.8 | 105.86 / 137.54 / 139.3 |
+| nes_sweep_down_s7_p2 | 153.26 / 153.26 / 153.3 | 0.69 / 1.55 / 3.2 | 147.22 / 170.07 / 174.9 |
+| nes_sweep5_down_s2_p1 | 949.43 / 1478.29 / 1783.8 | 0.05 / 0.48 / 48.4 | 949.45 / 1478.35 / 1783.7 |
+| nes_pal_sweep_down_s2_p1 | 940.23 / 1441.74 / 1536.5 | 0.05 / 0.53 / 25.4 | 940.34 / 1441.80 / 1536.5 |
 
 #### Deviations beyond thresholds (NES: ours vs MAME core (VGMPlay))
 
-* **nes_pulse_t0008** (pulse 1, duty 2, constant volume 15, t = 8 (12428.98 Hz)): level L +2.27 dB (ref -20.9 dBFS); level R +2.27 dB (ref -20.9 dBFS); H1 +1.99 dB (ref 0.0, ours 2.0 dB re H1)
-* **nes_pulse_t0012** (pulse 1, duty 2, constant volume 15, t = 12 (8604.68 Hz)): level L +1.06 dB (ref -20.1 dBFS); level R +1.06 dB (ref -20.1 dBFS)
-* **nes_pulse_t0020** (pulse 1, duty 2, constant volume 15, t = 20 (5326.71 Hz)): H3 +3.38 dB (ref -18.3, ours -14.9 dB re H1)
-* **nes_pulse_t0050** (pulse 1, duty 2, constant volume 15, t = 50 (2193.35 Hz)): H5 +1.51 dB (ref -14.9, ours -13.4 dB re H1); H7 +3.08 dB (ref -22.9, ours -19.8 dB re H1)
+* **nes_pulse_t0008** (pulse 1, duty 2, constant volume 15, t = 8 (12428.98 Hz)): level L +1.13 dB (ref -20.9 dBFS); level R +1.13 dB (ref -20.9 dBFS)
+* **nes_pulse_t0012** (pulse 1, duty 2, constant volume 15, t = 12 (8604.68 Hz)): level L +0.53 dB (ref -20.1 dBFS); level R +0.53 dB (ref -20.1 dBFS)
+* **nes_pulse_t0020** (pulse 1, duty 2, constant volume 15, t = 20 (5326.71 Hz)): H3 +1.44 dB (ref -18.3, ours -16.9 dB re H1)
+* **nes_pulse_t0050** (pulse 1, duty 2, constant volume 15, t = 50 (2193.35 Hz)): H7 +1.30 dB (ref -22.9, ours -21.6 dB re H1)
 * **nes_pulse_t0007_mute** (pulse 1, t = 7: muted (t < 8)): level L -217.95 dB (ref -22.1 dBFS); level R -217.95 dB (ref -22.1 dBFS); mute: ref -22.1 dBFS, ours -240.0 dBFS
 * **nes_pulse_sweepmute** (pulse 1, t = $400, $4001 = $00: sweep target 2t > $7FF mutes (sweep disabled)): level L -221.32 dB (ref -18.7 dBFS); level R -221.32 dB (ref -18.7 dBFS); mute: ref -18.7 dBFS, ours -240.0 dBFS
-* **nes_pulse_vol** (pulse 1, duty 2, t = 253, constant volume 15 down to 0 (60 ms each)): segment 'volume 9' level +0.54 dB (ref -23.1 dBFS); segment 'volume 9' re first segment: ours -3.87, ref -4.43 dB; segment 'volume 8' level +0.64 dB (ref -24.2 dBFS); segment 'volume 8' re first segment: ours -4.81, ref -5.47 dB; segment 'volume 7' level +0.77 dB (ref -25.3 dBFS); segment 'volume 7' re first segment: ours -5.86, ref -6.65 dB; segment 'volume 6' level +0.87 dB (ref -26.7 dBFS); segment 'volume 6' re first segment: ours -7.08, ref -7.97 dB; segment 'volume 5' level +0.98 dB (ref -28.2 dBFS); segment 'volume 5' re first segment: ours -8.54, ref -9.54 dB; segment 'volume 4' level +1.04 dB (ref -30.1 dBFS); segment 'volume 4' re first segment: ours -10.39, ref -11.45 dB; segment 'volume 3' level +1.14 dB (ref -32.7 dBFS); segment 'volume 3' re first segment: ours -12.80, ref -13.96 dB; segment 'volume 2' level +1.23 dB (ref -36.2 dBFS); segment 'volume 2' re first segment: ours -16.24, ref -17.50 dB; segment 'volume 1' level +1.37 dB (ref -42.2 dBFS); segment 'volume 1' re first segment: ours -22.16, ref -23.54 dB
-* **nes_env_v00** (pulse 1 (t = 63), decay envelope V = 0, loop off, 4-step (step every 1 quarter frames at 240 Hz)): level L +2.19 dB (ref -23.4 dBFS); level R +2.19 dB (ref -23.4 dBFS); gate start +4.08 ms (ref 0.00 ms, ours 4.08 ms); gate end +8.32 ms (ref 58.34 ms, ours 66.67 ms); envelope step timing: worst ours - ref +2.83 ms
-* **nes_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step (step every 4 quarter frames at 240 Hz)): level L +1.00 dB (ref -20.1 dBFS); level R +1.00 dB (ref -20.1 dBFS); gate start +4.10 ms (ref 0.00 ms, ours 4.10 ms); gate end +21.07 ms (ref 233.11 ms, ours 254.17 ms); envelope step timing: worst ours - ref +8.21 ms
-* **nes_env_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 4-step (step every 8 quarter frames at 240 Hz)): level L +0.83 dB (ref -19.6 dBFS); level R +0.83 dB (ref -19.6 dBFS); gate start +4.10 ms (ref 0.00 ms, ours 4.10 ms); gate end +37.51 ms (ref 466.67 ms, ours 504.17 ms); envelope step timing: worst ours - ref +15.71 ms
-* **nes_env_v15** (pulse 1 (t = 63), decay envelope V = 15, loop off, 4-step (step every 16 quarter frames at 240 Hz)): level L +0.74 dB (ref -19.5 dBFS); level R +0.74 dB (ref -19.5 dBFS); gate start +4.10 ms (ref 0.00 ms, ours 4.10 ms); gate end +71.11 ms (ref 933.08 ms, ours 1004.20 ms); envelope step timing: worst ours - ref +30.70 ms
-* **nes_env_loop_v01** (pulse 1 (t = 63), decay envelope V = 1, loop on, 4-step (step every 2 quarter frames at 240 Hz)): level L +0.61 dB (ref -23.7 dBFS); level R +0.61 dB (ref -23.7 dBFS); envelope modulation depth 22.99 vs ref 26.33 dB; envelope steps found: ref 106, ours 113 of 113; envelope step timing: worst ours - ref +4.22 ms
-* **nes_env_loop_v03** (pulse 1 (t = 63), decay envelope V = 3, loop on, 4-step (step every 4 quarter frames at 240 Hz)): envelope modulation depth 24.52 vs ref 26.22 dB; envelope step timing: worst ours - ref +8.50 ms
-* **nes_env5_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 5-step (step every 4 quarter frames at 192 Hz)): level L +0.94 dB (ref -19.9 dBFS); level R +0.94 dB (ref -19.9 dBFS); gate end +79.37 ms (ref 233.11 ms, ours 312.47 ms); envelope step timing: worst ours - ref +10.07 ms
-* **nes_env5_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 5-step (step every 8 quarter frames at 192 Hz)): level L +0.78 dB (ref -19.5 dBFS); level R +0.78 dB (ref -19.5 dBFS); gate end +158.25 ms (ref 466.67 ms, ours 624.92 ms); envelope step timing: worst ours - ref +19.46 ms
-* **nes_env_retrig** (pulse 1 (t = 63), envelope V = 0 decayed to 0, then $4003 rewritten at 0.30 s): level L +2.93 dB (ref -26.8 dBFS); level R +2.93 dB (ref -26.8 dBFS); gate start +4.10 ms (ref 0.00 ms, ours 4.10 ms); gate end +8.34 ms (ref 58.32 ms, ours 66.67 ms); envelope step timing: worst ours - ref +2.86 ms
-* **nes_sweep_up_s1** (pulse 1, sweep up, shift 1, period P = 7, from t = 128): gate end +8.37 ms (ref 333.33 ms, ours 341.70 ms); sweep pitch track |ours - ref| median 7.83, p90 16.53, max 242.6 cents
-* **nes_sweep_up_s2** (pulse 1, sweep up, shift 2, period P = 5, from t = 128): sweep pitch track |ours - ref| median 15.15, p90 50.76, max 133.3 cents
-* **nes_sweep_up_s3** (pulse 1, sweep up, shift 3, period P = 3, from t = 128): sweep pitch track |ours - ref| median 40.58, p90 75.84, max 2107.6 cents
-* **nes_sweep_up_s4** (pulse 1, sweep up, shift 4, period P = 2, from t = 128): sweep pitch track |ours - ref| median 68.19, p90 97.66, max 140.4 cents
-* **nes_sweep_up_s5** (pulse 1, sweep up, shift 5, period P = 1, from t = 128): sweep pitch track |ours - ref| median 146.27, p90 193.42, max 229.0 cents
-* **nes_sweep_up_s6** (pulse 1, sweep up, shift 6, period P = 0, from t = 128): sweep pitch track |ours - ref| median 183.86, p90 275.18, max 356.0 cents
-* **nes_sweep_up_s7** (pulse 1, sweep up, shift 7, period P = 0, from t = 128): sweep pitch track |ours - ref| median 144.29, p90 368.45, max 436.1 cents
-* **nes_sweep_down_s1_p1** (pulse 1, sweep down, shift 1, period P = 7, from t = 1024): gate end -125.01 ms (ref 533.31 ms, ours 408.30 ms); sweep pitch track |ours - ref| median 0.25, p90 352.93, max 523.0 cents
-* **nes_sweep_down_s1_p2** (pulse 2, sweep down, shift 1, period P = 7, from t = 1024): gate end -58.30 ms (ref 533.31 ms, ours 475.01 ms); sweep pitch track |ours - ref| median 53.36, p90 287.81, max 548.1 cents
-* **nes_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024): gate end -141.61 ms (ref 949.95 ms, ours 808.34 ms); sweep pitch track |ours - ref| median 24.71, p90 138.40, max 184.9 cents
-* **nes_sweep_down_s2_p2** (pulse 2, sweep down, shift 2, period P = 5, from t = 1024): gate end -91.61 ms (ref 949.95 ms, ours 858.34 ms); sweep pitch track |ours - ref| median 111.80, p90 454.35, max 636.9 cents
-* **nes_sweep_down_s3_p1** (pulse 1, sweep down, shift 3, period P = 3, from t = 1024): sweep pitch track |ours - ref| median 40.57, p90 160.23, max 231.5 cents
-* **nes_sweep_down_s3_p2** (pulse 2, sweep down, shift 3, period P = 3, from t = 1024): sweep pitch track |ours - ref| median 91.82, p90 274.93, max 414.2 cents
-* **nes_sweep_down_s4_p1** (pulse 1, sweep down, shift 4, period P = 2, from t = 1024): sweep pitch track |ours - ref| median 23.68, p90 87.76, max 150.8 cents
-* **nes_sweep_down_s4_p2** (pulse 2, sweep down, shift 4, period P = 2, from t = 1024): sweep pitch track |ours - ref| median 69.68, p90 154.04, max 205.1 cents
-* **nes_sweep_down_s5_p1** (pulse 1, sweep down, shift 5, period P = 1, from t = 1024): sweep pitch track |ours - ref| median 28.04, p90 87.57, max 117.8 cents
-* **nes_sweep_down_s5_p2** (pulse 2, sweep down, shift 5, period P = 1, from t = 1024): sweep pitch track |ours - ref| median 90.59, p90 141.21, max 183.2 cents
-* **nes_sweep_down_s6_p1** (pulse 1, sweep down, shift 6, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 141.53, p90 219.25, max 239.3 cents
-* **nes_sweep_down_s6_p2** (pulse 2, sweep down, shift 6, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 197.79, p90 262.10, max 275.8 cents
-* **nes_sweep_down_s7_p1** (pulse 1, sweep down, shift 7, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 112.12, p90 112.12, max 135.9 cents
-* **nes_sweep_down_s7_p2** (pulse 2, sweep down, shift 7, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 153.86, p90 130.94, max 153.9 cents
-* **nes_sweep5_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, 5-step): level L +1.07 dB (ref -19.9 dBFS); level R +1.07 dB (ref -19.9 dBFS); sweep pitch track |ours - ref| median 949.46, p90 1478.36, max 1783.7 cents
-* **nes_len_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 120 Hz), halt off): gate end +16.67 ms (ref 316.67 ms, ours 333.33 ms)
-* **nes_len5_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 96 Hz), halt off, 5-step): level L +1.13 dB (ref -19.9 dBFS); level R +1.13 dB (ref -19.9 dBFS); gate end +87.51 ms (ref 316.67 ms, ours 404.17 ms)
-* **nes_tri_t0008** (triangle, t = 8 (6214.49 Hz)): level L +7.33 dB (ref -25.7 dBFS); level R +7.33 dB (ref -25.7 dBFS); H1 +7.24 dB (ref 0.0, ours 7.2 dB re H1); H2 +40.61 dB (ref -103.7, ours -19.4 dB re H1); H3 +9.89 dB (ref -49.1, ours -39.2 dB re H1)
-* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +6.80 dB (ref -25.3 dBFS); level R +6.80 dB (ref -25.3 dBFS); H1 +6.78 dB (ref 0.0, ours 6.8 dB re H1); H2 +39.73 dB (ref -102.5, ours -20.3 dB re H1); H3 +6.88 dB (ref -19.1, ours -12.3 dB re H1); H4 +27.59 dB (ref -97.3, ours -32.4 dB re H1); H5 +6.78 dB (ref -28.1, ours -21.4 dB re H1); H6 +20.22 dB (ref -89.3, ours -39.8 dB re H1); H7 +6.56 dB (ref -34.3, ours -27.7 dB re H1); H8 +14.04 dB (ref -94.9, ours -46.0 dB re H1); H9 +6.10 dB (ref -42.6, ours -36.5 dB re H1)
-* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +6.76 dB (ref -25.3 dBFS); level R +6.76 dB (ref -25.3 dBFS); H1 +6.75 dB (ref 0.0, ours 6.7 dB re H1); H2 +39.66 dB (ref -98.0, ours -20.3 dB re H1); H3 +6.57 dB (ref -19.0, ours -12.4 dB re H1); H4 +27.34 dB (ref -96.7, ours -32.7 dB re H1); H5 +5.92 dB (ref -27.7, ours -21.7 dB re H1); H6 +19.70 dB (ref -87.4, ours -40.3 dB re H1); H7 +4.84 dB (ref -33.2, ours -28.4 dB re H1); H8 +13.74 dB (ref -88.8, ours -46.3 dB re H1); H9 +3.20 dB (ref -37.1, ours -33.9 dB re H1); H10 +8.37 dB (ref -99.3, ours -51.6 dB re H1)
-* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +6.74 dB (ref -25.3 dBFS); level R +6.74 dB (ref -25.3 dBFS); H1 +6.74 dB (ref 0.0, ours 6.7 dB re H1); H2 +39.66 dB (ref -99.4, ours -20.3 dB re H1); H3 +6.55 dB (ref -19.0, ours -12.4 dB re H1); H4 +27.33 dB (ref -110.8, ours -32.7 dB re H1); H5 +5.86 dB (ref -27.6, ours -21.8 dB re H1); H6 +19.68 dB (ref -105.4, ours -40.3 dB re H1); H7 +4.73 dB (ref -33.1, ours -28.4 dB re H1); H8 +13.68 dB (ref -107.1, ours -46.3 dB re H1); H9 +3.02 dB (ref -37.0, ours -34.0 dB re H1); H10 +8.25 dB (ref -112.4, ours -51.7 dB re H1)
-* **nes_tri_t0767** (triangle, t = 767 (72.83 Hz)): level L +6.77 dB (ref -26.1 dBFS); level R +6.77 dB (ref -26.1 dBFS); H1 +6.74 dB (ref 0.0, ours 6.7 dB re H1); H2 +40.50 dB (ref -104.1, ours -19.5 dB re H1); H3 +6.55 dB (ref -18.1, ours -11.6 dB re H1); H4 +28.18 dB (ref -101.3, ours -31.8 dB re H1); H5 +5.86 dB (ref -26.8, ours -20.9 dB re H1); H6 +20.51 dB (ref -101.9, ours -39.5 dB re H1); H7 +4.72 dB (ref -32.3, ours -27.6 dB re H1); H8 +14.53 dB (ref -103.8, ours -45.5 dB re H1); H9 +3.00 dB (ref -36.2, ours -33.2 dB re H1); H10 +9.07 dB (ref -106.4, ours -50.9 dB re H1)
-* **nes_tri_ultra_t0** (triangle t = 126, then $400A = 0 at 0.30 s (ultrasonic: A2)): level L +6.75 dB (ref -30.5 dBFS); level R +6.75 dB (ref -30.5 dBFS); segment 't = 126 (440 Hz)' level +6.75 dB (ref -25.3 dBFS)
-* **nes_tri_ultra_t1** (triangle t = 126, then $400A = 1 at 0.30 s (ultrasonic: A2)): level L +6.75 dB (ref -30.5 dBFS); level R +6.75 dB (ref -30.5 dBFS); segment 't = 126 (440 Hz)' level +6.75 dB (ref -25.3 dBFS)
-* **nes_tri_lin016** (triangle t = 31, control 0, linear counter 16 quarter frames (240 Hz), length 254): level L +6.81 dB (ref -25.3 dBFS); level R +6.81 dB (ref -25.3 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +4.10 ms (ref 66.73 ms, ours 70.84 ms)
-* **nes_tri_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames (240 Hz), length 254): level L +6.80 dB (ref -25.3 dBFS); level R +6.80 dB (ref -25.3 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +4.10 ms (ref 266.73 ms, ours 270.84 ms)
-* **nes_tri_lin127** (triangle t = 31, control 0, linear counter 127 quarter frames (240 Hz), length 254): level L +6.80 dB (ref -25.3 dBFS); level R +6.80 dB (ref -25.3 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +4.17 ms (ref 529.18 ms, ours 533.36 ms)
-* **nes_tri_len_i00** (triangle t = 31, control 0, linear 127, length index 0 (10 half frames)): level L +6.80 dB (ref -25.3 dBFS); level R +6.80 dB (ref -25.3 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms)
-* **nes_tri5_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames, 5-step (192 Hz), length 254): level L +7.70 dB (ref -26.2 dBFS); level R +7.70 dB (ref -26.2 dBFS); gate end +66.55 ms (ref 266.73 ms, ours 333.29 ms)
-* **nes_noise_l00** (noise long mode, period index 0 (4 CPU cycles)): level L +2.94 dB (ref -34.2 dBFS); level R +2.94 dB (ref -34.2 dBFS)
-* **nes_noise_l01** (noise long mode, period index 1 (8 CPU cycles)): level L +2.56 dB (ref -30.8 dBFS); level R +2.56 dB (ref -30.8 dBFS)
-* **nes_noise_l02** (noise long mode, period index 2 (16 CPU cycles)): level L +2.49 dB (ref -27.8 dBFS); level R +2.49 dB (ref -27.8 dBFS)
-* **nes_noise_l03** (noise long mode, period index 3 (32 CPU cycles)): level L +2.28 dB (ref -24.9 dBFS); level R +2.28 dB (ref -24.9 dBFS)
-* **nes_noise_l04** (noise long mode, period index 4 (64 CPU cycles)): level L +2.10 dB (ref -22.7 dBFS); level R +2.10 dB (ref -22.7 dBFS)
-* **nes_noise_l05** (noise long mode, period index 5 (96 CPU cycles)): level L +1.79 dB (ref -22.1 dBFS); level R +1.79 dB (ref -22.1 dBFS)
-* **nes_noise_l06** (noise long mode, period index 6 (128 CPU cycles)): level L +1.54 dB (ref -21.9 dBFS); level R +1.54 dB (ref -21.9 dBFS)
-* **nes_noise_l07** (noise long mode, period index 7 (160 CPU cycles)): level L +1.41 dB (ref -21.8 dBFS); level R +1.41 dB (ref -21.8 dBFS)
-* **nes_noise_l08** (noise long mode, period index 8 (202 CPU cycles)): level L +1.40 dB (ref -21.7 dBFS); level R +1.40 dB (ref -21.7 dBFS)
-* **nes_noise_l09** (noise long mode, period index 9 (254 CPU cycles)): level L +1.33 dB (ref -21.6 dBFS); level R +1.33 dB (ref -21.6 dBFS)
-* **nes_noise_l10** (noise long mode, period index 10 (380 CPU cycles)): level L +1.24 dB (ref -21.6 dBFS); level R +1.24 dB (ref -21.6 dBFS)
-* **nes_noise_l11** (noise long mode, period index 11 (508 CPU cycles)): level L +1.20 dB (ref -21.6 dBFS); level R +1.20 dB (ref -21.6 dBFS)
-* **nes_noise_l12** (noise long mode, period index 12 (762 CPU cycles)): level L +0.96 dB (ref -21.5 dBFS); level R +0.96 dB (ref -21.5 dBFS)
+* **nes_pulse_vol** (pulse 1, duty 2, t = 253, constant volume 15 down to 0 (60 ms each)): segment 'volume 9' level +0.54 dB (ref -23.1 dBFS); segment 'volume 9' re first segment: ours -3.87, ref -4.43 dB; segment 'volume 8' level +0.64 dB (ref -24.2 dBFS); segment 'volume 8' re first segment: ours -4.81, ref -5.47 dB; segment 'volume 7' level +0.77 dB (ref -25.3 dBFS); segment 'volume 7' re first segment: ours -5.86, ref -6.65 dB; segment 'volume 6' level +0.87 dB (ref -26.7 dBFS); segment 'volume 6' re first segment: ours -7.08, ref -7.97 dB; segment 'volume 5' level +0.98 dB (ref -28.2 dBFS); segment 'volume 5' re first segment: ours -8.54, ref -9.54 dB; segment 'volume 4' level +1.04 dB (ref -30.1 dBFS); segment 'volume 4' re first segment: ours -10.39, ref -11.45 dB; segment 'volume 3' level +1.14 dB (ref -32.7 dBFS); segment 'volume 3' re first segment: ours -12.80, ref -13.96 dB; segment 'volume 2' level +1.23 dB (ref -36.2 dBFS); segment 'volume 2' re first segment: ours -16.24, ref -17.50 dB; segment 'volume 1' level +1.37 dB (ref -42.2 dBFS); segment 'volume 1' re first segment: ours -22.15, ref -23.54 dB
+* **nes_env_v00** (pulse 1 (t = 63), decay envelope V = 0, loop off, 4-step (step every 1 quarter frames at 240 Hz)): level L +2.13 dB (ref -23.4 dBFS); level R +2.13 dB (ref -23.4 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +8.32 ms (ref 58.34 ms, ours 66.67 ms); envelope step timing: worst ours - ref +2.86 ms
+* **nes_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step (step every 4 quarter frames at 240 Hz)): level L +0.94 dB (ref -20.1 dBFS); level R +0.94 dB (ref -20.1 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +21.09 ms (ref 233.11 ms, ours 254.20 ms); envelope step timing: worst ours - ref +8.21 ms
+* **nes_env_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 4-step (step every 8 quarter frames at 240 Hz)): level L +0.76 dB (ref -19.6 dBFS); level R +0.76 dB (ref -19.6 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +37.53 ms (ref 466.67 ms, ours 504.20 ms); envelope step timing: worst ours - ref +15.71 ms
+* **nes_env_v15** (pulse 1 (t = 63), decay envelope V = 15, loop off, 4-step (step every 16 quarter frames at 240 Hz)): level L +0.67 dB (ref -19.5 dBFS); level R +0.67 dB (ref -19.5 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +71.11 ms (ref 933.08 ms, ours 1004.20 ms); envelope step timing: worst ours - ref +30.73 ms
+* **nes_env_loop_v01** (pulse 1 (t = 63), decay envelope V = 1, loop on, 4-step (step every 2 quarter frames at 240 Hz)): level L +0.54 dB (ref -23.7 dBFS); level R +0.54 dB (ref -23.7 dBFS); envelope modulation depth 22.96 vs ref 26.33 dB; envelope steps found: ref 106, ours 113 of 113; envelope step timing: worst ours - ref +4.24 ms
+* **nes_env_loop_v03** (pulse 1 (t = 63), decay envelope V = 3, loop on, 4-step (step every 4 quarter frames at 240 Hz)): envelope modulation depth 24.51 vs ref 26.22 dB; envelope step timing: worst ours - ref +8.50 ms
+* **nes_env5_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 5-step (step every 4 quarter frames at 192 Hz)): level L +0.87 dB (ref -19.9 dBFS); level R +0.87 dB (ref -19.9 dBFS); gate end +79.37 ms (ref 233.11 ms, ours 312.47 ms); envelope step timing: worst ours - ref +10.07 ms
+* **nes_env5_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 5-step (step every 8 quarter frames at 192 Hz)): level L +0.72 dB (ref -19.5 dBFS); level R +0.72 dB (ref -19.5 dBFS); gate end +158.28 ms (ref 466.67 ms, ours 624.94 ms); envelope step timing: worst ours - ref +19.46 ms
+* **nes_env_retrig** (pulse 1 (t = 63), envelope V = 0 decayed to 0, then $4003 rewritten at 0.30 s): level L +2.87 dB (ref -26.8 dBFS); level R +2.87 dB (ref -26.8 dBFS); gate start +4.17 ms (ref 0.00 ms, ours 4.17 ms); gate end +8.37 ms (ref 58.32 ms, ours 66.69 ms); envelope step timing: worst ours - ref +2.86 ms
+* **nes_sweep_up_s1** (pulse 1, sweep up, shift 1, period P = 7, from t = 128): gate end +8.39 ms (ref 333.33 ms, ours 341.72 ms); sweep pitch track |ours - ref| median 7.89, p90 16.52, max 243.2 cents
+* **nes_sweep_up_s2** (pulse 1, sweep up, shift 2, period P = 5, from t = 128): sweep pitch track |ours - ref| median 15.15, p90 50.61, max 133.6 cents
+* **nes_sweep_up_s3** (pulse 1, sweep up, shift 3, period P = 3, from t = 128): sweep pitch track |ours - ref| median 40.61, p90 75.83, max 2107.6 cents
+* **nes_sweep_up_s4** (pulse 1, sweep up, shift 4, period P = 2, from t = 128): sweep pitch track |ours - ref| median 68.20, p90 98.78, max 140.4 cents
+* **nes_sweep_up_s5** (pulse 1, sweep up, shift 5, period P = 1, from t = 128): sweep pitch track |ours - ref| median 145.51, p90 193.39, max 228.9 cents
+* **nes_sweep_up_s6** (pulse 1, sweep up, shift 6, period P = 0, from t = 128): sweep pitch track |ours - ref| median 181.88, p90 274.22, max 348.0 cents
+* **nes_sweep_up_s7** (pulse 1, sweep up, shift 7, period P = 0, from t = 128): sweep pitch track |ours - ref| median 144.57, p90 367.10, max 436.1 cents
+* **nes_sweep_down_s1_p1** (pulse 1, sweep down, shift 1, period P = 7, from t = 1024): gate end -124.99 ms (ref 533.31 ms, ours 408.32 ms); sweep pitch track |ours - ref| median 0.20, p90 182.85, max 522.8 cents
+* **nes_sweep_down_s1_p2** (pulse 2, sweep down, shift 1, period P = 7, from t = 1024): gate end -58.30 ms (ref 533.31 ms, ours 475.01 ms); sweep pitch track |ours - ref| median 53.31, p90 287.82, max 547.9 cents
+* **nes_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024): gate end -141.56 ms (ref 949.95 ms, ours 808.39 ms); sweep pitch track |ours - ref| median 24.75, p90 138.41, max 185.1 cents
+* **nes_sweep_down_s2_p2** (pulse 2, sweep down, shift 2, period P = 5, from t = 1024): gate end -91.56 ms (ref 949.95 ms, ours 858.39 ms); sweep pitch track |ours - ref| median 111.62, p90 454.39, max 636.9 cents
+* **nes_sweep_down_s3_p1** (pulse 1, sweep down, shift 3, period P = 3, from t = 1024): sweep pitch track |ours - ref| median 40.80, p90 160.24, max 231.2 cents
+* **nes_sweep_down_s3_p2** (pulse 2, sweep down, shift 3, period P = 3, from t = 1024): sweep pitch track |ours - ref| median 92.09, p90 274.85, max 414.2 cents
+* **nes_sweep_down_s4_p1** (pulse 1, sweep down, shift 4, period P = 2, from t = 1024): sweep pitch track |ours - ref| median 23.81, p90 87.32, max 150.6 cents
+* **nes_sweep_down_s4_p2** (pulse 2, sweep down, shift 4, period P = 2, from t = 1024): sweep pitch track |ours - ref| median 69.50, p90 153.89, max 204.8 cents
+* **nes_sweep_down_s5_p1** (pulse 1, sweep down, shift 5, period P = 1, from t = 1024): sweep pitch track |ours - ref| median 27.55, p90 87.31, max 117.8 cents
+* **nes_sweep_down_s5_p2** (pulse 2, sweep down, shift 5, period P = 1, from t = 1024): sweep pitch track |ours - ref| median 90.43, p90 141.04, max 183.0 cents
+* **nes_sweep_down_s6_p1** (pulse 1, sweep down, shift 6, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 141.60, p90 220.89, max 239.0 cents
+* **nes_sweep_down_s6_p2** (pulse 2, sweep down, shift 6, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 197.78, p90 261.86, max 278.4 cents
+* **nes_sweep_down_s7_p1** (pulse 1, sweep down, shift 7, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 109.23, p90 109.23, max 138.1 cents
+* **nes_sweep_down_s7_p2** (pulse 2, sweep down, shift 7, period P = 0, from t = 1024): sweep pitch track |ours - ref| median 153.26, p90 153.26, max 153.3 cents
+* **nes_sweep5_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, 5-step): level L +0.95 dB (ref -19.9 dBFS); level R +0.95 dB (ref -19.9 dBFS); sweep pitch track |ours - ref| median 949.43, p90 1478.29, max 1783.8 cents
+* **nes_len_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 120 Hz), halt off): gate end +16.62 ms (ref 316.67 ms, ours 333.29 ms)
+* **nes_len5_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 96 Hz), halt off, 5-step): level L +1.06 dB (ref -19.9 dBFS); level R +1.06 dB (ref -19.9 dBFS); gate end +87.48 ms (ref 316.67 ms, ours 404.15 ms)
+* **nes_tri_t0008** (triangle, t = 8 (6214.49 Hz)): level L +7.06 dB (ref -25.7 dBFS); level R +7.06 dB (ref -25.7 dBFS); H1 +6.97 dB (ref 0.0, ours 7.0 dB re H1); H2 +39.47 dB (ref -103.7, ours -20.5 dB re H1); H3 +7.19 dB (ref -49.1, ours -41.9 dB re H1)
+* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +6.79 dB (ref -25.3 dBFS); level R +6.79 dB (ref -25.3 dBFS); H1 +6.78 dB (ref 0.0, ours 6.8 dB re H1); H2 +39.67 dB (ref -102.5, ours -20.3 dB re H1); H3 +6.71 dB (ref -19.1, ours -12.4 dB re H1); H4 +27.27 dB (ref -97.3, ours -32.7 dB re H1); H5 +6.27 dB (ref -28.1, ours -21.9 dB re H1); H6 +19.48 dB (ref -89.3, ours -40.5 dB re H1); H7 +5.52 dB (ref -34.3, ours -28.7 dB re H1); H8 +12.68 dB (ref -94.9, ours -47.3 dB re H1); H9 +4.34 dB (ref -42.6, ours -38.3 dB re H1)
+* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +6.77 dB (ref -25.3 dBFS); level R +6.77 dB (ref -25.3 dBFS); H1 +6.77 dB (ref 0.0, ours 6.8 dB re H1); H2 +39.67 dB (ref -98.0, ours -20.3 dB re H1); H3 +6.58 dB (ref -19.0, ours -12.4 dB re H1); H4 +27.34 dB (ref -96.7, ours -32.7 dB re H1); H5 +5.90 dB (ref -27.7, ours -21.8 dB re H1); H6 +19.66 dB (ref -87.4, ours -40.3 dB re H1); H7 +4.79 dB (ref -33.2, ours -28.4 dB re H1); H8 +13.67 dB (ref -88.8, ours -46.3 dB re H1); H9 +3.10 dB (ref -37.1, ours -34.0 dB re H1); H10 +8.28 dB (ref -99.3, ours -51.7 dB re H1)
+* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +6.76 dB (ref -25.3 dBFS); level R +6.76 dB (ref -25.3 dBFS); H1 +6.76 dB (ref 0.0, ours 6.8 dB re H1); H2 +39.68 dB (ref -99.5, ours -20.3 dB re H1); H3 +6.57 dB (ref -19.0, ours -12.4 dB re H1); H4 +27.35 dB (ref -110.8, ours -32.6 dB re H1); H5 +5.88 dB (ref -27.6, ours -21.7 dB re H1); H6 +19.69 dB (ref -105.4, ours -40.3 dB re H1); H7 +4.74 dB (ref -33.1, ours -28.4 dB re H1); H8 +13.69 dB (ref -107.1, ours -46.3 dB re H1); H9 +3.03 dB (ref -37.0, ours -34.0 dB re H1); H10 +8.24 dB (ref -112.4, ours -51.8 dB re H1)
+* **nes_tri_t0767** (triangle, t = 767 (72.83 Hz)): level L +6.79 dB (ref -26.1 dBFS); level R +6.79 dB (ref -26.1 dBFS); H1 +6.76 dB (ref 0.0, ours 6.8 dB re H1); H2 +40.52 dB (ref -104.0, ours -19.5 dB re H1); H3 +6.57 dB (ref -18.1, ours -11.5 dB re H1); H4 +28.20 dB (ref -101.3, ours -31.8 dB re H1); H5 +5.88 dB (ref -26.8, ours -20.9 dB re H1); H6 +20.54 dB (ref -101.9, ours -39.5 dB re H1); H7 +4.73 dB (ref -32.3, ours -27.5 dB re H1); H8 +14.53 dB (ref -103.8, ours -45.5 dB re H1); H9 +3.02 dB (ref -36.2, ours -33.1 dB re H1); H10 +9.10 dB (ref -106.4, ours -50.9 dB re H1)
+* **nes_tri_ultra_t0** (triangle t = 126, then $400A = 0 at 0.30 s (ultrasonic: A2)): level L +6.77 dB (ref -30.5 dBFS); level R +6.77 dB (ref -30.5 dBFS); segment 't = 126 (440 Hz)' level +6.77 dB (ref -25.3 dBFS)
+* **nes_tri_ultra_t1** (triangle t = 126, then $400A = 1 at 0.30 s (ultrasonic: A2)): level L +6.77 dB (ref -30.5 dBFS); level R +6.77 dB (ref -30.5 dBFS); segment 't = 126 (440 Hz)' level +6.77 dB (ref -25.3 dBFS)
+* **nes_tri_lin016** (triangle t = 31, control 0, linear counter 16 quarter frames (240 Hz), length 254): level L +6.80 dB (ref -25.3 dBFS); level R +6.80 dB (ref -25.3 dBFS); gate start +4.20 ms (ref 0.00 ms, ours 4.20 ms); gate end +4.08 ms (ref 66.73 ms, ours 70.82 ms)
+* **nes_tri_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames (240 Hz), length 254): level L +6.80 dB (ref -25.3 dBFS); level R +6.80 dB (ref -25.3 dBFS); gate start +4.20 ms (ref 0.00 ms, ours 4.20 ms); gate end +4.13 ms (ref 266.73 ms, ours 270.86 ms)
+* **nes_tri_lin127** (triangle t = 31, control 0, linear counter 127 quarter frames (240 Hz), length 254): level L +6.80 dB (ref -25.3 dBFS); level R +6.80 dB (ref -25.3 dBFS); gate start +4.20 ms (ref 0.00 ms, ours 4.20 ms); gate end +4.17 ms (ref 529.18 ms, ours 533.36 ms)
+* **nes_tri_len_i00** (triangle t = 31, control 0, linear 127, length index 0 (10 half frames)): level L +6.79 dB (ref -25.3 dBFS); level R +6.79 dB (ref -25.3 dBFS); gate start +4.20 ms (ref 0.00 ms, ours 4.20 ms)
+* **nes_tri5_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames, 5-step (192 Hz), length 254): level L +7.69 dB (ref -26.2 dBFS); level R +7.69 dB (ref -26.2 dBFS); gate end +66.60 ms (ref 266.73 ms, ours 333.33 ms)
+* **nes_noise_l00** (noise long mode, period index 0 (4 CPU cycles)): level L +2.36 dB (ref -34.2 dBFS); level R +2.36 dB (ref -34.2 dBFS)
+* **nes_noise_l01** (noise long mode, period index 1 (8 CPU cycles)): level L +1.97 dB (ref -30.8 dBFS); level R +1.97 dB (ref -30.8 dBFS)
+* **nes_noise_l02** (noise long mode, period index 2 (16 CPU cycles)): level L +1.91 dB (ref -27.8 dBFS); level R +1.91 dB (ref -27.8 dBFS)
+* **nes_noise_l03** (noise long mode, period index 3 (32 CPU cycles)): level L +1.73 dB (ref -24.9 dBFS); level R +1.73 dB (ref -24.9 dBFS)
+* **nes_noise_l04** (noise long mode, period index 4 (64 CPU cycles)): level L +1.67 dB (ref -22.7 dBFS); level R +1.67 dB (ref -22.7 dBFS)
+* **nes_noise_l05** (noise long mode, period index 5 (96 CPU cycles)): level L +1.51 dB (ref -22.1 dBFS); level R +1.51 dB (ref -22.1 dBFS)
+* **nes_noise_l06** (noise long mode, period index 6 (128 CPU cycles)): level L +1.39 dB (ref -21.9 dBFS); level R +1.39 dB (ref -21.9 dBFS)
+* **nes_noise_l07** (noise long mode, period index 7 (160 CPU cycles)): level L +1.30 dB (ref -21.8 dBFS); level R +1.30 dB (ref -21.8 dBFS)
+* **nes_noise_l08** (noise long mode, period index 8 (202 CPU cycles)): level L +1.30 dB (ref -21.7 dBFS); level R +1.30 dB (ref -21.7 dBFS)
+* **nes_noise_l09** (noise long mode, period index 9 (254 CPU cycles)): level L +1.27 dB (ref -21.6 dBFS); level R +1.27 dB (ref -21.6 dBFS)
+* **nes_noise_l10** (noise long mode, period index 10 (380 CPU cycles)): level L +1.21 dB (ref -21.6 dBFS); level R +1.21 dB (ref -21.6 dBFS)
+* **nes_noise_l11** (noise long mode, period index 11 (508 CPU cycles)): level L +1.18 dB (ref -21.6 dBFS); level R +1.18 dB (ref -21.6 dBFS)
+* **nes_noise_l12** (noise long mode, period index 12 (762 CPU cycles)): level L +0.95 dB (ref -21.5 dBFS); level R +0.95 dB (ref -21.5 dBFS)
 * **nes_noise_l13** (noise long mode, period index 13 (1016 CPU cycles)): level L +0.96 dB (ref -21.6 dBFS); level R +0.96 dB (ref -21.6 dBFS)
-* **nes_noise_l14** (noise long mode, period index 14 (2034 CPU cycles)): level L +0.77 dB (ref -22.0 dBFS); level R +0.77 dB (ref -22.0 dBFS)
-* **nes_noise_s00** (noise short (93-step) mode, period index 0 (4 CPU cycles), f0 4811.22 Hz): level L -2.03 dB (ref -34.2 dBFS); level R -2.03 dB (ref -34.2 dBFS); H1 -1.86 dB (ref 0.0, ours -1.9 dB re H1); H2 -3.42 dB (ref 1.9, ours -1.5 dB re H1); H3 +3.03 dB (ref -5.6, ours -2.5 dB re H1)
-* **nes_noise_s01** (noise short (93-step) mode, period index 1 (8 CPU cycles), f0 2405.61 Hz): level L -1.20 dB (ref -32.0 dBFS); level R -1.20 dB (ref -32.0 dBFS); H1 -2.09 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.33 dB (ref 2.3, ours -2.0 dB re H1); H5 +2.53 dB (ref -4.0, ours -1.5 dB re H1); H6 +3.73 dB (ref -6.4, ours -2.7 dB re H1); H7 -2.27 dB (ref -10.6, ours -12.8 dB re H1); H8 -5.95 dB (ref -32.0, ours -37.9 dB re H1)
-* **nes_noise_s02** (noise short (93-step) mode, period index 2 (16 CPU cycles), f0 1202.80 Hz): level L -1.96 dB (ref -28.1 dBFS); level R -1.96 dB (ref -28.1 dBFS); H1 -2.14 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.56 dB (ref 2.4, ours -2.1 dB re H1); H4 -1.15 dB (ref -0.9, ours -2.1 dB re H1); H5 +1.09 dB (ref -3.1, ours -2.0 dB re H1); H6 +1.63 dB (ref -3.6, ours -1.9 dB re H1); H7 -5.17 dB (ref 3.3, ours -1.9 dB re H1); H8 -6.69 dB (ref 4.9, ours -1.8 dB re H1); H9 +7.81 dB (ref -9.5, ours -1.7 dB re H1)
-* **nes_noise_s03** (noise short (93-step) mode, period index 3 (32 CPU cycles), f0 601.40 Hz): level L -2.30 dB (ref -25.0 dBFS); level R -2.30 dB (ref -25.0 dBFS); H1 -2.16 dB (ref 0.0, ours -2.2 dB re H1); H2 -4.61 dB (ref 2.4, ours -2.2 dB re H1); H4 -1.37 dB (ref -0.8, ours -2.2 dB re H1); H6 +1.12 dB (ref -3.3, ours -2.2 dB re H1); H7 -5.85 dB (ref 3.7, ours -2.1 dB re H1); H8 -7.59 dB (ref 5.4, ours -2.1 dB re H1); H9 +6.63 dB (ref -8.8, ours -2.1 dB re H1); H10 -1.34 dB (ref -0.8, ours -2.1 dB re H1)
-* **nes_noise_s04** (noise short (93-step) mode, period index 4 (64 CPU cycles), f0 300.70 Hz): H1 -2.16 dB (ref 0.0, ours -2.2 dB re H1); H2 -4.63 dB (ref 2.5, ours -2.2 dB re H1); H4 -1.43 dB (ref -0.7, ours -2.2 dB re H1); H6 +1.00 dB (ref -3.2, ours -2.2 dB re H1); H7 -6.01 dB (ref 3.8, ours -2.2 dB re H1); H8 -7.81 dB (ref 5.6, ours -2.2 dB re H1); H9 +6.37 dB (ref -8.6, ours -2.3 dB re H1); H10 -1.70 dB (ref -0.6, ours -2.3 dB re H1)
-* **nes_noise_s05** (noise short (93-step) mode, period index 5 (96 CPU cycles), f0 200.47 Hz): H1 -2.17 dB (ref 0.0, ours -2.2 dB re H1); H2 -4.62 dB (ref 2.5, ours -2.2 dB re H1); H4 -1.44 dB (ref -0.7, ours -2.2 dB re H1); H7 -6.06 dB (ref 3.8, ours -2.2 dB re H1); H8 -7.85 dB (ref 5.6, ours -2.3 dB re H1); H9 +6.31 dB (ref -8.6, ours -2.3 dB re H1); H10 -1.75 dB (ref -0.6, ours -2.3 dB re H1)
-* **nes_noise_s06** (noise short (93-step) mode, period index 6 (128 CPU cycles), f0 150.35 Hz): level L -0.53 dB (ref -22.3 dBFS); level R -0.53 dB (ref -22.3 dBFS); H1 -2.16 dB (ref 0.0, ours -2.2 dB re H1); H2 -4.63 dB (ref 2.5, ours -2.2 dB re H1); H4 -1.44 dB (ref -0.7, ours -2.2 dB re H1); H7 -6.07 dB (ref 3.8, ours -2.2 dB re H1); H8 -7.87 dB (ref 5.6, ours -2.3 dB re H1); H9 +6.31 dB (ref -8.6, ours -2.3 dB re H1); H10 -1.78 dB (ref -0.5, ours -2.3 dB re H1)
-* **nes_noise_s07** (noise short (93-step) mode, period index 7 (160 CPU cycles), f0 120.28 Hz): level L -0.58 dB (ref -22.2 dBFS); level R -0.58 dB (ref -22.2 dBFS); H1 -2.16 dB (ref 0.0, ours -2.2 dB re H1); H2 -4.63 dB (ref 2.5, ours -2.1 dB re H1); H4 -1.44 dB (ref -0.7, ours -2.2 dB re H1); H7 -6.07 dB (ref 3.9, ours -2.2 dB re H1); H8 -7.87 dB (ref 5.6, ours -2.2 dB re H1); H9 +6.28 dB (ref -8.5, ours -2.3 dB re H1); H10 -1.78 dB (ref -0.5, ours -2.3 dB re H1)
-* **nes_noise_s08** (noise short (93-step) mode, period index 8 (202 CPU cycles), f0 95.27 Hz): level L -0.59 dB (ref -22.1 dBFS); level R -0.59 dB (ref -22.1 dBFS); H1 -2.16 dB (ref 0.0, ours -2.2 dB re H1); H2 -4.63 dB (ref 2.6, ours -2.1 dB re H1); H4 -1.45 dB (ref -0.6, ours -2.1 dB re H1); H7 -6.07 dB (ref 4.0, ours -2.1 dB re H1); H8 -7.88 dB (ref 5.7, ours -2.1 dB re H1); H9 +6.29 dB (ref -8.5, ours -2.2 dB re H1); H10 -1.79 dB (ref -0.4, ours -2.2 dB re H1)
-* **nes_noise_s09** (noise short (93-step) mode, period index 9 (254 CPU cycles), f0 75.77 Hz): level L -0.65 dB (ref -22.0 dBFS); level R -0.65 dB (ref -22.0 dBFS)
-* **nes_noise_s10** (noise short (93-step) mode, period index 10 (380 CPU cycles), f0 50.64 Hz): level L -0.68 dB (ref -22.0 dBFS); level R -0.68 dB (ref -22.0 dBFS)
-* **nes_noise_s11** (noise short (93-step) mode, period index 11 (508 CPU cycles), f0 37.88 Hz): level L -0.71 dB (ref -22.0 dBFS); level R -0.71 dB (ref -22.0 dBFS)
-* **nes_noise_s12** (noise short (93-step) mode, period index 12 (762 CPU cycles), f0 25.26 Hz): level L -0.69 dB (ref -22.0 dBFS); level R -0.69 dB (ref -22.0 dBFS)
+* **nes_noise_l14** (noise long mode, period index 14 (2034 CPU cycles)): level L +0.78 dB (ref -22.0 dBFS); level R +0.78 dB (ref -22.0 dBFS)
+* **nes_noise_s00** (noise short (93-step) mode, period index 0 (4 CPU cycles), f0 4811.22 Hz): level L -2.77 dB (ref -34.2 dBFS); level R -2.77 dB (ref -34.2 dBFS); H1 -2.01 dB (ref 0.0, ours -2.0 dB re H1); H2 -4.09 dB (ref 1.9, ours -2.2 dB re H1); H3 +1.45 dB (ref -5.6, ours -4.1 dB re H1); H4 -2.39 dB (ref -38.2, ours -40.6 dB re H1)
+* **nes_noise_s01** (noise short (93-step) mode, period index 1 (8 CPU cycles), f0 2405.61 Hz): level L -1.83 dB (ref -32.0 dBFS); level R -1.83 dB (ref -32.0 dBFS); H1 -2.11 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.48 dB (ref 2.3, ours -2.1 dB re H1); H5 +1.45 dB (ref -4.0, ours -2.5 dB re H1); H6 +2.16 dB (ref -6.4, ours -4.3 dB re H1); H7 -4.45 dB (ref -10.6, ours -15.0 dB re H1); H8 -8.85 dB (ref -32.0, ours -40.8 dB re H1)
+* **nes_noise_s02** (noise short (93-step) mode, period index 2 (16 CPU cycles), f0 1202.80 Hz): level L -2.55 dB (ref -28.1 dBFS); level R -2.55 dB (ref -28.1 dBFS); H1 -2.13 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.57 dB (ref 2.4, ours -2.2 dB re H1); H4 -1.30 dB (ref -0.9, ours -2.2 dB re H1); H6 +1.27 dB (ref -3.6, ours -2.3 dB re H1); H7 -5.68 dB (ref 3.3, ours -2.4 dB re H1); H8 -7.36 dB (ref 4.9, ours -2.4 dB re H1); H9 +6.96 dB (ref -9.5, ours -2.5 dB re H1)
+* **nes_noise_s03** (noise short (93-step) mode, period index 3 (32 CPU cycles), f0 601.40 Hz): level L -2.86 dB (ref -25.0 dBFS); level R -2.86 dB (ref -25.0 dBFS); H1 -2.14 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.60 dB (ref 2.4, ours -2.2 dB re H1); H4 -1.39 dB (ref -0.8, ours -2.2 dB re H1); H6 +1.05 dB (ref -3.3, ours -2.2 dB re H1); H7 -5.97 dB (ref 3.7, ours -2.3 dB re H1); H8 -7.74 dB (ref 5.4, ours -2.3 dB re H1); H9 +6.44 dB (ref -8.8, ours -2.3 dB re H1); H10 -1.59 dB (ref -0.8, ours -2.4 dB re H1)
+* **nes_noise_s04** (noise short (93-step) mode, period index 4 (64 CPU cycles), f0 300.70 Hz): level L -0.65 dB (ref -23.1 dBFS); level R -0.65 dB (ref -23.1 dBFS); H1 -2.14 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.61 dB (ref 2.5, ours -2.1 dB re H1); H4 -1.41 dB (ref -0.7, ours -2.2 dB re H1); H7 -6.03 dB (ref 3.8, ours -2.2 dB re H1); H8 -7.83 dB (ref 5.6, ours -2.3 dB re H1); H9 +6.34 dB (ref -8.6, ours -2.3 dB re H1); H10 -1.74 dB (ref -0.6, ours -2.3 dB re H1)
+* **nes_noise_s05** (noise short (93-step) mode, period index 5 (96 CPU cycles), f0 200.47 Hz): level L -0.61 dB (ref -22.5 dBFS); level R -0.61 dB (ref -22.5 dBFS); H1 -2.14 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.61 dB (ref 2.5, ours -2.1 dB re H1); H4 -1.43 dB (ref -0.7, ours -2.2 dB re H1); H7 -6.05 dB (ref 3.8, ours -2.2 dB re H1); H8 -7.85 dB (ref 5.6, ours -2.2 dB re H1); H9 +6.31 dB (ref -8.6, ours -2.3 dB re H1); H10 -1.76 dB (ref -0.6, ours -2.3 dB re H1)
+* **nes_noise_s06** (noise short (93-step) mode, period index 6 (128 CPU cycles), f0 150.35 Hz): level L -0.71 dB (ref -22.3 dBFS); level R -0.71 dB (ref -22.3 dBFS); H1 -2.14 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.61 dB (ref 2.5, ours -2.1 dB re H1); H4 -1.42 dB (ref -0.7, ours -2.2 dB re H1); H7 -6.05 dB (ref 3.8, ours -2.2 dB re H1); H8 -7.86 dB (ref 5.6, ours -2.2 dB re H1); H9 +6.32 dB (ref -8.6, ours -2.3 dB re H1); H10 -1.77 dB (ref -0.5, ours -2.3 dB re H1)
+* **nes_noise_s07** (noise short (93-step) mode, period index 7 (160 CPU cycles), f0 120.28 Hz): level L -0.72 dB (ref -22.2 dBFS); level R -0.72 dB (ref -22.2 dBFS); H1 -2.14 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.61 dB (ref 2.5, ours -2.1 dB re H1); H4 -1.43 dB (ref -0.7, ours -2.1 dB re H1); H7 -6.05 dB (ref 3.9, ours -2.2 dB re H1); H8 -7.86 dB (ref 5.6, ours -2.2 dB re H1); H9 +6.29 dB (ref -8.5, ours -2.3 dB re H1); H10 -1.77 dB (ref -0.5, ours -2.3 dB re H1)
+* **nes_noise_s08** (noise short (93-step) mode, period index 8 (202 CPU cycles), f0 95.27 Hz): level L -0.72 dB (ref -22.1 dBFS); level R -0.72 dB (ref -22.1 dBFS); H1 -2.14 dB (ref 0.0, ours -2.1 dB re H1); H2 -4.61 dB (ref 2.6, ours -2.0 dB re H1); H4 -1.43 dB (ref -0.6, ours -2.1 dB re H1); H7 -6.06 dB (ref 4.0, ours -2.1 dB re H1); H8 -7.86 dB (ref 5.7, ours -2.1 dB re H1); H9 +6.30 dB (ref -8.5, ours -2.2 dB re H1); H10 -1.77 dB (ref -0.4, ours -2.2 dB re H1)
+* **nes_noise_s09** (noise short (93-step) mode, period index 9 (254 CPU cycles), f0 75.77 Hz): level L -0.73 dB (ref -22.0 dBFS); level R -0.73 dB (ref -22.0 dBFS)
+* **nes_noise_s10** (noise short (93-step) mode, period index 10 (380 CPU cycles), f0 50.64 Hz): level L -0.72 dB (ref -22.0 dBFS); level R -0.72 dB (ref -22.0 dBFS)
+* **nes_noise_s11** (noise short (93-step) mode, period index 11 (508 CPU cycles), f0 37.88 Hz): level L -0.74 dB (ref -22.0 dBFS); level R -0.74 dB (ref -22.0 dBFS)
+* **nes_noise_s12** (noise short (93-step) mode, period index 12 (762 CPU cycles), f0 25.26 Hz): level L -0.70 dB (ref -22.0 dBFS); level R -0.70 dB (ref -22.0 dBFS)
 * **nes_noise_s13** (noise short (93-step) mode, period index 13 (1016 CPU cycles), f0 18.94 Hz): level L -0.67 dB (ref -22.1 dBFS); level R -0.67 dB (ref -22.1 dBFS)
-* **nes_noise_s14** (noise short (93-step) mode, period index 14 (2034 CPU cycles), f0 9.46 Hz): level L -0.69 dB (ref -22.2 dBFS); level R -0.69 dB (ref -22.2 dBFS)
-* **nes_noise_s15** (noise short (93-step) mode, period index 15 (4068 CPU cycles), f0 4.73 Hz): level L -0.56 dB (ref -23.0 dBFS); level R -0.56 dB (ref -23.0 dBFS)
-* **nes_dmc_r00_loop** (DMC rate 0 (4181.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.10 dB (ref -25.6, ours -31.7 dB re H1); H3 +4.12 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.62 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.08 dB (ref -25.6, ours -27.7 dB re H1); H6 -14.19 dB (ref -36.1, ours -50.3 dB re H1); H7 +2.79 dB (ref -36.0, ours -33.2 dB re H1); H8 -16.37 dB (ref -38.5, ours -54.9 dB re H1); H9 -1.67 dB (ref -35.5, ours -37.1 dB re H1); H10 -18.23 dB (ref -40.1, ours -58.4 dB re H1)
-* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.10 dB (ref -25.6, ours -31.7 dB re H1); H3 +4.13 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.62 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.07 dB (ref -25.6, ours -27.7 dB re H1); H6 -14.17 dB (ref -36.1, ours -50.3 dB re H1); H7 +2.80 dB (ref -36.0, ours -33.2 dB re H1); H8 -16.38 dB (ref -38.6, ours -55.0 dB re H1); H9 -1.66 dB (ref -35.5, ours -37.2 dB re H1); H10 -18.17 dB (ref -40.2, ours -58.3 dB re H1)
-* **nes_dmc_r08_loop** (DMC rate 8 (9419.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.10 dB (ref -25.6, ours -31.7 dB re H1); H3 +4.13 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.61 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.06 dB (ref -25.6, ours -27.7 dB re H1); H6 -14.16 dB (ref -36.1, ours -50.3 dB re H1); H7 +2.83 dB (ref -36.0, ours -33.2 dB re H1); H8 -16.34 dB (ref -38.6, ours -55.0 dB re H1); H9 -1.61 dB (ref -35.5, ours -37.1 dB re H1); H10 -18.13 dB (ref -40.2, ours -58.3 dB re H1)
-* **nes_dmc_r12_loop** (DMC rate 12 (16884.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.09 dB (ref -25.6, ours -31.7 dB re H1); H3 +4.15 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.57 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.00 dB (ref -25.6, ours -27.6 dB re H1); H6 -14.09 dB (ref -36.2, ours -50.3 dB re H1); H7 +2.94 dB (ref -36.1, ours -33.2 dB re H1); H8 -16.21 dB (ref -38.7, ours -54.9 dB re H1); H9 -1.44 dB (ref -35.6, ours -37.1 dB re H1); H10 -17.95 dB (ref -40.3, ours -58.3 dB re H1)
-* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.05 dB (ref -25.6, ours -31.6 dB re H1); H3 +4.23 dB (ref -23.2, ours -19.0 dB re H1); H4 -11.44 dB (ref -32.0, ours -43.5 dB re H1); H5 -1.78 dB (ref -25.8, ours -27.5 dB re H1); H6 -13.74 dB (ref -36.4, ours -50.1 dB re H1); H7 +3.37 dB (ref -36.3, ours -33.0 dB re H1); H8 -15.67 dB (ref -39.0, ours -54.7 dB re H1); H10 -16.97 dB (ref -40.9, ours -57.8 dB re H1)
+* **nes_noise_s14** (noise short (93-step) mode, period index 14 (2034 CPU cycles), f0 9.46 Hz): level L -0.68 dB (ref -22.2 dBFS); level R -0.68 dB (ref -22.2 dBFS)
+* **nes_noise_s15** (noise short (93-step) mode, period index 15 (4068 CPU cycles), f0 4.73 Hz): level L -0.54 dB (ref -23.0 dBFS); level R -0.54 dB (ref -23.0 dBFS)
+* **nes_dmc_r00_loop** (DMC rate 0 (4181.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.08 dB (ref -25.6, ours -31.6 dB re H1); H3 +4.14 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.61 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.06 dB (ref -25.6, ours -27.6 dB re H1); H6 -14.18 dB (ref -36.1, ours -50.3 dB re H1); H7 +2.80 dB (ref -36.0, ours -33.2 dB re H1); H8 -16.37 dB (ref -38.5, ours -54.9 dB re H1); H9 -1.66 dB (ref -35.5, ours -37.1 dB re H1); H10 -18.24 dB (ref -40.1, ours -58.4 dB re H1)
+* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.08 dB (ref -25.6, ours -31.6 dB re H1); H3 +4.14 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.60 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.05 dB (ref -25.6, ours -27.7 dB re H1); H6 -14.16 dB (ref -36.1, ours -50.3 dB re H1); H7 +2.81 dB (ref -36.0, ours -33.2 dB re H1); H8 -16.38 dB (ref -38.6, ours -55.0 dB re H1); H9 -1.66 dB (ref -35.5, ours -37.2 dB re H1); H10 -18.20 dB (ref -40.2, ours -58.4 dB re H1)
+* **nes_dmc_r08_loop** (DMC rate 8 (9419.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.08 dB (ref -25.6, ours -31.6 dB re H1); H3 +4.14 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.60 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.06 dB (ref -25.6, ours -27.7 dB re H1); H6 -14.17 dB (ref -36.1, ours -50.3 dB re H1); H7 +2.83 dB (ref -36.0, ours -33.2 dB re H1); H8 -16.35 dB (ref -38.6, ours -55.0 dB re H1); H9 -1.64 dB (ref -35.5, ours -37.2 dB re H1); H10 -18.20 dB (ref -40.2, ours -58.4 dB re H1)
+* **nes_dmc_r12_loop** (DMC rate 12 (16884.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.07 dB (ref -25.6, ours -31.6 dB re H1); H3 +4.16 dB (ref -23.1, ours -19.0 dB re H1); H4 -11.58 dB (ref -31.9, ours -43.5 dB re H1); H5 -2.03 dB (ref -25.6, ours -27.7 dB re H1); H6 -14.14 dB (ref -36.2, ours -50.3 dB re H1); H7 +2.87 dB (ref -36.1, ours -33.2 dB re H1); H8 -16.27 dB (ref -38.7, ours -55.0 dB re H1); H9 -1.56 dB (ref -35.6, ours -37.2 dB re H1); H10 -18.14 dB (ref -40.3, ours -58.5 dB re H1)
+* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -6.05 dB (ref -25.6, ours -31.7 dB re H1); H3 +4.19 dB (ref -23.2, ours -19.0 dB re H1); H4 -11.52 dB (ref -32.0, ours -43.5 dB re H1); H5 -1.93 dB (ref -25.8, ours -27.7 dB re H1); H6 -14.00 dB (ref -36.4, ours -50.4 dB re H1); H7 +3.05 dB (ref -36.3, ours -33.3 dB re H1); H8 -16.08 dB (ref -39.0, ours -55.1 dB re H1); H9 -1.25 dB (ref -36.1, ours -37.3 dB re H1); H10 -17.67 dB (ref -40.9, ours -58.6 dB re H1)
 * **nes_dmc_direct** ($4011 direct load, 0x70 / 0x10 alternating every 50 VGM samples (441 Hz square)): level L -0.95 dB (ref -11.1 dBFS); level R -0.95 dB (ref -11.1 dBFS)
-* **nes_mix_pulse** (pulse 1 (t = 253, 440.4 Hz) and pulse 2 (t = 200, 556.6 Hz), duty 2, volume combinations): segment 'p1 15 + p2 15' level -1.21 dB (ref -15.7 dBFS); segment 'p1 15 + p2 15' re first segment: ours +1.77, ref +2.98 dB; segment 'p1 15 + p2 15' IMD 116.1 Hz: ours -24.0, ref -93.4 dB; segment 'p1 15 + p2 15' IMD 996.9 Hz: ours -24.0, ref -89.5 dB; segment 'p1 8 + p2 8' IMD 116.1 Hz: ours -28.8, ref -83.5 dB; segment 'p1 8 + p2 8' IMD 996.9 Hz: ours -28.8, ref -84.2 dB; segment 'p1 4 + p2 4' level +0.67 dB (ref -27.2 dBFS); segment 'p1 4 + p2 4' re first segment: ours -7.79, ref -8.46 dB; segment 'p1 4 + p2 4' IMD 116.1 Hz: ours -34.5, ref -83.4 dB; segment 'p1 4 + p2 4' IMD 996.9 Hz: ours -34.4, ref -82.9 dB; segment 'p1 15 + p2 4' IMD 116.1 Hz: ours -32.2, ref -84.9 dB; segment 'p1 15 + p2 4' IMD 996.9 Hz: ours -32.2, ref -86.6 dB
-* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L +2.29 dB (ref -25.1 dBFS); level R +2.29 dB (ref -25.1 dBFS); segment 'tri, dmc 0' level +6.75 dB (ref -25.3 dBFS); segment 'tri, dmc 32' level +4.63 dB (ref -25.3 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref -0.00 dB; segment 'tri, dmc 64' level +2.74 dB (ref -25.3 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref -0.01 dB; segment 'tri, dmc 96' level +1.04 dB (ref -25.3 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref -0.02 dB; segment 'tri, dmc 127' re first segment: ours -7.24, ref -0.01 dB
-* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -2.33 dB (ref -21.4 dBFS); level R -2.33 dB (ref -21.4 dBFS); segment 'noise, dmc 0' level +1.37 dB (ref -21.7 dBFS); segment 'noise, dmc 64' level -2.13 dB (ref -21.7 dBFS); segment 'noise, dmc 64' re first segment: ours -3.45, ref +0.05 dB; segment 'noise, dmc 127' level -5.09 dB (ref -21.6 dBFS); segment 'noise, dmc 127' re first segment: ours -6.37, ref +0.09 dB
-* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +2.81 dB (ref -20.4 dBFS); level R +2.81 dB (ref -20.4 dBFS); segment 'tri alone' level +6.75 dB (ref -25.3 dBFS); segment 'tri + noise' level +3.88 dB (ref -20.0 dBFS); segment 'tri + noise' re first segment: ours +2.45, ref +5.32 dB; segment 'tri + noise, dmc 64' re first segment: ours -1.36, ref +5.18 dB
-* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +3.06 dB (ref -20.1 dBFS); level R +3.06 dB (ref -20.1 dBFS); segment 'tri alone' level +6.75 dB (ref -25.3 dBFS); segment 'tri alone' re first segment: ours +0.12, ref -6.62 dB; segment 'p1 + tri' level +2.15 dB (ref -17.8 dBFS); segment 'p1 + tri' re first segment: ours +3.05, ref +0.91 dB
-* **nes_pal_tri_t0126** (triangle, t = 126 (409.11 Hz), PAL): level L +6.75 dB (ref -25.3 dBFS); level R +6.75 dB (ref -25.3 dBFS); H1 +6.75 dB (ref 0.0, ours 6.7 dB re H1); H2 +39.66 dB (ref -97.5, ours -20.3 dB re H1); H3 +6.57 dB (ref -19.0, ours -12.4 dB re H1); H4 +27.33 dB (ref -96.9, ours -32.7 dB re H1); H5 +5.90 dB (ref -27.7, ours -21.8 dB re H1); H6 +19.68 dB (ref -101.3, ours -40.3 dB re H1); H7 +4.80 dB (ref -33.2, ours -28.4 dB re H1); H8 +13.69 dB (ref -88.9, ours -46.3 dB re H1); H9 +3.14 dB (ref -37.1, ours -34.0 dB re H1); H10 +8.26 dB (ref -91.2, ours -51.7 dB re H1)
-* **nes_pal_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step PAL (step every 4 quarter frames at 200 Hz)): level L +1.13 dB (ref -20.1 dBFS); level R +1.13 dB (ref -20.1 dBFS); gate start +4.94 ms (ref 0.00 ms, ours 4.94 ms); gate end +71.70 ms (ref 233.33 ms, ours 305.03 ms); envelope step timing: worst ours - ref +9.75 ms
-* **nes_pal_len_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 100 Hz), halt off, PAL): level L +1.07 dB (ref -19.9 dBFS); level R +1.07 dB (ref -19.9 dBFS); gate end +83.42 ms (ref 316.64 ms, ours 400.07 ms)
-* **nes_pal_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, PAL): level L +0.98 dB (ref -19.8 dBFS); level R +0.98 dB (ref -19.8 dBFS); sweep pitch track |ours - ref| median 940.42, p90 1441.77, max 1536.6 cents
-* **nes_pal_noise_s02** (noise short (93-step) mode, period index 2 (14 CPU cycles), f0 1276.96 Hz, PAL): pitch +8.59 cents (ref 1270.647 Hz, ours 1276.965 Hz); level L -2.47 dB (ref -27.9 dBFS); level R -2.47 dB (ref -27.9 dBFS); H1 +55.48 dB (ref 0.0, ours 55.5 dB re H1); H2 +65.10 dB (ref -9.6, ours 55.5 dB re H1); H3 +48.19 dB (ref 7.4, ours 55.6 dB re H1); H4 +49.53 dB (ref 6.1, ours 55.6 dB re H1); H5 +59.07 dB (ref -3.4, ours 55.7 dB re H1); H6 +54.52 dB (ref 1.3, ours 55.9 dB re H1); H7 +36.75 dB (ref 19.2, ours 56.0 dB re H1); H8 +51.08 dB (ref 5.1, ours 56.1 dB re H1); H9 +54.97 dB (ref 1.3, ours 56.3 dB re H1); H10 +56.85 dB (ref -0.6, ours 56.3 dB re H1)
-* **nes_pal_noise_s05** (noise short (93-step) mode, period index 5 (88 CPU cycles), f0 203.15 Hz, PAL): pitch +43.23 cents (ref 198.143 Hz, ours 203.153 Hz); H1 +45.57 dB (ref 0.0, ours 45.6 dB re H1); H2 +61.96 dB (ref -16.4, ours 45.6 dB re H1); H3 +53.74 dB (ref -8.2, ours 45.6 dB re H1); H4 +68.34 dB (ref -22.8, ours 45.5 dB re H1); H5 +60.99 dB (ref -15.5, ours 45.5 dB re H1); H6 +65.54 dB (ref -20.0, ours 45.5 dB re H1); H7 +62.71 dB (ref -17.2, ours 45.5 dB re H1); H8 +51.79 dB (ref -6.3, ours 45.5 dB re H1); H9 +63.72 dB (ref -18.3, ours 45.5 dB re H1); H10 +74.09 dB (ref -28.7, ours 45.4 dB re H1)
-* **nes_pal_noise_s08** (noise short (93-step) mode, period index 8 (188 CPU cycles), f0 95.09 Hz, PAL): pitch +65.41 cents (ref 91.567 Hz, ours 95.093 Hz); level L -0.62 dB (ref -22.1 dBFS); level R -0.62 dB (ref -22.1 dBFS); H1 +5.90 dB (ref 0.0, ours 5.9 dB re H1); H2 +27.25 dB (ref -21.2, ours 6.0 dB re H1); H3 +45.99 dB (ref -40.0, ours 6.0 dB re H1); H4 +46.47 dB (ref -40.5, ours 6.0 dB re H1); H5 +47.12 dB (ref -41.1, ours 6.0 dB re H1); H6 +60.07 dB (ref -54.1, ours 6.0 dB re H1); H7 +63.61 dB (ref -57.7, ours 5.9 dB re H1); H8 +60.11 dB (ref -54.2, ours 5.9 dB re H1); H9 +52.52 dB (ref -46.6, ours 5.9 dB re H1); H10 +65.87 dB (ref -60.1, ours 5.9 dB re H1)
-* **nes_pal_noise_s11** (noise short (93-step) mode, period index 11 (472 CPU cycles), f0 37.88 Hz, PAL): level L -0.72 dB (ref -22.0 dBFS); level R -0.72 dB (ref -22.0 dBFS)
-* **nes_pal_noise_l08** (noise long mode, period index 8 (188 CPU cycles), PAL): level L +1.38 dB (ref -21.7 dBFS); level R +1.38 dB (ref -21.7 dBFS)
-* **nes_pal_dmc_r04_loop** (DMC rate 4 (6023.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): pitch +59.52 cents (ref 171.187 Hz, ours 177.175 Hz); H2 -5.98 dB (ref -25.7, ours -31.6 dB re H1); H3 +4.39 dB (ref -23.4, ours -19.0 dB re H1); H4 -11.15 dB (ref -32.4, ours -43.5 dB re H1); H5 -1.34 dB (ref -26.3, ours -27.6 dB re H1); H6 -13.15 dB (ref -37.1, ours -50.3 dB re H1); H7 +4.25 dB (ref -37.4, ours -33.2 dB re H1); H8 -14.50 dB (ref -40.4, ours -54.9 dB re H1); H10 -15.15 dB (ref -43.2, ours -58.3 dB re H1)
-* **nes_pal_dmc_r15_loop** (DMC rate 15 (33252.1 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): pitch +15.86 cents (ref 969.085 Hz, ours 978.004 Hz); H1 +59.32 dB (ref 0.0, ours 59.3 dB re H1); H2 +55.01 dB (ref -27.3, ours 27.7 dB re H1); H3 +68.20 dB (ref -27.8, ours 40.4 dB re H1); H4 +45.50 dB (ref -29.5, ours 16.0 dB re H1); H5 +54.56 dB (ref -22.7, ours 31.9 dB re H1); H6 +41.47 dB (ref -32.2, ours 9.3 dB re H1); H7 +41.91 dB (ref -15.4, ours 26.5 dB re H1); H8 +39.46 dB (ref -34.6, ours 4.8 dB re H1); H9 +53.84 dB (ref -31.1, ours 22.8 dB re H1); H10 +38.23 dB (ref -36.6, ours 1.7 dB re H1)
+* **nes_mix_pulse** (pulse 1 (t = 253, 440.4 Hz) and pulse 2 (t = 200, 556.6 Hz), duty 2, volume combinations): level L -0.50 dB (ref -18.9 dBFS); level R -0.50 dB (ref -18.9 dBFS); segment 'p1 15 + p2 15' level -1.21 dB (ref -15.7 dBFS); segment 'p1 15 + p2 15' re first segment: ours +1.76, ref +2.98 dB; segment 'p1 15 + p2 15' IMD 116.1 Hz: ours -24.0, ref -93.4 dB; segment 'p1 15 + p2 15' IMD 996.9 Hz: ours -24.0, ref -89.5 dB; segment 'p1 8 + p2 8' IMD 116.1 Hz: ours -28.8, ref -83.5 dB; segment 'p1 8 + p2 8' IMD 996.9 Hz: ours -28.8, ref -84.2 dB; segment 'p1 4 + p2 4' level +0.67 dB (ref -27.2 dBFS); segment 'p1 4 + p2 4' re first segment: ours -7.80, ref -8.46 dB; segment 'p1 4 + p2 4' IMD 116.1 Hz: ours -34.4, ref -83.4 dB; segment 'p1 4 + p2 4' IMD 996.9 Hz: ours -34.4, ref -82.9 dB; segment 'p1 15 + p2 4' IMD 116.1 Hz: ours -32.2, ref -84.9 dB; segment 'p1 15 + p2 4' IMD 996.9 Hz: ours -32.2, ref -86.6 dB
+* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L +2.31 dB (ref -25.1 dBFS); level R +2.31 dB (ref -25.1 dBFS); segment 'tri, dmc 0' level +6.77 dB (ref -25.3 dBFS); segment 'tri, dmc 32' level +4.65 dB (ref -25.3 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref -0.00 dB; segment 'tri, dmc 64' level +2.76 dB (ref -25.3 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref -0.01 dB; segment 'tri, dmc 96' level +1.05 dB (ref -25.3 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref -0.02 dB; segment 'tri, dmc 127' re first segment: ours -7.24, ref -0.01 dB
+* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -2.42 dB (ref -21.4 dBFS); level R -2.42 dB (ref -21.4 dBFS); segment 'noise, dmc 0' level +1.28 dB (ref -21.7 dBFS); segment 'noise, dmc 64' level -2.23 dB (ref -21.7 dBFS); segment 'noise, dmc 64' re first segment: ours -3.46, ref +0.05 dB; segment 'noise, dmc 127' level -5.19 dB (ref -21.6 dBFS); segment 'noise, dmc 127' re first segment: ours -6.38, ref +0.09 dB
+* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +2.77 dB (ref -20.4 dBFS); level R +2.77 dB (ref -20.4 dBFS); segment 'tri alone' level +6.77 dB (ref -25.3 dBFS); segment 'tri + noise' level +3.83 dB (ref -20.0 dBFS); segment 'tri + noise' re first segment: ours +2.38, ref +5.32 dB; segment 'tri + noise, dmc 64' re first segment: ours -1.42, ref +5.18 dB
+* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +3.07 dB (ref -20.1 dBFS); level R +3.07 dB (ref -20.1 dBFS); segment 'tri alone' level +6.77 dB (ref -25.3 dBFS); segment 'tri alone' re first segment: ours +0.14, ref -6.62 dB; segment 'p1 + tri' level +2.16 dB (ref -17.8 dBFS); segment 'p1 + tri' re first segment: ours +3.06, ref +0.91 dB
+* **nes_pal_tri_t0126** (triangle, t = 126 (409.11 Hz), PAL): level L +6.77 dB (ref -25.3 dBFS); level R +6.77 dB (ref -25.3 dBFS); H1 +6.77 dB (ref 0.0, ours 6.8 dB re H1); H2 +39.67 dB (ref -97.5, ours -20.3 dB re H1); H3 +6.58 dB (ref -19.0, ours -12.4 dB re H1); H4 +27.33 dB (ref -96.9, ours -32.7 dB re H1); H5 +5.89 dB (ref -27.7, ours -21.8 dB re H1); H6 +19.66 dB (ref -101.3, ours -40.3 dB re H1); H7 +4.76 dB (ref -33.2, ours -28.4 dB re H1); H8 +13.63 dB (ref -88.9, ours -46.4 dB re H1); H9 +3.06 dB (ref -37.1, ours -34.1 dB re H1); H10 +8.14 dB (ref -91.2, ours -51.9 dB re H1)
+* **nes_pal_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step PAL (step every 4 quarter frames at 200 Hz)): level L +1.07 dB (ref -20.1 dBFS); level R +1.07 dB (ref -20.1 dBFS); gate start +4.99 ms (ref 0.00 ms, ours 4.99 ms); gate end +71.70 ms (ref 233.33 ms, ours 305.03 ms); envelope step timing: worst ours - ref +9.77 ms
+* **nes_pal_len_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 100 Hz), halt off, PAL): level L +1.01 dB (ref -19.9 dBFS); level R +1.01 dB (ref -19.9 dBFS); gate end +83.42 ms (ref 316.64 ms, ours 400.07 ms)
+* **nes_pal_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, PAL): level L +0.85 dB (ref -19.8 dBFS); level R +0.85 dB (ref -19.8 dBFS); sweep pitch track |ours - ref| median 940.23, p90 1441.74, max 1536.5 cents
+* **nes_pal_noise_s02** (noise short (93-step) mode, period index 2 (14 CPU cycles), f0 1276.96 Hz, PAL): pitch +8.58 cents (ref 1270.649 Hz, ours 1276.965 Hz); level L -3.07 dB (ref -27.9 dBFS); level R -3.07 dB (ref -27.9 dBFS); H1 +55.49 dB (ref 0.0, ours 55.5 dB re H1); H2 +65.08 dB (ref -9.6, ours 55.5 dB re H1); H3 +48.14 dB (ref 7.3, ours 55.5 dB re H1); H4 +49.32 dB (ref 6.1, ours 55.5 dB re H1); H5 +58.78 dB (ref -3.3, ours 55.5 dB re H1); H6 +54.11 dB (ref 1.3, ours 55.4 dB re H1); H7 +36.16 dB (ref 19.2, ours 55.4 dB re H1); H8 +50.33 dB (ref 5.0, ours 55.4 dB re H1); H9 +54.07 dB (ref 1.2, ours 55.3 dB re H1); H10 +55.75 dB (ref -0.7, ours 55.1 dB re H1)
+* **nes_pal_noise_s05** (noise short (93-step) mode, period index 5 (88 CPU cycles), f0 203.15 Hz, PAL): pitch +43.24 cents (ref 198.143 Hz, ours 203.154 Hz); level L -0.67 dB (ref -22.4 dBFS); level R -0.67 dB (ref -22.4 dBFS); H1 +45.59 dB (ref 0.0, ours 45.6 dB re H1); H2 +61.98 dB (ref -16.4, ours 45.6 dB re H1); H3 +53.76 dB (ref -8.2, ours 45.6 dB re H1); H4 +68.35 dB (ref -22.8, ours 45.6 dB re H1); H5 +61.00 dB (ref -15.5, ours 45.6 dB re H1); H6 +65.55 dB (ref -20.0, ours 45.5 dB re H1); H7 +62.72 dB (ref -17.2, ours 45.5 dB re H1); H8 +51.80 dB (ref -6.3, ours 45.5 dB re H1); H9 +63.72 dB (ref -18.3, ours 45.5 dB re H1); H10 +74.09 dB (ref -28.7, ours 45.4 dB re H1)
+* **nes_pal_noise_s08** (noise short (93-step) mode, period index 8 (188 CPU cycles), f0 95.09 Hz, PAL): pitch +65.41 cents (ref 91.567 Hz, ours 95.093 Hz); level L -0.74 dB (ref -22.1 dBFS); level R -0.74 dB (ref -22.1 dBFS); H1 +5.92 dB (ref 0.0, ours 5.9 dB re H1); H2 +27.26 dB (ref -21.2, ours 6.0 dB re H1); H3 +46.01 dB (ref -40.0, ours 6.0 dB re H1); H4 +46.49 dB (ref -40.5, ours 6.0 dB re H1); H5 +47.14 dB (ref -41.1, ours 6.0 dB re H1); H6 +60.09 dB (ref -54.1, ours 6.0 dB re H1); H7 +63.62 dB (ref -57.7, ours 6.0 dB re H1); H8 +60.13 dB (ref -54.2, ours 5.9 dB re H1); H9 +52.53 dB (ref -46.6, ours 5.9 dB re H1); H10 +65.89 dB (ref -60.1, ours 5.9 dB re H1)
+* **nes_pal_noise_s11** (noise short (93-step) mode, period index 11 (472 CPU cycles), f0 37.88 Hz, PAL): level L -0.75 dB (ref -22.0 dBFS); level R -0.75 dB (ref -22.0 dBFS)
+* **nes_pal_noise_l08** (noise long mode, period index 8 (188 CPU cycles), PAL): level L +1.28 dB (ref -21.7 dBFS); level R +1.28 dB (ref -21.7 dBFS)
+* **nes_pal_dmc_r04_loop** (DMC rate 4 (6023.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): pitch +59.52 cents (ref 171.187 Hz, ours 177.175 Hz); H2 -5.96 dB (ref -25.7, ours -31.6 dB re H1); H3 +4.41 dB (ref -23.4, ours -19.0 dB re H1); H4 -11.13 dB (ref -32.4, ours -43.5 dB re H1); H5 -1.32 dB (ref -26.3, ours -27.6 dB re H1); H6 -13.13 dB (ref -37.1, ours -50.3 dB re H1); H7 +4.26 dB (ref -37.4, ours -33.2 dB re H1); H8 -14.48 dB (ref -40.4, ours -54.9 dB re H1); H10 -15.14 dB (ref -43.2, ours -58.3 dB re H1)
+* **nes_pal_dmc_r15_loop** (DMC rate 15 (33252.1 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): pitch +15.86 cents (ref 969.085 Hz, ours 978.004 Hz); H1 +59.33 dB (ref 0.0, ours 59.3 dB re H1); H2 +55.00 dB (ref -27.3, ours 27.7 dB re H1); H3 +68.16 dB (ref -27.8, ours 40.4 dB re H1); H4 +45.42 dB (ref -29.5, ours 15.9 dB re H1); H5 +54.41 dB (ref -22.7, ours 31.7 dB re H1); H6 +41.23 dB (ref -32.2, ours 9.1 dB re H1); H7 +41.58 dB (ref -15.4, ours 26.2 dB re H1); H8 +39.03 dB (ref -34.6, ours 4.4 dB re H1); H9 +53.29 dB (ref -31.1, ours 22.2 dB re H1); H10 +37.60 dB (ref -36.6, ours 1.0 dB re H1)
 
 #### Test side against the documented schedule and mixer formula (NES: ours vs MAME core (VGMPlay))
 
@@ -2030,134 +2033,134 @@ From the edges of the raw renders (largest sample step over 1.1 periods of the t
 * **nes_pal_len_i04**: gate end -83.40 ms vs documented 400.02 ms
 * **nes_pal_sweep_down_s2_p1**: sweep vs documented trajectory: median 945.82, p90 1442.04 cents
 
-### NES: ours with the integrated-step kernel vs NSFPlay core
+### NES: ours with the legacy ImpulseSum kernel vs NSFPlay core
 
 #### 2a03
 
 | stimulus | lag (smp) | null (dB) | pitch (cents) | level L / R (dB) | max harm (dB) | max env timing (%) | env shape (dB) | spectral (dB) | devs |
 |---|---|---|---|---|---|---|---|---|---|
-| nes_pulse_ref | -11 | 27.7 | +0.00 | +0.00 / +0.00 | 0.10 |  | 0.31 | 0.99 | 0 |
-| nes_pulse_duty0 | -11 | 25.5 | +0.00 | +0.02 / +0.02 | 0.13 |  | 0.63 | 3.96 | 0 |
-| nes_pulse_duty1 | -11 | 24.8 | +0.00 | +0.01 / +0.01 | 0.13 |  | 0.76 | 1.84 | 0 |
-| nes_pulse_duty3 | -11 | 29.2 | +0.00 | +0.01 / +0.01 | 0.13 |  | 6.57 | 0.50 | 0 |
-| nes_pulse2_ref | -11 | 26.1 | +0.00 | -0.00 / -0.00 | 0.10 |  | 0.38 | 3.20 | 0 |
-| nes_pulse_t0008 | +1 | 16.1 | +0.00 | +1.13 / +1.13 | 1.15 |  | 1.08 | 7.70 | 3 |
-| nes_pulse_t0012 | +11 | 19.4 | +0.00 | +0.53 / +0.53 | 0.53 |  | 0.54 | 7.45 | 2 |
-| nes_pulse_t0020 | +17 | 21.9 | +0.00 | +0.22 / +0.22 | 1.94 |  | 0.32 | 7.36 | 1 |
-| nes_pulse_t0050 | -1 | 25.5 | +0.00 | +0.08 / +0.08 | 1.78 |  | 0.07 | 3.39 | 1 |
-| nes_pulse_t0120 | +43 | 19.4 | +0.00 | +0.02 / +0.02 | 0.50 |  | 0.63 | 4.94 | 0 |
-| nes_pulse_t0400 | -18 | 21.8 | +0.00 | -0.01 / -0.01 | 0.03 |  | 0.59 | 4.35 | 0 |
-| nes_pulse_t1023 | -49 | 33.5 | +0.00 | -0.01 / -0.01 | 0.02 |  | 0.05 | 0.70 | 0 |
-| nes_pulse_t1024 | -49 | 23.9 | +0.00 | -0.01 / -0.01 | 0.02 |  | 0.53 | 4.14 | 0 |
-| nes_pulse_t2047 | -99 | 15.1 | +0.00 | -0.01 / -0.01 | 0.02 |  | 1.53 | 1.13 | 0 |
+| nes_pulse_ref | -12 | 18.5 | +0.00 | +0.00 / +0.00 | 0.19 |  | 0.31 | 1.27 | 0 |
+| nes_pulse_duty0 | -12 | 14.9 | +0.00 | +0.05 / +0.05 | 0.25 |  | 0.63 | 3.91 | 0 |
+| nes_pulse_duty1 | -12 | 16.9 | +0.00 | +0.01 / +0.01 | 0.25 |  | 0.76 | 2.00 | 0 |
+| nes_pulse_duty3 | -12 | 17.5 | +0.00 | +0.01 / +0.01 | 0.25 |  | 6.55 | 0.92 | 0 |
+| nes_pulse2_ref | -12 | 18.2 | +0.00 | -0.00 / -0.00 | 0.19 |  | 0.39 | 3.29 | 0 |
+| nes_pulse_t0008 | +36 | 9.8 | +0.00 | +2.27 / +2.27 | 2.29 |  | 2.25 | 7.84 | 3 |
+| nes_pulse_t0012 | +26 | 15.1 | +0.00 | +1.06 / +1.06 | 1.06 |  | 1.11 | 6.82 | 3 |
+| nes_pulse_t0020 | +0 | 18.7 | +0.00 | +0.45 / +0.45 | 3.88 |  | 0.43 | 6.69 | 1 |
+| nes_pulse_t0050 | +59 | 14.9 | +0.00 | +0.17 / +0.17 | 3.57 |  | 1.17 | 3.71 | 2 |
+| nes_pulse_t0120 | -5 | 25.7 | +0.00 | +0.05 / +0.05 | 0.99 |  | 0.18 | 5.15 | 0 |
+| nes_pulse_t0400 | -19 | 23.0 | +0.00 | -0.01 / -0.01 | 0.05 |  | 0.59 | 4.40 | 0 |
+| nes_pulse_t1023 | -49 | 24.8 | +0.00 | -0.03 / -0.03 | 0.04 |  | 0.06 | 1.06 | 0 |
+| nes_pulse_t1024 | -50 | 21.7 | +0.00 | -0.03 / -0.03 | 0.04 |  | 0.53 | 4.22 | 0 |
+| nes_pulse_t2047 | -100 | 15.4 | +0.00 | -0.03 / -0.03 | 0.04 |  | 1.53 | 1.39 | 0 |
 | nes_pulse_t0007_mute | +0 | 0.0 |  | +0.00 / +0.00 |  |  | 0.00 | 0.00 | 0 |
 | nes_pulse_sweepmute | +0 | 0.0 |  | +0.00 / +0.00 |  |  | 0.00 | 0.00 | 0 |
-| nes_pulse_vol | +1 | 0.3 |  | +0.00 / +0.00 |  |  | 0.32 | 0.50 | 0 |
-| nes_env_v00 | +1 | 1.0 |  | +0.07 / +0.07 |  |  | 40.86 | 3.33 | 1 |
-| nes_env_v03 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 23.77 | 5.12 | 1 |
-| nes_env_v07 | +1 | 1.0 |  | +0.07 / +0.07 |  |  | 17.37 | 5.64 | 1 |
-| nes_env_v15 | +1 | 1.0 |  | +0.07 / +0.07 |  |  | 12.48 | 6.41 | 1 |
-| nes_env_loop_v01 | +1 | 1.1 |  | +0.05 / +0.05 |  |  | 12.72 | 1.78 | 0 |
-| nes_env_loop_v03 | +1 | 1.0 |  | +0.05 / +0.05 |  |  | 12.74 | 2.67 | 0 |
-| nes_env5_v03 | +1 | 1.0 |  | -0.01 / -0.01 |  |  | 2.61 | 5.38 | 2 |
-| nes_env5_v07 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 1.88 | 6.02 | 2 |
-| nes_env_retrig | +1 | 6.8 |  | +0.06 / +0.06 |  |  | 0.13 | 3.06 | 0 |
-| nes_sweep_up_s1 | +1 | -1.6 |  | +0.03 / +0.03 |  |  | 25.91 | 5.10 | 1 |
-| nes_sweep_up_s2 | +1 | -2.1 |  | +0.03 / +0.03 |  |  | 17.02 | 1.98 | 1 |
-| nes_sweep_up_s3 | +1 | -2.2 |  | +0.03 / +0.03 |  |  | 11.45 | 1.01 | 1 |
-| nes_sweep_up_s4 | +1 | -2.5 |  | -0.00 / -0.00 |  |  | 3.37 | 0.68 | 0 |
-| nes_sweep_up_s5 | +1 | -1.7 |  | -0.01 / -0.01 |  |  | 1.05 | 0.66 | 0 |
-| nes_sweep_up_s6 | +1 | -1.6 |  | -0.01 / -0.01 |  |  | 0.88 | 0.54 | 0 |
-| nes_sweep_up_s7 | +1 | -0.6 |  | +0.01 / +0.01 |  |  | 0.17 | 1.08 | 0 |
-| nes_sweep_down_s1_p1 | +1 | -3.0 |  | -0.15 / -0.15 |  |  | 0.29 | 0.53 | 1 |
-| nes_sweep_down_s1_p2 | +1 | -1.0 |  | -0.15 / -0.15 |  |  | 0.47 | 0.44 | 1 |
-| nes_sweep_down_s2_p1 | +1 | 1.7 |  | -0.20 / -0.20 |  |  | 0.44 | 0.56 | 1 |
-| nes_sweep_down_s2_p2 | +1 | 1.8 |  | -0.19 / -0.19 |  |  | 0.39 | 0.37 | 1 |
-| nes_sweep_down_s3_p1 | +1 | 2.6 |  | +0.05 / +0.05 |  |  | 0.35 | 0.38 | 0 |
-| nes_sweep_down_s3_p2 | +1 | 4.9 |  | +0.04 / +0.04 |  |  | 0.35 | 0.39 | 0 |
-| nes_sweep_down_s4_p1 | +1 | 4.8 |  | +0.01 / +0.01 |  |  | 0.43 | 0.43 | 0 |
-| nes_sweep_down_s4_p2 | +1 | 5.4 |  | +0.00 / +0.00 |  |  | 0.44 | 0.44 | 0 |
-| nes_sweep_down_s5_p1 | +1 | 4.2 |  | -0.00 / -0.00 |  |  | 0.52 | 0.39 | 0 |
-| nes_sweep_down_s5_p2 | +1 | 3.9 |  | -0.00 / -0.00 |  |  | 0.55 | 0.39 | 0 |
-| nes_sweep_down_s6_p1 | +1 | 4.1 |  | -0.00 / -0.00 |  |  | 0.54 | 0.38 | 0 |
-| nes_sweep_down_s6_p2 | +1 | 3.9 |  | -0.01 / -0.01 |  |  | 0.55 | 0.41 | 0 |
-| nes_sweep_down_s7_p1 | +1 | 2.1 |  | -0.02 / -0.02 |  |  | 0.71 | 0.44 | 0 |
-| nes_sweep_down_s7_p2 | +1 | 1.6 |  | -0.01 / -0.01 |  |  | 0.81 | 0.51 | 0 |
-| nes_sweep5_down_s2_p1 | +1 | -3.0 |  | -0.00 / -0.00 |  |  | 0.54 | 5.78 | 1 |
-| nes_len_i00 | +1 | 1.1 |  | +0.05 / +0.05 |  |  | 0.18 | 2.55 | 0 |
-| nes_len_i04 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 0.11 | 4.30 | 0 |
-| nes_len_i10 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 0.10 | 4.90 | 0 |
-| nes_len_i00_halt | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 0.09 | 5.53 | 0 |
-| nes_len5_i04 | +1 | 1.0 |  | +0.06 / +0.06 |  |  | 5.44 | 4.20 | 1 |
-| nes_tri_t0002 | +4 inv | 6.7 | +0.00 | +2.41 / +2.41 | 3.86 |  | 2.34 | 8.02 | 3 |
-| nes_tri_t0008 | +44 inv | 7.8 | +0.00 | +2.75 / +2.75 | 3.59 |  | 2.70 | 4.65 | 5 |
-| nes_tri_t0032 | +2 inv | 8.5 | +0.00 | +2.50 / +2.50 | 6.99 |  | 2.46 | 2.48 | 11 |
-| nes_tri_t0126 | -1 inv | 9.2 | +0.00 | +2.49 / +2.49 | 3.77 |  | 2.66 | 2.75 | 12 |
-| nes_tri_t0383 | -2 inv | 9.2 | +0.00 | +2.48 / +2.48 | 3.96 |  | 2.47 | 2.99 | 12 |
-| nes_tri_t0767 | -12 inv | 9.1 | +0.00 | +2.47 / +2.47 | 4.10 |  | 2.55 | 2.79 | 12 |
-| nes_tri_ultra_t0 | +1 inv | 7.2 |  | +2.16 / +2.16 |  |  | 68.21 | 4.81 | 4 |
-| nes_tri_ultra_t1 | +1 inv | 7.0 |  | +2.16 / +2.16 |  |  | 68.05 | 6.40 | 4 |
-| nes_tri_lin016 | +1 inv | 8.3 |  | +2.51 / +2.51 |  |  | 3.43 | 4.41 | 2 |
-| nes_tri_lin064 | +1 inv | 8.4 |  | +2.50 / +2.50 |  |  | 2.94 | 4.19 | 2 |
-| nes_tri_lin127 | +1 inv | 8.4 |  | +2.50 / +2.50 |  |  | 2.40 | 4.15 | 2 |
-| nes_tri_len_i00 | +1 inv | 8.5 |  | +2.50 / +2.50 |  |  | 2.02 | 4.25 | 2 |
-| nes_tri5_lin064 | +1 | -4.2 |  | +2.51 / +2.51 |  |  | 3.41 | 8.05 | 4 |
-| nes_noise_l00 | +3 inv | 5.0 |  | -0.17 / -0.17 |  |  | 0.55 | 0.41 | 0 |
-| nes_noise_l01 | +4 inv | 6.4 |  | -0.08 / -0.08 |  |  | 0.65 | 0.36 | 0 |
-| nes_noise_l02 | +7 inv | 6.6 |  | +0.01 / +0.01 |  |  | 0.55 | 0.31 | 0 |
-| nes_noise_l03 | +12 inv | 10.6 |  | +0.17 / +0.17 |  |  | 0.89 | 0.47 | 0 |
-| nes_noise_l04 | +22 inv | 15.0 |  | +0.11 / +0.11 |  |  | 0.44 | 0.47 | 0 |
-| nes_noise_l05 | +32 inv | 9.9 |  | -0.02 / -0.02 |  |  | 1.85 | 0.41 | 0 |
-| nes_noise_l06 | +43 inv | 10.6 |  | -0.12 / -0.12 |  |  | 0.66 | 0.41 | 0 |
-| nes_noise_l07 | -3 inv | -2.9 |  | -0.17 / -0.17 |  |  | 0.79 | 0.37 | 0 |
-| nes_noise_l08 | -73 inv | -2.8 |  | -0.18 / -0.18 |  |  | 7.71 | 0.43 | 0 |
-| nes_noise_l09 | -92 inv | -2.8 |  | -0.21 / -0.21 |  |  | 8.84 | 0.42 | 0 |
-| nes_noise_l10 | -9 inv | -2.7 |  | -0.23 / -0.23 |  |  | 1.18 | 0.40 | 0 |
-| nes_noise_l11 | -22 inv | -2.7 |  | -0.24 / -0.24 |  |  | 1.29 | 0.42 | 0 |
-| nes_noise_l12 | -112 | -2.7 |  | -0.27 / -0.27 |  |  | 2.50 | 0.46 | 0 |
-| nes_noise_l13 | -149 | -2.7 |  | -0.31 / -0.31 |  |  | 3.55 | 0.44 | 0 |
-| nes_noise_l14 | -350 | -2.6 |  | -0.32 / -0.32 |  |  | 6.34 | 0.55 | 0 |
-| nes_noise_l15 | -637 | -2.8 |  | +0.20 / +0.20 |  |  | 11.50 | 0.38 | 0 |
-| nes_noise_s00 | +58 inv | 1.4 | +0.00 | -0.04 / -0.04 | 1.31 |  | 3.87 | 13.75 | 1 |
-| nes_noise_s01 | +59 inv | 3.5 | +0.00 | -0.43 / -0.43 | 1.89 |  | 3.77 | 13.69 | 2 |
-| nes_noise_s02 | -30 inv | 5.8 | -0.00 | -0.28 / -0.28 | 0.82 |  | 7.36 | 11.09 | 0 |
-| nes_noise_s03 | +12 inv | 8.2 | +0.00 | +0.11 / +0.11 | 0.27 |  | 3.65 | 8.90 | 0 |
-| nes_noise_s04 | +22 inv | 13.0 | +0.00 | +0.20 / +0.20 | 0.28 |  | 3.51 | 8.35 | 0 |
-| nes_noise_s05 | +32 inv | 8.6 | +0.00 | +0.04 / +0.04 | 0.29 |  | 3.42 | 6.94 | 0 |
-| nes_noise_s06 | +43 inv | 9.4 | -0.00 | -0.09 / -0.09 | 0.28 |  | 3.41 | 6.33 | 0 |
-| nes_noise_s07 | +41 inv | -0.9 | +0.01 | -0.14 / -0.14 | 0.28 |  | 3.59 | 4.97 | 0 |
-| nes_noise_s08 | -53 inv | -0.9 | +0.00 | -0.14 / -0.14 | 0.28 |  | 5.91 | 4.66 | 0 |
-| nes_noise_s09 | -86 inv | -0.8 |  | -0.19 / -0.19 |  |  | 10.24 | 3.78 | 0 |
-| nes_noise_s10 | -101 inv | -0.8 |  | -0.23 / -0.23 |  |  | 8.98 | 0.81 | 0 |
-| nes_noise_s11 | -136 inv | -0.7 |  | -0.26 / -0.26 |  |  | 11.04 | 1.54 | 0 |
-| nes_noise_s12 | -149 inv | -0.6 |  | -0.35 / -0.35 |  |  | 9.61 | 0.37 | 0 |
-| nes_noise_s13 | -199 inv | -0.5 |  | -0.36 / -0.36 |  |  | 12.69 | 0.40 | 0 |
-| nes_noise_s14 | -249 inv | -0.5 |  | -0.29 / -0.29 |  |  | 12.37 | 0.55 | 0 |
-| nes_noise_s15 | -602 | -1.6 |  | -0.62 / -0.62 |  |  | 14.51 | 0.54 | 2 |
-| nes_dmc_r00_loop | +44 inv | 11.0 | +0.00 | +0.11 / +0.11 | 1.97 |  | 0.44 | 0.83 | 4 |
-| nes_dmc_r04_loop | +39 inv | 13.6 | +0.00 | +0.11 / +0.11 | 1.77 |  | 3.14 | 1.61 | 4 |
-| nes_dmc_r08_loop | +29 inv | 14.8 | +0.00 | +0.11 / +0.11 | 2.05 |  | 0.19 | 0.95 | 4 |
-| nes_dmc_r12_loop | +21 inv | 16.2 | +0.00 | +0.11 / +0.11 | 2.78 |  | 0.17 | 0.98 | 2 |
-| nes_dmc_r15_loop | +16 inv | 16.4 | +0.00 | +0.12 / +0.12 | 4.61 |  | 3.28 | 5.70 | 2 |
-| nes_dmc_r15_oneshot | +1 | -1.4 |  | +0.12 / +0.12 |  |  | 0.48 | 3.00 | 0 |
-| nes_dmc_direct | +1 inv | 19.3 | -0.00 | +0.10 / +0.10 | 0.11 |  | 0.10 | 2.41 | 0 |
-| nes_mix_pulse | +1 | 0.3 |  | +0.01 / +0.01 |  |  | 0.29 | 0.73 | 0 |
-| nes_mix_tri_dmc | +1 inv | 9.0 |  | -2.18 / -2.18 |  |  | 3.68 | 1.55 | 10 |
-| nes_mix_noise_dmc | +1 inv | -1.7 |  | -3.99 / -3.99 |  |  | 4.56 | 2.67 | 6 |
-| nes_mix_tri_noise | +1 inv | 0.3 |  | +0.81 / +0.81 |  |  | 4.56 | 1.13 | 6 |
-| nes_mix_pulse_tri | +1 | -4.2 |  | +1.48 / +1.48 |  |  | 5.26 | 3.98 | 6 |
-| nes_pal_pulse_ref | -12 | 27.8 | +0.00 | -0.00 / -0.00 | 0.08 |  | 0.23 | 3.42 | 0 |
-| nes_pal_tri_t0126 | +23 inv | 9.0 | -0.00 | +2.48 / +2.48 | 3.93 |  | 4.69 | 4.72 | 12 |
-| nes_pal_env_v03 | +1 | 0.7 |  | +0.11 / +0.11 |  |  | 27.11 | 6.03 | 3 |
-| nes_pal_len_i04 | +1 | 0.4 |  | +0.42 / +0.42 |  |  | 11.43 | 5.01 | 1 |
-| nes_pal_sweep_down_s2_p1 | +1 | -3.1 |  | +0.52 / +0.52 |  |  | 7.02 | 2.07 | 3 |
-| nes_pal_noise_s02 | +37 inv | 3.4 | -0.00 | -0.06 / -0.06 | 1.02 |  | 3.81 | 12.62 | 1 |
-| nes_pal_noise_s05 | +45 inv | -1.2 | -0.00 | +0.05 / +0.05 | 0.27 |  | 3.23 | 7.17 | 0 |
-| nes_pal_noise_s08 | -93 inv | -0.9 | +0.00 | -0.15 / -0.15 | 0.28 |  | 10.04 | 4.52 | 0 |
-| nes_pal_noise_s11 | -11 inv | -0.8 |  | -0.26 / -0.26 |  |  | 5.74 | 1.40 | 0 |
-| nes_pal_noise_l08 | +21 inv | -2.8 |  | -0.18 / -0.18 |  |  | 0.72 | 0.41 | 0 |
-| nes_pal_dmc_r04_loop | +46 inv | 13.2 | +0.00 | +0.11 / +0.11 | 1.92 |  | 0.33 | 0.76 | 4 |
-| nes_pal_dmc_r15_loop | +11 inv | 19.3 | +0.00 | +0.12 / +0.12 | 3.92 |  | 0.14 | 3.36 | 4 |
+| nes_pulse_vol | +1 | 0.1 |  | +0.00 / +0.00 |  |  | 0.33 | 0.93 | 0 |
+| nes_env_v00 | +1 | 0.2 |  | +0.14 / +0.14 |  |  | 40.89 | 3.06 | 1 |
+| nes_env_v03 | +1 | 0.2 |  | +0.13 / +0.13 |  |  | 23.79 | 4.91 | 1 |
+| nes_env_v07 | +1 | 0.2 |  | +0.13 / +0.13 |  |  | 17.38 | 5.48 | 1 |
+| nes_env_v15 | +1 | 0.1 |  | +0.13 / +0.13 |  |  | 12.49 | 6.09 | 1 |
+| nes_env_loop_v01 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 12.73 | 1.58 | 0 |
+| nes_env_loop_v03 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 12.75 | 2.39 | 0 |
+| nes_env5_v03 | +1 | 0.1 |  | +0.05 / +0.05 |  |  | 2.62 | 5.20 | 2 |
+| nes_env5_v07 | +1 | 0.1 |  | +0.13 / +0.13 |  |  | 1.89 | 5.86 | 2 |
+| nes_env_retrig | +1 | 3.9 |  | +0.12 / +0.12 |  |  | 0.14 | 2.76 | 0 |
+| nes_sweep_up_s1 | +1 | -1.7 |  | +0.04 / +0.04 |  |  | 25.93 | 5.18 | 1 |
+| nes_sweep_up_s2 | +1 | -2.2 |  | +0.04 / +0.04 |  |  | 17.03 | 2.17 | 1 |
+| nes_sweep_up_s3 | +1 | -2.3 |  | +0.04 / +0.04 |  |  | 11.45 | 1.30 | 1 |
+| nes_sweep_up_s4 | +1 | -2.6 |  | -0.01 / -0.01 |  |  | 3.37 | 1.06 | 0 |
+| nes_sweep_up_s5 | +1 | -1.8 |  | -0.01 / -0.01 |  |  | 1.06 | 1.06 | 0 |
+| nes_sweep_up_s6 | +1 | -1.7 |  | -0.01 / -0.01 |  |  | 0.89 | 0.93 | 0 |
+| nes_sweep_up_s7 | +1 | -0.8 |  | +0.01 / +0.01 |  |  | 0.18 | 1.34 | 0 |
+| nes_sweep_down_s1_p1 | +1 | -2.6 |  | -0.16 / -0.16 |  |  | 0.38 | 0.96 | 1 |
+| nes_sweep_down_s1_p2 | +1 | 0.3 |  | -0.16 / -0.16 |  |  | 0.87 | 0.90 | 1 |
+| nes_sweep_down_s2_p1 | +1 | 2.0 |  | -0.22 / -0.22 |  |  | 0.73 | 0.76 | 1 |
+| nes_sweep_down_s2_p2 | +1 | 2.1 |  | -0.21 / -0.21 |  |  | 0.61 | 0.86 | 1 |
+| nes_sweep_down_s3_p1 | +1 | 3.3 |  | +0.11 / +0.11 |  |  | 0.39 | 0.85 | 0 |
+| nes_sweep_down_s3_p2 | +1 | 6.0 |  | +0.08 / +0.08 |  |  | 0.37 | 0.87 | 0 |
+| nes_sweep_down_s4_p1 | +1 | 5.0 |  | +0.01 / +0.01 |  |  | 0.44 | 0.91 | 0 |
+| nes_sweep_down_s4_p2 | +1 | 5.5 |  | +0.00 / +0.00 |  |  | 0.45 | 0.91 | 0 |
+| nes_sweep_down_s5_p1 | +1 | 4.1 |  | -0.01 / -0.01 |  |  | 0.52 | 0.87 | 0 |
+| nes_sweep_down_s5_p2 | +1 | 3.7 |  | -0.01 / -0.01 |  |  | 0.56 | 0.87 | 0 |
+| nes_sweep_down_s6_p1 | +1 | 4.1 |  | -0.00 / -0.00 |  |  | 0.55 | 0.86 | 0 |
+| nes_sweep_down_s6_p2 | +1 | 3.7 |  | -0.01 / -0.01 |  |  | 0.56 | 0.89 | 0 |
+| nes_sweep_down_s7_p1 | +1 | 2.0 |  | -0.03 / -0.03 |  |  | 0.72 | 0.92 | 0 |
+| nes_sweep_down_s7_p2 | +1 | 1.5 |  | -0.02 / -0.02 |  |  | 0.82 | 0.95 | 0 |
+| nes_sweep5_down_s2_p1 | +1 | -3.1 |  | +0.12 / +0.12 |  |  | 0.62 | 5.88 | 1 |
+| nes_len_i00 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.23 | 2.28 | 0 |
+| nes_len_i04 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.17 | 4.07 | 0 |
+| nes_len_i10 | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.15 | 4.62 | 0 |
+| nes_len_i00_halt | +1 | 0.2 |  | +0.12 / +0.12 |  |  | 0.14 | 5.25 | 0 |
+| nes_len5_i04 | +1 | 0.1 |  | +0.12 / +0.12 |  |  | 5.44 | 3.99 | 1 |
+| nes_tri_t0002 | +1 inv | 6.6 | +0.00 | +5.24 / +5.24 | 6.56 |  | 4.89 | 10.36 | 3 |
+| nes_tri_t0008 | +8 inv | 7.3 | +0.00 | +3.01 / +3.01 | 6.29 |  | 2.95 | 4.22 | 5 |
+| nes_tri_t0032 | +1 inv | 9.1 | +0.00 | +2.50 / +2.50 | 8.75 |  | 2.46 | 2.71 | 11 |
+| nes_tri_t0126 | -1 inv | 9.2 | +0.00 | +2.47 / +2.47 | 3.86 |  | 2.64 | 2.94 | 12 |
+| nes_tri_t0383 | -3 inv | 9.3 | +0.00 | +2.46 / +2.46 | 3.97 |  | 2.45 | 2.99 | 12 |
+| nes_tri_t0767 | -12 inv | 9.2 | +0.00 | +2.45 / +2.45 | 4.07 |  | 2.53 | 3.05 | 12 |
+| nes_tri_ultra_t0 | +1 inv | 7.0 |  | +2.14 / +2.14 |  |  | 68.22 | 4.83 | 4 |
+| nes_tri_ultra_t1 | +1 inv | 6.8 |  | +2.14 / +2.14 |  |  | 68.06 | 6.25 | 4 |
+| nes_tri_lin016 | +1 inv | 8.9 |  | +2.51 / +2.51 |  |  | 3.42 | 4.39 | 2 |
+| nes_tri_lin064 | +1 inv | 9.1 |  | +2.51 / +2.51 |  |  | 2.94 | 4.10 | 2 |
+| nes_tri_lin127 | +1 inv | 9.1 |  | +2.51 / +2.51 |  |  | 2.41 | 4.09 | 2 |
+| nes_tri_len_i00 | +1 inv | 9.2 |  | +2.51 / +2.51 |  |  | 2.02 | 4.34 | 2 |
+| nes_tri5_lin064 | +1 | -3.6 |  | +2.51 / +2.51 |  |  | 3.41 | 8.02 | 4 |
+| nes_noise_l00 | +2 inv | 2.8 |  | +0.42 / +0.42 |  |  | 0.66 | 0.64 | 0 |
+| nes_noise_l01 | +4 inv | 4.2 |  | +0.51 / +0.51 |  |  | 0.83 | 0.64 | 2 |
+| nes_noise_l02 | +6 inv | 6.8 |  | +0.59 / +0.59 |  |  | 0.80 | 0.67 | 2 |
+| nes_noise_l03 | +11 inv | 6.0 |  | +0.72 / +0.72 |  |  | 0.99 | 0.85 | 2 |
+| nes_noise_l04 | +22 inv | 6.4 |  | +0.54 / +0.54 |  |  | 0.68 | 0.92 | 2 |
+| nes_noise_l05 | +32 inv | 13.6 |  | +0.25 / +0.25 |  |  | 1.88 | 0.65 | 0 |
+| nes_noise_l06 | +42 inv | 16.4 |  | +0.03 / +0.03 |  |  | 0.64 | 0.80 | 0 |
+| nes_noise_l07 | -4 inv | -2.9 |  | -0.06 / -0.06 |  |  | 0.78 | 0.82 | 0 |
+| nes_noise_l08 | -74 inv | -2.9 |  | -0.08 / -0.08 |  |  | 7.83 | 0.86 | 0 |
+| nes_noise_l09 | -93 inv | -2.8 |  | -0.14 / -0.14 |  |  | 9.04 | 0.84 | 0 |
+| nes_noise_l10 | -9 inv | -2.8 |  | -0.19 / -0.19 |  |  | 1.18 | 0.83 | 0 |
+| nes_noise_l11 | -23 inv | -2.7 |  | -0.22 / -0.22 |  |  | 1.29 | 0.84 | 0 |
+| nes_noise_l12 | -112 | -2.7 |  | -0.26 / -0.26 |  |  | 2.50 | 0.83 | 0 |
+| nes_noise_l13 | -150 | -2.7 |  | -0.31 / -0.31 |  |  | 3.56 | 0.84 | 0 |
+| nes_noise_l14 | -350 | -2.6 |  | -0.33 / -0.33 |  |  | 6.34 | 0.86 | 0 |
+| nes_noise_l15 | -637 | -2.8 |  | +0.18 / +0.18 |  |  | 11.49 | 0.82 | 0 |
+| nes_noise_s00 | +39 inv | 1.1 | +0.00 | +0.70 / +0.70 | 2.87 |  | 4.10 | 13.24 | 5 |
+| nes_noise_s01 | +22 inv | 3.3 | +0.00 | +0.20 / +0.20 | 4.06 |  | 3.96 | 12.86 | 5 |
+| nes_noise_s02 | +43 inv | 5.3 | +0.00 | +0.32 / +0.32 | 1.89 |  | 3.65 | 12.15 | 3 |
+| nes_noise_s03 | -62 inv | 9.0 | -0.00 | +0.67 / +0.67 | 0.29 |  | 9.71 | 7.90 | 2 |
+| nes_noise_s04 | +22 inv | 5.4 | +0.01 | +0.71 / +0.71 | 0.30 |  | 3.57 | 8.40 | 2 |
+| nes_noise_s05 | +32 inv | 11.9 | +0.01 | +0.38 / +0.38 | 0.31 |  | 3.43 | 6.96 | 0 |
+| nes_noise_s06 | +42 inv | 14.4 | -0.00 | +0.09 / +0.09 | 0.30 |  | 3.45 | 6.35 | 0 |
+| nes_noise_s07 | -66 inv | -1.0 | +0.01 | +0.03 / +0.03 | 0.30 |  | 9.01 | 4.96 | 0 |
+| nes_noise_s08 | +6 inv | -0.9 | +0.01 | -0.02 / -0.02 | 0.30 |  | 3.00 | 4.69 | 0 |
+| nes_noise_s09 | +26 inv | -0.9 |  | -0.10 / -0.10 |  |  | 4.16 | 4.39 | 0 |
+| nes_noise_s10 | -102 inv | -0.8 |  | -0.18 / -0.18 |  |  | 8.98 | 1.09 | 0 |
+| nes_noise_s11 | -99 inv | -0.8 |  | -0.26 / -0.26 |  |  | 7.51 | 1.71 | 0 |
+| nes_noise_s12 | -149 inv | -0.6 |  | -0.34 / -0.34 |  |  | 9.60 | 0.80 | 0 |
+| nes_noise_s13 | -199 inv | -0.5 |  | -0.35 / -0.35 |  |  | 12.68 | 0.81 | 0 |
+| nes_noise_s14 | -249 inv | -0.5 |  | -0.30 / -0.30 |  |  | 12.37 | 0.91 | 0 |
+| nes_noise_s15 | -602 | -1.6 |  | -0.63 / -0.63 |  |  | 14.52 | 1.00 | 2 |
+| nes_dmc_r00_loop | +43 inv | 10.9 | +0.00 | +0.09 / +0.09 | 1.97 |  | 0.44 | 1.02 | 4 |
+| nes_dmc_r04_loop | +38 inv | 13.4 | +0.00 | +0.09 / +0.09 | 1.77 |  | 3.11 | 1.80 | 4 |
+| nes_dmc_r08_loop | +29 inv | 15.1 | +0.00 | +0.09 / +0.09 | 2.06 |  | 0.18 | 0.94 | 3 |
+| nes_dmc_r12_loop | +21 inv | 16.5 | +0.00 | +0.09 / +0.09 | 2.84 |  | 0.16 | 1.21 | 3 |
+| nes_dmc_r15_loop | +16 inv | 17.2 | +0.00 | +0.11 / +0.11 | 5.01 |  | 3.29 | 5.60 | 3 |
+| nes_dmc_r15_oneshot | +1 | -1.7 |  | +0.10 / +0.10 |  |  | 0.47 | 2.84 | 0 |
+| nes_dmc_direct | +1 inv | 34.5 | -0.00 | +0.10 / +0.10 | 0.16 |  | 0.10 | 2.36 | 0 |
+| nes_mix_pulse | +1 | 0.0 |  | +0.01 / +0.01 |  |  | 0.29 | 1.07 | 0 |
+| nes_mix_tri_dmc | +1 inv | 8.8 |  | -2.19 / -2.19 |  |  | 3.69 | 1.50 | 10 |
+| nes_mix_noise_dmc | +1 inv | -1.7 |  | -3.90 / -3.90 |  |  | 4.50 | 2.57 | 6 |
+| nes_mix_tri_noise | +1 inv | 0.2 |  | +0.85 / +0.85 |  |  | 4.55 | 1.48 | 6 |
+| nes_mix_pulse_tri | +1 | -4.2 |  | +1.47 / +1.47 |  |  | 5.25 | 4.05 | 6 |
+| nes_pal_pulse_ref | -12 | 18.9 | +0.00 | -0.00 / -0.00 | 0.16 |  | 0.22 | 3.50 | 0 |
+| nes_pal_tri_t0126 | +22 inv | 9.1 | -0.00 | +2.46 / +2.46 | 4.04 |  | 4.68 | 4.81 | 12 |
+| nes_pal_env_v03 | +1 | -0.1 |  | +0.17 / +0.17 |  |  | 27.11 | 5.70 | 3 |
+| nes_pal_len_i04 | +1 | -0.3 |  | +0.48 / +0.48 |  |  | 11.45 | 4.62 | 1 |
+| nes_pal_sweep_down_s2_p1 | +1 | -3.2 |  | +0.65 / +0.65 |  |  | 7.14 | 2.22 | 3 |
+| nes_pal_noise_s02 | +36 inv | 4.9 | -0.00 | +0.54 / +0.54 | 2.24 |  | 3.80 | 12.57 | 5 |
+| nes_pal_noise_s05 | +45 inv | -1.3 | -0.00 | +0.40 / +0.40 | 0.30 |  | 3.25 | 7.19 | 0 |
+| nes_pal_noise_s08 | +26 inv | -1.0 | -0.00 | -0.03 / -0.03 | 0.30 |  | 3.28 | 4.33 | 0 |
+| nes_pal_noise_s11 | -12 inv | -0.8 |  | -0.23 / -0.23 |  |  | 5.74 | 1.57 | 0 |
+| nes_pal_noise_l08 | +21 inv | -2.9 |  | -0.08 / -0.08 |  |  | 0.71 | 0.85 | 0 |
+| nes_pal_dmc_r04_loop | +46 inv | 13.3 | +0.00 | +0.09 / +0.09 | 1.94 |  | 0.33 | 1.03 | 4 |
+| nes_pal_dmc_r15_loop | +10 inv | 19.0 | +0.00 | +0.11 / +0.11 | 3.29 |  | 0.13 | 3.17 | 5 |
 
 #### 2a03 mixer and multi-segment stimuli
 
@@ -2165,68 +2168,68 @@ Levels after the global gain. 're first' = level relative to the first segment o
 
 | stimulus | segment | ref (dBFS) | ours - ref (dB) | ours re first | ref re first | formula re first |
 |---|---|---|---|---|---|---|
-| nes_pulse_vol | volume 15 | -22.62 | -0.02 | +0.00 | +0.00 | +0.00 |
+| nes_pulse_vol | volume 15 | -22.62 | -0.01 | +0.00 | +0.00 | +0.00 |
 | nes_pulse_vol | volume 14 | -23.11 | -0.03 | -0.51 | -0.49 | -0.51 |
-| nes_pulse_vol | volume 13 | -23.64 | -0.04 | -1.04 | -1.02 | -1.06 |
-| nes_pulse_vol | volume 12 | -24.26 | +0.00 | -1.62 | -1.64 | -1.66 |
+| nes_pulse_vol | volume 13 | -23.64 | -0.04 | -1.05 | -1.02 | -1.06 |
+| nes_pulse_vol | volume 12 | -24.26 | -0.00 | -1.63 | -1.64 | -1.66 |
 | nes_pulse_vol | volume 11 | -24.94 | +0.02 | -2.28 | -2.32 | -2.33 |
 | nes_pulse_vol | volume 10 | -25.69 | +0.03 | -3.03 | -3.07 | -3.06 |
-| nes_pulse_vol | volume 9 | -26.51 | +0.00 | -3.87 | -3.89 | -3.88 |
+| nes_pulse_vol | volume 9 | -26.51 | +0.01 | -3.87 | -3.89 | -3.88 |
 | nes_pulse_vol | volume 8 | -27.43 | -0.02 | -4.81 | -4.81 | -4.80 |
-| nes_pulse_vol | volume 7 | -28.47 | -0.02 | -5.86 | -5.85 | -5.87 |
+| nes_pulse_vol | volume 7 | -28.47 | -0.03 | -5.86 | -5.85 | -5.87 |
 | nes_pulse_vol | volume 6 | -29.71 | -0.01 | -7.08 | -7.09 | -7.11 |
 | nes_pulse_vol | volume 5 | -31.19 | +0.02 | -8.54 | -8.57 | -8.59 |
 | nes_pulse_vol | volume 4 | -33.06 | +0.03 | -10.39 | -10.44 | -10.43 |
 | nes_pulse_vol | volume 3 | -35.48 | +0.04 | -12.80 | -12.85 | -12.82 |
 | nes_pulse_vol | volume 2 | -38.89 | +0.02 | -16.24 | -16.27 | -16.24 |
-| nes_pulse_vol | volume 1 | -44.81 | +0.02 | -22.15 | -22.19 | -22.16 |
-| nes_pulse_vol | volume 0 | -75.39 | +0.71 |  |  |  |
-| nes_tri_ultra_t0 | t = 126 (440 Hz) | -24.95 | +2.49 | +0.00 | +0.00 | +0.00 |
-| nes_tri_ultra_t0 | t = 0 (ultrasonic) | -39.68 | -64.58 |  |  |  |
-| nes_tri_ultra_t0 | switch pop (peak) (peak) | -28.26 | +0.38 |  |  |  |
-| nes_tri_ultra_t1 | t = 126 (440 Hz) | -24.95 | +2.49 | +0.00 | +0.00 | +0.00 |
-| nes_tri_ultra_t1 | t = 1 (ultrasonic) | -39.67 | -64.59 |  |  |  |
-| nes_tri_ultra_t1 | switch pop (peak) (peak) | -26.60 | -1.27 |  |  |  |
+| nes_pulse_vol | volume 1 | -44.81 | +0.02 | -22.16 | -22.19 | -22.16 |
+| nes_pulse_vol | volume 0 | -75.39 | +0.67 |  |  |  |
+| nes_tri_ultra_t0 | t = 126 (440 Hz) | -24.95 | +2.47 | +0.00 | +0.00 | +0.00 |
+| nes_tri_ultra_t0 | t = 0 (ultrasonic) | -39.68 | -64.60 |  |  |  |
+| nes_tri_ultra_t0 | switch pop (peak) (peak) | -28.26 | +0.41 |  |  |  |
+| nes_tri_ultra_t1 | t = 126 (440 Hz) | -24.95 | +2.47 | +0.00 | +0.00 | +0.00 |
+| nes_tri_ultra_t1 | t = 1 (ultrasonic) | -39.67 | -64.62 |  |  |  |
+| nes_tri_ultra_t1 | switch pop (peak) (peak) | -26.60 | -1.25 |  |  |  |
 | nes_mix_pulse | p1 15 | -22.61 | +0.00 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse | p2 15 | -22.63 | +0.00 | -0.02 | -0.02 | +0.00 |
-| nes_mix_pulse | p1 15 + p2 15 | -20.84 | -0.01 | +1.76 | +1.77 | +1.81 |
+| nes_mix_pulse | p2 15 | -22.63 | +0.01 | -0.01 | -0.02 | +0.00 |
+| nes_mix_pulse | p1 15 + p2 15 | -20.84 | -0.00 | +1.77 | +1.77 | +1.81 |
 | nes_mix_pulse | p1 8 + p2 8 | -25.14 | +0.02 | -2.51 | -2.53 | -2.52 |
-| nes_mix_pulse | p1 4 + p2 4 | -30.42 | +0.02 | -7.80 | -7.81 | -7.81 |
-| nes_mix_pulse | p1 15 + p2 4 | -22.69 | +0.01 | -0.08 | -0.08 | -0.06 |
-| nes_mix_tri_dmc | tri, dmc 0 | -24.94 | +2.49 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_dmc | tri, dmc 32 | -24.37 | -0.21 | -2.12 | +0.57 | -2.13 |
-| nes_mix_tri_dmc | tri, dmc 64 | -24.36 | -2.12 | -4.02 | +0.59 | -4.02 |
-| nes_mix_tri_dmc | tri, dmc 96 | -24.56 | -3.63 | -5.74 | +0.38 | -5.73 |
-| nes_mix_tri_dmc | tri, dmc 127 | -24.83 | -4.86 | -7.24 | +0.11 | -7.23 |
-| nes_mix_noise_dmc | noise, dmc 0 | -24.18 | -0.19 | +0.00 | +0.00 | +0.00 |
-| nes_mix_noise_dmc | noise, dmc 64 | -23.57 | -4.26 | -3.46 | +0.61 | -3.57 |
-| nes_mix_noise_dmc | noise, dmc 127 | -24.15 | -6.61 | -6.38 | +0.04 | -6.48 |
-| nes_mix_tri_noise | tri alone | -24.94 | +2.49 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_noise | tri + noise | -22.33 | +2.26 | +2.38 | +2.61 | +2.54 |
-| nes_mix_tri_noise | tri + noise, dmc 64 | -22.05 | -1.82 | -1.42 | +2.89 | -1.31 |
+| nes_mix_pulse | p1 4 + p2 4 | -30.42 | +0.02 | -7.79 | -7.81 | -7.81 |
+| nes_mix_pulse | p1 15 + p2 4 | -22.69 | +0.01 | -0.07 | -0.08 | -0.06 |
+| nes_mix_tri_dmc | tri, dmc 0 | -24.94 | +2.47 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_dmc | tri, dmc 32 | -24.37 | -0.22 | -2.12 | +0.57 | -2.13 |
+| nes_mix_tri_dmc | tri, dmc 64 | -24.36 | -2.14 | -4.02 | +0.59 | -4.02 |
+| nes_mix_tri_dmc | tri, dmc 96 | -24.56 | -3.65 | -5.74 | +0.38 | -5.73 |
+| nes_mix_tri_dmc | tri, dmc 127 | -24.83 | -4.88 | -7.24 | +0.11 | -7.23 |
+| nes_mix_noise_dmc | noise, dmc 0 | -24.18 | -0.10 | +0.00 | +0.00 | +0.00 |
+| nes_mix_noise_dmc | noise, dmc 64 | -23.57 | -4.16 | -3.45 | +0.61 | -3.57 |
+| nes_mix_noise_dmc | noise, dmc 127 | -24.15 | -6.51 | -6.37 | +0.04 | -6.48 |
+| nes_mix_tri_noise | tri alone | -24.94 | +2.47 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_noise | tri + noise | -22.33 | +2.31 | +2.45 | +2.61 | +2.54 |
+| nes_mix_tri_noise | tri + noise, dmc 64 | -22.05 | -1.78 | -1.36 | +2.89 | -1.31 |
 | nes_mix_pulse_tri | p1 alone | -22.61 | +0.00 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse_tri | tri alone | -24.95 | +2.48 | +0.14 | -2.34 | +0.11 |
-| nes_mix_pulse_tri | p1 + tri | -20.64 | +1.10 | +3.06 | +1.97 | +3.07 |
+| nes_mix_pulse_tri | tri alone | -24.95 | +2.46 | +0.12 | -2.34 | +0.11 |
+| nes_mix_pulse_tri | p1 + tri | -20.64 | +1.09 | +3.05 | +1.97 | +3.07 |
 
 Intermodulation products (component amplitude in dB re sqrt(2) x segment RMS; no linear component exists at these frequencies):
 
 | stimulus | segment | Hz | ours | ref | formula |
 |---|---|---|---|---|---|
 | nes_mix_pulse | p1 15 + p2 15 | 116.1 | -24.0 | -24.0 | -24.0 |
-| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -81.9 | -86.6 | -72.1 |
-| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.2 | -73.8 | -83.3 |
+| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -82.8 | -86.6 | -72.1 |
+| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.6 | -73.8 | -83.3 |
 | nes_mix_pulse | p1 15 + p2 15 | 996.9 | -24.0 | -23.9 | -24.0 |
 | nes_mix_pulse | p1 8 + p2 8 | 116.1 | -28.8 | -28.8 | -28.8 |
-| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -90.7 | -85.7 | -74.4 |
-| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.4 | -89.0 | -81.9 |
+| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -98.0 | -85.7 | -74.4 |
+| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.5 | -89.0 | -81.9 |
 | nes_mix_pulse | p1 8 + p2 8 | 996.9 | -28.8 | -28.7 | -28.8 |
-| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.4 | -34.1 | -34.4 |
-| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -93.0 | -112.9 | -76.1 |
-| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -84.0 | -85.4 | -80.0 |
+| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.5 | -34.1 | -34.4 |
+| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -83.0 | -112.9 | -76.1 |
+| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -81.3 | -85.4 | -80.0 |
 | nes_mix_pulse | p1 4 + p2 4 | 996.9 | -34.4 | -34.1 | -34.4 |
 | nes_mix_pulse | p1 15 + p2 4 | 116.1 | -32.2 | -32.1 | -32.2 |
-| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -85.8 | -83.5 | -73.8 |
-| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.9 | -79.9 | -93.9 |
+| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -84.7 | -83.5 | -73.8 |
+| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.8 | -79.9 | -93.9 |
 | nes_mix_pulse | p1 15 + p2 4 | 996.9 | -32.2 | -32.1 | -32.2 |
 
 #### 2a03 frame-sequencer events (ms after the note-start write)
@@ -2235,152 +2238,159 @@ From the edges of the raw renders (largest sample step over 1.1 periods of the t
 
 | stimulus | start ours | start ref | start documented | end ours | end ref | end documented | res |
 |---|---|---|---|---|---|---|---|
-| nes_env_v00 | 4.17 | 0.07 | 4.17 | 66.67 | 66.69 | 66.67 | 0.29 |
-| nes_env_v03 | 4.17 | 0.07 | 4.17 | 254.20 | 254.20 | 254.17 | 0.29 |
-| nes_env_v07 | 4.17 | 0.07 | 4.17 | 504.20 | 504.22 | 504.18 | 0.29 |
-| nes_env_v15 | 4.17 | 0.07 | 4.17 | 1004.20 | 1004.26 | 1004.18 | 0.29 |
-| nes_env5_v03 | -0.02 | 0.07 | 0.00 | 312.47 | 316.69 | 312.46 | 0.29 |
-| nes_env5_v07 | -0.02 | 0.07 | 0.00 | 624.94 | 629.14 | 624.92 | 0.29 |
-| nes_env_retrig | 4.17 | 4.15 | 4.17 | 66.69 | 66.69 | 66.67 | 0.29 |
-| nes_sweep_up_s1 | -0.02 | 0.14 | 0.00 | 341.72 | 402.34 | 341.67 | 4.35 |
-| nes_sweep_up_s2 | -0.02 | 0.14 | 0.00 | 555.56 | 608.39 | 558.34 | 6.63 |
-| nes_sweep_up_s3 | -0.02 | 0.14 | 0.00 | 734.88 | 773.04 | 741.68 | 7.47 |
-| nes_sweep_up_s4 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s5 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s6 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_up_s7 | -0.02 | 0.14 | 0.00 |  |  |  | 0.58 |
-| nes_sweep_down_s1_p1 | -0.02 | 1.13 | 0.00 | 408.32 | 408.37 | 408.34 | 0.07 |
+| nes_env_v00 | 4.08 | 0.07 | 4.17 | 66.67 | 66.69 | 66.67 | 0.29 |
+| nes_env_v03 | 4.10 | 0.07 | 4.17 | 254.17 | 254.20 | 254.17 | 0.29 |
+| nes_env_v07 | 4.10 | 0.07 | 4.17 | 504.17 | 504.22 | 504.18 | 0.29 |
+| nes_env_v15 | 4.10 | 0.07 | 4.17 | 1004.20 | 1004.26 | 1004.18 | 0.29 |
+| nes_env5_v03 | 0.00 | 0.07 | 0.00 | 312.47 | 316.69 | 312.46 | 0.29 |
+| nes_env5_v07 | 0.00 | 0.07 | 0.00 | 624.92 | 629.14 | 624.92 | 0.29 |
+| nes_env_retrig | 4.10 | 4.15 | 4.17 | 66.67 | 66.69 | 66.67 | 0.29 |
+| nes_sweep_up_s1 | -0.05 | 0.14 | 0.00 | 341.70 | 402.34 | 341.67 | 4.35 |
+| nes_sweep_up_s2 | -0.05 | 0.14 | 0.00 | 555.53 | 608.39 | 558.34 | 6.63 |
+| nes_sweep_up_s3 | -0.05 | 0.14 | 0.00 | 734.85 | 773.04 | 741.68 | 7.47 |
+| nes_sweep_up_s4 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s5 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s6 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_up_s7 | -0.05 | 0.14 | 0.00 |  |  |  | 0.58 |
+| nes_sweep_down_s1_p1 | -0.05 | 1.13 | 0.00 | 408.30 | 408.37 | 408.34 | 0.07 |
 | nes_sweep_down_s1_p2 | -0.02 | 1.13 | 0.00 | 475.01 | 475.06 | 475.01 | 0.04 |
-| nes_sweep_down_s2_p1 | -0.02 | 1.13 | 0.00 | 808.39 | 808.41 | 808.35 | 0.04 |
-| nes_sweep_down_s2_p2 | -0.02 | 1.13 | 0.00 | 858.39 | 858.41 | 858.35 | 0.04 |
+| nes_sweep_down_s2_p1 | -0.02 | 1.13 | 0.00 | 808.34 | 808.41 | 808.35 | 0.04 |
+| nes_sweep_down_s2_p2 | -0.02 | 1.13 | 0.00 | 858.34 | 858.41 | 858.35 | 0.04 |
 | nes_sweep_down_s3_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s3_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s4_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s4_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s5_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s5_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_sweep_down_s5_p1 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_sweep_down_s5_p2 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s6_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s6_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
 | nes_sweep_down_s7_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep_down_s7_p2 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_sweep5_down_s2_p1 | -0.02 | 1.13 | 0.00 |  |  |  | 4.58 |
-| nes_len_i00 | -0.02 | 0.07 | 0.00 | 83.27 | 83.33 | 83.34 | 0.29 |
-| nes_len_i04 | -0.02 | 0.07 | 0.00 | 333.29 | 333.36 | 333.34 | 0.29 |
-| nes_len_i10 | -0.02 | 0.07 | 0.00 | 499.82 | 499.84 | 500.01 | 0.29 |
-| nes_len_i00_halt | -0.02 | 0.07 | 0.00 |  |  |  | 0.29 |
-| nes_len5_i04 | -0.02 | 0.07 | 0.00 | 404.15 | 416.71 | 404.11 | 0.29 |
-| nes_tri_lin016 | 4.20 | 4.17 | 4.17 | 70.82 | 70.84 | 70.84 | 0.29 |
-| nes_tri_lin064 | 4.20 | 4.17 | 4.17 | 270.86 | 270.86 | 270.84 | 0.29 |
-| nes_tri_lin127 | 4.20 | 4.17 | 4.17 | 533.36 | 533.38 | 533.34 | 0.29 |
-| nes_tri_len_i00 | 4.20 | 4.17 | 4.17 | 83.33 | 83.33 | 83.34 | 0.29 |
-| nes_tri5_lin064 | 0.02 | 4.17 | 0.00 | 333.33 | 337.53 | 333.29 | 0.29 |
-| nes_dmc_r15_oneshot | -0.23 | 0.00 | 0.00 | 247.82 | 247.44 | 247.41 a | 0.51 |
-| nes_pal_env_v03 | 4.99 | 0.07 | 5.00 | 305.03 | 273.63 | 305.02 | 0.31 |
-| nes_pal_len_i04 | -0.02 | 0.07 | 0.00 | 400.07 | 358.84 | 400.02 | 0.31 |
-| nes_pal_sweep_down_s2_p1 | -0.02 | 1.22 | 0.00 |  |  |  | 4.93 |
+| nes_sweep_down_s7_p2 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_sweep5_down_s2_p1 | -0.05 | 1.13 | 0.00 |  |  |  | 4.58 |
+| nes_len_i00 | -0.05 | 0.07 | 0.00 | 83.31 | 83.33 | 83.34 | 0.29 |
+| nes_len_i04 | -0.05 | 0.07 | 0.00 | 333.33 | 333.36 | 333.34 | 0.29 |
+| nes_len_i10 | -0.05 | 0.07 | 0.00 | 499.80 | 499.84 | 500.01 | 0.29 |
+| nes_len_i00_halt | -0.05 | 0.07 | 0.00 |  |  |  | 0.29 |
+| nes_len5_i04 | -0.05 | 0.07 | 0.00 | 404.17 | 416.71 | 404.11 | 0.29 |
+| nes_tri_lin016 | 4.17 | 4.17 | 4.17 | 70.84 | 70.84 | 70.84 | 0.29 |
+| nes_tri_lin064 | 4.17 | 4.17 | 4.17 | 270.84 | 270.86 | 270.84 | 0.29 |
+| nes_tri_lin127 | 4.17 | 4.17 | 4.17 | 533.36 | 533.38 | 533.34 | 0.29 |
+| nes_tri_len_i00 | 4.17 | 4.17 | 4.17 | 83.33 | 83.33 | 83.34 | 0.29 |
+| nes_tri5_lin064 | 0.00 | 4.17 | 0.00 | 333.29 | 337.53 | 333.29 | 0.29 |
+| nes_dmc_r15_oneshot | -0.20 | 0.00 | 0.00 | 247.78 | 247.44 | 247.41 a | 0.51 |
+| nes_pal_env_v03 | 4.94 | 0.07 | 5.00 | 305.03 | 273.63 | 305.02 | 0.31 |
+| nes_pal_len_i04 | 0.00 | 0.07 | 0.00 | 400.07 | 358.84 | 400.02 | 0.31 |
+| nes_pal_sweep_down_s2_p1 | -0.07 | 1.22 | 0.00 |  |  |  | 4.93 |
 
 #### 2a03 envelope staircase (worst step-time difference, ms; steps found of documented)
 
 | stimulus | steps ours / ref / doc | ours - documented | ref - documented (worst / median) | ours - ref |
 |---|---|---|---|---|
-| nes_env_v00 | 15 / 15 / 15 | +0.96 | +0.98 / +0.19 | -0.41 |
-| nes_env_v03 | 15 / 15 / 15 | +0.69 | +0.72 / +0.17 | +0.29 |
-| nes_env_v07 | 15 / 15 / 15 | +0.69 | +0.73 / +0.17 | +0.29 |
-| nes_env_v15 | 15 / 15 / 15 | +0.70 | +0.75 / +0.15 | -0.41 |
-| nes_env_loop_v01 | 113 / 113 / 113 | +0.82 | -0.98 / +0.14 | -0.41 |
+| nes_env_v00 | 15 / 15 / 15 | +0.94 | +0.98 / +0.19 | -0.41 |
+| nes_env_v03 | 15 / 15 / 15 | +0.69 | +0.72 / +0.17 | +0.27 |
+| nes_env_v07 | 15 / 15 / 15 | +0.69 | +0.73 / +0.17 | +0.27 |
+| nes_env_v15 | 15 / 15 / 15 | +0.68 | +0.75 / +0.15 | +0.27 |
+| nes_env_loop_v01 | 113 / 113 / 113 | +0.82 | -0.98 / +0.14 | -0.43 |
 | nes_env_loop_v03 | 56 / 56 / 56 | +0.98 | +1.05 / +0.17 | -0.41 |
 | nes_env5_v03 | 15 / 15 / 15 | +0.68 | +5.22 / +4.33 | -4.54 |
 | nes_env5_v07 | 15 / 15 / 15 | +0.69 | +5.21 / +4.39 | -4.54 |
 | nes_env_retrig | 15 / 15 / 15 | +0.96 | +0.98 / +0.10 | -0.39 |
-| nes_pal_env_v03 | 15 / 15 / 15 | +0.75 | -9.03 / -9.02 | +9.77 |
+| nes_pal_env_v03 | 15 / 15 / 15 | +0.73 | -9.03 / -9.02 | +9.75 |
 
 #### 2a03 sweeps (frame-wise pitch, |cents|: median / 90th percentile / max)
 
 | stimulus | ours vs ref | ours vs documented | ref vs documented |
 |---|---|---|---|
-| nes_sweep_up_s1 | 0.19 / 2.54 / 12.2 | 0.18 / 1.73 / 15.0 | 0.20 / 0.81 / 5.3 |
-| nes_sweep_up_s2 | 0.26 / 4.97 / 25.8 | 0.20 / 4.92 / 19.0 | 0.28 / 2.71 / 7.4 |
-| nes_sweep_up_s3 | 0.36 / 4.52 / 16.1 | 0.39 / 5.16 / 19.6 | 0.33 / 4.14 / 21.9 |
-| nes_sweep_up_s4 | 0.36 / 3.81 / 10.3 | 0.28 / 3.32 / 9.1 | 0.32 / 3.39 / 8.1 |
-| nes_sweep_up_s5 | 0.42 / 2.50 / 8.2 | 0.31 / 2.07 / 4.3 | 0.36 / 2.01 / 4.3 |
-| nes_sweep_up_s6 | 0.64 / 2.30 / 4.0 | 0.52 / 1.55 / 2.4 | 0.72 / 1.65 / 3.2 |
-| nes_sweep_up_s7 | 0.73 / 2.50 / 5.3 | 0.46 / 1.10 / 2.6 | 0.78 / 1.91 / 4.4 |
-| nes_sweep_down_s1_p1 | 0.13 / 0.75 / 9.7 | 0.05 / 1.30 / 15.3 | 0.11 / 0.54 / 12.6 |
-| nes_sweep_down_s1_p2 | 0.09 / 0.72 / 9.6 | 0.06 / 0.43 / 15.3 | 0.12 / 0.56 / 13.4 |
-| nes_sweep_down_s2_p1 | 0.10 / 0.87 / 9.5 | 0.06 / 0.45 / 49.9 | 0.10 / 1.09 / 40.4 |
-| nes_sweep_down_s2_p2 | 0.10 / 0.80 / 9.4 | 0.05 / 0.53 / 49.6 | 0.10 / 0.64 / 40.2 |
-| nes_sweep_down_s3_p1 | 0.17 / 1.64 / 17.2 | 0.09 / 2.67 / 23.5 | 0.14 / 1.69 / 21.8 |
-| nes_sweep_down_s3_p2 | 0.14 / 1.68 / 17.2 | 0.09 / 2.72 / 23.4 | 0.15 / 1.68 / 21.7 |
-| nes_sweep_down_s4_p1 | 0.31 / 2.66 / 8.8 | 0.17 / 3.91 / 44.4 | 0.22 / 3.89 / 42.5 |
-| nes_sweep_down_s4_p2 | 0.33 / 2.70 / 10.6 | 0.22 / 4.38 / 44.2 | 0.27 / 4.15 / 42.3 |
-| nes_sweep_down_s5_p1 | 0.46 / 2.83 / 4.4 | 0.30 / 3.47 / 37.1 | 0.31 / 3.86 / 6.7 |
-| nes_sweep_down_s5_p2 | 0.72 / 2.39 / 7.9 | 0.53 / 3.37 / 37.0 | 0.56 / 3.28 / 6.3 |
-| nes_sweep_down_s6_p1 | 0.99 / 2.79 / 3.6 | 0.70 / 1.49 / 2.8 | 0.61 / 2.12 / 3.1 |
-| nes_sweep_down_s6_p2 | 0.88 / 2.68 / 4.5 | 0.60 / 1.90 / 3.2 | 0.91 / 2.35 / 5.2 |
-| nes_sweep_down_s7_p1 | 0.71 / 4.25 / 4.3 | 1.18 / 1.70 / 3.1 | 1.48 / 2.54 / 3.5 |
-| nes_sweep_down_s7_p2 | 0.09 / 0.08 / 0.1 | 1.39 / 1.46 / 1.6 | 1.21 / 1.21 / 1.3 |
-| nes_sweep5_down_s2_p1 | 500.53 / 528.63 / 603.2 | 0.05 / 0.35 / 15.0 | 500.73 / 528.64 / 603.1 |
-| nes_pal_sweep_down_s2_p1 | 498.10 / 897.64 / 8776.9 | 0.05 / 0.54 / 25.4 | 498.12 / 897.63 / 8776.9 |
+| nes_sweep_up_s1 | 0.27 / 2.55 / 12.2 | 0.21 / 1.73 / 15.1 | 0.20 / 0.81 / 5.3 |
+| nes_sweep_up_s2 | 0.35 / 4.96 / 25.8 | 0.21 / 5.04 / 19.1 | 0.28 / 2.71 / 7.4 |
+| nes_sweep_up_s3 | 0.50 / 4.51 / 16.1 | 0.40 / 5.13 / 19.6 | 0.33 / 4.14 / 21.9 |
+| nes_sweep_up_s4 | 0.43 / 3.81 / 10.3 | 0.30 / 3.34 / 9.1 | 0.32 / 3.39 / 8.1 |
+| nes_sweep_up_s5 | 0.47 / 3.01 / 8.2 | 0.31 / 2.04 / 4.3 | 0.36 / 2.01 / 4.3 |
+| nes_sweep_up_s6 | 0.79 / 2.29 / 4.6 | 0.57 / 1.47 / 2.6 | 0.72 / 1.65 / 3.2 |
+| nes_sweep_up_s7 | 0.84 / 2.29 / 5.8 | 0.44 / 1.16 / 2.5 | 0.78 / 1.91 / 4.4 |
+| nes_sweep_down_s1_p1 | 0.09 / 0.76 / 386.2 | 0.05 / 1.30 / 398.8 | 0.11 / 0.54 / 12.6 |
+| nes_sweep_down_s1_p2 | 0.16 / 0.48 / 9.7 | 0.07 / 0.47 / 15.3 | 0.12 / 0.56 / 13.4 |
+| nes_sweep_down_s2_p1 | 0.09 / 0.78 / 9.5 | 0.06 / 0.51 / 49.9 | 0.10 / 1.09 / 40.4 |
+| nes_sweep_down_s2_p2 | 0.11 / 0.68 / 9.4 | 0.05 / 0.56 / 49.7 | 0.10 / 0.64 / 40.2 |
+| nes_sweep_down_s3_p1 | 0.13 / 1.69 / 17.2 | 0.10 / 2.73 / 23.5 | 0.14 / 1.69 / 21.8 |
+| nes_sweep_down_s3_p2 | 0.18 / 1.69 / 17.2 | 0.10 / 2.73 / 23.3 | 0.15 / 1.68 / 21.7 |
+| nes_sweep_down_s4_p1 | 0.32 / 2.68 / 8.8 | 0.21 / 3.92 / 44.5 | 0.22 / 3.89 / 42.5 |
+| nes_sweep_down_s4_p2 | 0.35 / 2.64 / 10.6 | 0.22 / 4.44 / 44.2 | 0.27 / 4.15 / 42.3 |
+| nes_sweep_down_s5_p1 | 0.54 / 2.82 / 4.3 | 0.40 / 3.92 / 37.1 | 0.31 / 3.86 / 6.7 |
+| nes_sweep_down_s5_p2 | 0.62 / 2.32 / 8.0 | 0.51 / 3.30 / 36.9 | 0.56 / 3.28 / 6.3 |
+| nes_sweep_down_s6_p1 | 0.74 / 2.13 / 4.1 | 0.65 / 1.87 / 1204.0 | 0.61 / 2.12 / 3.1 |
+| nes_sweep_down_s6_p2 | 0.60 / 3.05 / 7.1 | 0.77 / 1.90 / 3.0 | 0.91 / 2.35 / 5.2 |
+| nes_sweep_down_s7_p1 | 0.85 / 3.48 / 4.0 | 1.43 / 2.49 / 1206.2 | 1.48 / 2.54 / 3.5 |
+| nes_sweep_down_s7_p2 | 0.77 / 0.19 / 0.8 | 1.59 / 1.61 / 2.1 | 1.21 / 1.21 / 1.3 |
+| nes_sweep5_down_s2_p1 | 500.50 / 528.65 / 603.1 | 0.06 / 0.46 / 15.0 | 500.73 / 528.64 / 603.1 |
+| nes_pal_sweep_down_s2_p1 | 498.15 / 897.64 / 8776.9 | 0.05 / 0.67 / 25.4 | 498.12 / 897.63 / 8776.9 |
 
-#### Deviations beyond thresholds (NES: ours with the integrated-step kernel vs NSFPlay core)
+#### Deviations beyond thresholds (NES: ours with the legacy ImpulseSum kernel vs NSFPlay core)
 
-* **nes_pulse_t0008** (pulse 1, duty 2, constant volume 15, t = 8 (12428.98 Hz)): level L +1.13 dB (ref -24.8 dBFS); level R +1.13 dB (ref -24.8 dBFS); H1 +1.15 dB (ref 0.0, ours 1.1 dB re H1)
-* **nes_pulse_t0012** (pulse 1, duty 2, constant volume 15, t = 12 (8604.68 Hz)): level L +0.53 dB (ref -24.0 dBFS); level R +0.53 dB (ref -24.0 dBFS)
-* **nes_pulse_t0020** (pulse 1, duty 2, constant volume 15, t = 20 (5326.71 Hz)): H3 +1.94 dB (ref -18.3, ours -16.4 dB re H1)
-* **nes_pulse_t0050** (pulse 1, duty 2, constant volume 15, t = 50 (2193.35 Hz)): H7 +1.78 dB (ref -22.9, ours -21.1 dB re H1)
-* **nes_env_v00** (pulse 1 (t = 63), decay envelope V = 0, loop off, 4-step (step every 1 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
-* **nes_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step (step every 4 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
-* **nes_env_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 4-step (step every 8 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
-* **nes_env_v15** (pulse 1 (t = 63), decay envelope V = 15, loop off, 4-step (step every 16 quarter frames at 240 Hz)): gate start +4.10 ms (ref 0.07 ms, ours 4.17 ms)
+* **nes_pulse_t0008** (pulse 1, duty 2, constant volume 15, t = 8 (12428.98 Hz)): level L +2.27 dB (ref -24.8 dBFS); level R +2.27 dB (ref -24.8 dBFS); H1 +2.29 dB (ref 0.0, ours 2.3 dB re H1)
+* **nes_pulse_t0012** (pulse 1, duty 2, constant volume 15, t = 12 (8604.68 Hz)): level L +1.06 dB (ref -24.0 dBFS); level R +1.06 dB (ref -24.0 dBFS); H1 +1.06 dB (ref 0.0, ours 1.1 dB re H1)
+* **nes_pulse_t0020** (pulse 1, duty 2, constant volume 15, t = 20 (5326.71 Hz)): H3 +3.88 dB (ref -18.3, ours -14.4 dB re H1)
+* **nes_pulse_t0050** (pulse 1, duty 2, constant volume 15, t = 50 (2193.35 Hz)): H5 +1.76 dB (ref -14.9, ours -13.1 dB re H1); H7 +3.57 dB (ref -22.9, ours -19.3 dB re H1)
+* **nes_env_v00** (pulse 1 (t = 63), decay envelope V = 0, loop off, 4-step (step every 1 quarter frames at 240 Hz)): gate start +4.01 ms (ref 0.07 ms, ours 4.08 ms)
+* **nes_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step (step every 4 quarter frames at 240 Hz)): gate start +4.04 ms (ref 0.07 ms, ours 4.10 ms)
+* **nes_env_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 4-step (step every 8 quarter frames at 240 Hz)): gate start +4.04 ms (ref 0.07 ms, ours 4.10 ms)
+* **nes_env_v15** (pulse 1 (t = 63), decay envelope V = 15, loop off, 4-step (step every 16 quarter frames at 240 Hz)): gate start +4.04 ms (ref 0.07 ms, ours 4.10 ms)
 * **nes_env5_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 5-step (step every 4 quarter frames at 192 Hz)): gate end -4.22 ms (ref 316.69 ms, ours 312.47 ms); envelope step timing: worst ours - ref -4.54 ms
-* **nes_env5_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 5-step (step every 8 quarter frames at 192 Hz)): gate end -4.20 ms (ref 629.14 ms, ours 624.94 ms); envelope step timing: worst ours - ref -4.54 ms
-* **nes_sweep_up_s1** (pulse 1, sweep up, shift 1, period P = 7, from t = 128): gate end -60.61 ms (ref 402.34 ms, ours 341.72 ms)
-* **nes_sweep_up_s2** (pulse 1, sweep up, shift 2, period P = 5, from t = 128): gate end -52.83 ms (ref 608.39 ms, ours 555.56 ms)
-* **nes_sweep_up_s3** (pulse 1, sweep up, shift 3, period P = 3, from t = 128): gate end -38.16 ms (ref 773.04 ms, ours 734.88 ms)
-* **nes_sweep_down_s1_p1** (pulse 1, sweep down, shift 1, period P = 7, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
+* **nes_env5_v07** (pulse 1 (t = 63), decay envelope V = 7, loop off, 5-step (step every 8 quarter frames at 192 Hz)): gate end -4.22 ms (ref 629.14 ms, ours 624.92 ms); envelope step timing: worst ours - ref -4.54 ms
+* **nes_sweep_up_s1** (pulse 1, sweep up, shift 1, period P = 7, from t = 128): gate end -60.63 ms (ref 402.34 ms, ours 341.70 ms)
+* **nes_sweep_up_s2** (pulse 1, sweep up, shift 2, period P = 5, from t = 128): gate end -52.86 ms (ref 608.39 ms, ours 555.53 ms)
+* **nes_sweep_up_s3** (pulse 1, sweep up, shift 3, period P = 3, from t = 128): gate end -38.19 ms (ref 773.04 ms, ours 734.85 ms)
+* **nes_sweep_down_s1_p1** (pulse 1, sweep down, shift 1, period P = 7, from t = 1024): gate start -1.18 ms (ref 1.13 ms, ours -0.05 ms)
 * **nes_sweep_down_s1_p2** (pulse 2, sweep down, shift 1, period P = 7, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
 * **nes_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
 * **nes_sweep_down_s2_p2** (pulse 2, sweep down, shift 2, period P = 5, from t = 1024): gate start -1.16 ms (ref 1.13 ms, ours -0.02 ms)
-* **nes_sweep5_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, 5-step): sweep pitch track |ours - ref| median 500.53, p90 528.63, max 603.2 cents
-* **nes_len5_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 96 Hz), halt off, 5-step): gate end -12.56 ms (ref 416.71 ms, ours 404.15 ms)
-* **nes_tri_t0002** (triangle, t = 2 (18643.47 Hz)): level L +2.41 dB (ref -53.9 dBFS); level R +2.41 dB (ref -53.9 dBFS); H1 +3.86 dB (ref 0.0, ours 3.9 dB re H1)
-* **nes_tri_t0008** (triangle, t = 8 (6214.49 Hz)): level L +2.75 dB (ref -25.3 dBFS); level R +2.75 dB (ref -25.3 dBFS); H1 +2.75 dB (ref 0.0, ours 2.7 dB re H1); H2 +3.55 dB (ref -28.1, ours -24.5 dB re H1); H3 +3.59 dB (ref -49.1, ours -45.5 dB re H1)
-* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS); H1 +2.50 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.52 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.61 dB (ref -19.3, ours -16.7 dB re H1); H4 +2.77 dB (ref -39.7, ours -36.9 dB re H1); H5 +2.75 dB (ref -28.8, ours -26.0 dB re H1); H6 +2.56 dB (ref -47.2, ours -44.6 dB re H1); H7 +2.16 dB (ref -34.9, ours -32.7 dB re H1); H8 +4.02 dB (ref -55.3, ours -51.2 dB re H1); H9 +6.99 dB (ref -49.1, ours -42.1 dB re H1)
-* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +2.49 dB (ref -24.9 dBFS); level R +2.49 dB (ref -24.9 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.47 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.50 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.59 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.56 dB (ref -28.6, ours -26.0 dB re H1); H6 +2.45 dB (ref -47.1, ours -44.6 dB re H1); H7 +3.09 dB (ref -35.8, ours -32.7 dB re H1); H8 +2.67 dB (ref -53.3, ours -50.6 dB re H1); H9 +1.81 dB (ref -40.1, ours -38.3 dB re H1); H10 +3.77 dB (ref -59.7, ours -56.0 dB re H1)
-* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +2.48 dB (ref -24.9 dBFS); level R +2.48 dB (ref -24.9 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.45 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.48 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.53 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.46 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.27 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.64 dB (ref -35.3, ours -32.7 dB re H1); H8 +2.56 dB (ref -53.2, ours -50.6 dB re H1); H9 +2.43 dB (ref -40.7, ours -38.3 dB re H1); H10 +3.96 dB (ref -60.2, ours -56.0 dB re H1)
-* **nes_tri_t0767** (triangle, t = 767 (72.83 Hz)): level L +2.47 dB (ref -25.7 dBFS); level R +2.47 dB (ref -25.7 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.45 dB (ref -26.2, ours -23.8 dB re H1); H3 +2.48 dB (ref -18.3, ours -15.8 dB re H1); H4 +2.53 dB (ref -38.6, ours -36.1 dB re H1); H5 +2.46 dB (ref -27.6, ours -25.2 dB re H1); H6 +2.27 dB (ref -46.0, ours -43.7 dB re H1); H7 +2.63 dB (ref -34.5, ours -31.8 dB re H1); H8 +2.55 dB (ref -52.3, ours -49.8 dB re H1); H9 +2.42 dB (ref -39.9, ours -37.4 dB re H1); H10 +4.10 dB (ref -59.3, ours -55.2 dB re H1)
-* **nes_tri_ultra_t0** (triangle t = 126, then $400A = 0 at 0.30 s (ultrasonic: A2)): level L +2.16 dB (ref -29.8 dBFS); level R +2.16 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.49 dB (ref -25.0 dBFS); segment 't = 0 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
-* **nes_tri_ultra_t1** (triangle t = 126, then $400A = 1 at 0.30 s (ultrasonic: A2)): level L +2.16 dB (ref -29.8 dBFS); level R +2.16 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.49 dB (ref -25.0 dBFS); segment 't = 1 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
+* **nes_sweep5_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, 5-step): sweep pitch track |ours - ref| median 500.50, p90 528.65, max 603.1 cents
+* **nes_len5_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 96 Hz), halt off, 5-step): gate end -12.54 ms (ref 416.71 ms, ours 404.17 ms)
+* **nes_tri_t0002** (triangle, t = 2 (18643.47 Hz)): level L +5.24 dB (ref -53.9 dBFS); level R +5.24 dB (ref -53.9 dBFS); H1 +6.56 dB (ref 0.0, ours 6.6 dB re H1)
+* **nes_tri_t0008** (triangle, t = 8 (6214.49 Hz)): level L +3.01 dB (ref -25.3 dBFS); level R +3.01 dB (ref -25.3 dBFS); H1 +3.01 dB (ref 0.0, ours 3.0 dB re H1); H2 +4.69 dB (ref -28.1, ours -23.4 dB re H1); H3 +6.29 dB (ref -49.1, ours -42.8 dB re H1)
+* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS); H1 +2.50 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.58 dB (ref -27.1, ours -24.5 dB re H1); H3 +2.78 dB (ref -19.3, ours -16.5 dB re H1); H4 +3.08 dB (ref -39.7, ours -36.6 dB re H1); H5 +3.26 dB (ref -28.8, ours -25.5 dB re H1); H6 +3.30 dB (ref -47.2, ours -43.9 dB re H1); H7 +3.20 dB (ref -34.9, ours -31.7 dB re H1); H8 +5.38 dB (ref -55.3, ours -49.9 dB re H1); H9 +8.75 dB (ref -49.1, ours -40.3 dB re H1)
+* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +2.47 dB (ref -24.9 dBFS); level R +2.47 dB (ref -24.9 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.45 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.50 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.59 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.57 dB (ref -28.6, ours -26.0 dB re H1); H6 +2.49 dB (ref -47.1, ours -44.6 dB re H1); H7 +3.14 dB (ref -35.8, ours -32.6 dB re H1); H8 +2.74 dB (ref -53.3, ours -50.5 dB re H1); H9 +1.91 dB (ref -40.1, ours -38.2 dB re H1); H10 +3.86 dB (ref -59.7, ours -55.9 dB re H1)
+* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +2.46 dB (ref -24.9 dBFS); level R +2.46 dB (ref -24.9 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.43 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.46 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.51 dB (ref -39.5, ours -37.0 dB re H1); H5 +2.44 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.26 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.63 dB (ref -35.3, ours -32.7 dB re H1); H8 +2.55 dB (ref -53.2, ours -50.6 dB re H1); H9 +2.42 dB (ref -40.7, ours -38.3 dB re H1); H10 +3.97 dB (ref -60.2, ours -56.0 dB re H1)
+* **nes_tri_t0767** (triangle, t = 767 (72.83 Hz)): level L +2.45 dB (ref -25.7 dBFS); level R +2.45 dB (ref -25.7 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.43 dB (ref -26.2, ours -23.8 dB re H1); H3 +2.46 dB (ref -18.3, ours -15.9 dB re H1); H4 +2.51 dB (ref -38.6, ours -36.1 dB re H1); H5 +2.44 dB (ref -27.6, ours -25.2 dB re H1); H6 +2.24 dB (ref -46.0, ours -43.8 dB re H1); H7 +2.61 dB (ref -34.5, ours -31.8 dB re H1); H8 +2.54 dB (ref -52.3, ours -49.8 dB re H1); H9 +2.40 dB (ref -39.9, ours -37.5 dB re H1); H10 +4.07 dB (ref -59.3, ours -55.2 dB re H1)
+* **nes_tri_ultra_t0** (triangle t = 126, then $400A = 0 at 0.30 s (ultrasonic: A2)): level L +2.14 dB (ref -29.8 dBFS); level R +2.14 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.47 dB (ref -25.0 dBFS); segment 't = 0 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
+* **nes_tri_ultra_t1** (triangle t = 126, then $400A = 1 at 0.30 s (ultrasonic: A2)): level L +2.14 dB (ref -29.8 dBFS); level R +2.14 dB (ref -29.8 dBFS); segment 't = 126 (440 Hz)' level +2.47 dB (ref -25.0 dBFS); segment 't = 1 (ultrasonic)' not silent: ref -39.7, ours -104.3 dBFS
 * **nes_tri_lin016** (triangle t = 31, control 0, linear counter 16 quarter frames (240 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
-* **nes_tri_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames (240 Hz), length 254): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS)
-* **nes_tri_lin127** (triangle t = 31, control 0, linear counter 127 quarter frames (240 Hz), length 254): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS)
-* **nes_tri_len_i00** (triangle t = 31, control 0, linear 127, length index 0 (10 half frames)): level L +2.50 dB (ref -25.0 dBFS); level R +2.50 dB (ref -25.0 dBFS)
-* **nes_tri5_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames, 5-step (192 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS); gate start -4.15 ms (ref 4.17 ms, ours 0.02 ms); gate end -4.20 ms (ref 337.53 ms, ours 333.33 ms)
-* **nes_noise_s00** (noise short (93-step) mode, period index 0 (4 CPU cycles), f0 4811.22 Hz): H3 +1.31 dB (ref -3.1, ours -1.8 dB re H1)
-* **nes_noise_s01** (noise short (93-step) mode, period index 1 (8 CPU cycles), f0 2405.61 Hz): H6 +1.31 dB (ref -3.3, ours -2.0 dB re H1); H7 +1.89 dB (ref -14.5, ours -12.6 dB re H1)
-* **nes_noise_s15** (noise short (93-step) mode, period index 15 (4068 CPU cycles), f0 4.73 Hz): level L -0.62 dB (ref -26.8 dBFS); level R -0.62 dB (ref -26.8 dBFS)
-* **nes_dmc_r00_loop** (DMC rate 0 (4181.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.05 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.29 dB (ref -42.0, ours -43.3 dB re H1); H8 +1.32 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.97 dB (ref -56.2, ours -58.2 dB re H1)
-* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.03 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.22 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.77 dB (ref -56.6, ours -54.8 dB re H1); H10 -1.34 dB (ref -56.9, ours -58.2 dB re H1)
-* **nes_dmc_r08_loop** (DMC rate 8 (9419.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.02 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.17 dB (ref -42.2, ours -43.4 dB re H1); H8 +2.05 dB (ref -56.8, ours -54.8 dB re H1); H10 -1.00 dB (ref -57.2, ours -58.2 dB re H1)
-* **nes_dmc_r12_loop** (DMC rate 12 (16884.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H4 -1.06 dB (ref -42.3, ours -43.3 dB re H1); H8 +2.78 dB (ref -57.5, ours -54.8 dB re H1)
-* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H8 +4.61 dB (ref -59.4, ours -54.8 dB re H1); H10 +1.80 dB (ref -60.5, ours -58.2 dB re H1)
-* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L -2.18 dB (ref -24.6 dBFS); level R -2.18 dB (ref -24.6 dBFS); segment 'tri, dmc 0' level +2.49 dB (ref -24.9 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref +0.57 dB; segment 'tri, dmc 64' level -2.12 dB (ref -24.4 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref +0.59 dB; segment 'tri, dmc 96' level -3.63 dB (ref -24.6 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref +0.38 dB; segment 'tri, dmc 127' level -4.86 dB (ref -24.8 dBFS); segment 'tri, dmc 127' re first segment: ours -7.24, ref +0.11 dB
-* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -3.99 dB (ref -23.7 dBFS); level R -3.99 dB (ref -23.7 dBFS); segment 'noise, dmc 64' level -4.26 dB (ref -23.6 dBFS); segment 'noise, dmc 64' re first segment: ours -3.46, ref +0.61 dB; segment 'noise, dmc 127' level -6.61 dB (ref -24.1 dBFS); segment 'noise, dmc 127' re first segment: ours -6.38, ref +0.04 dB
-* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +0.81 dB (ref -22.3 dBFS); level R +0.81 dB (ref -22.3 dBFS); segment 'tri alone' level +2.49 dB (ref -24.9 dBFS); segment 'tri + noise' level +2.26 dB (ref -22.3 dBFS); segment 'tri + noise, dmc 64' level -1.82 dB (ref -22.1 dBFS); segment 'tri + noise, dmc 64' re first segment: ours -1.42, ref +2.89 dB
-* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +1.48 dB (ref -22.4 dBFS); level R +1.48 dB (ref -22.4 dBFS); segment 'tri alone' level +2.48 dB (ref -25.0 dBFS); segment 'tri alone' re first segment: ours +0.14, ref -2.34 dB; segment 'p1 + tri' level +1.10 dB (ref -20.6 dBFS); segment 'p1 + tri' re first segment: ours +3.06, ref +1.97 dB
-* **nes_pal_tri_t0126** (triangle, t = 126 (409.11 Hz), PAL): level L +2.48 dB (ref -24.9 dBFS); level R +2.48 dB (ref -24.9 dBFS); H1 +2.48 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.46 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.49 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.55 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.49 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.32 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.66 dB (ref -35.3, ours -32.7 dB re H1); H8 +2.66 dB (ref -53.3, ours -50.6 dB re H1); H9 +2.53 dB (ref -40.8, ours -38.3 dB re H1); H10 +3.93 dB (ref -60.3, ours -56.1 dB re H1)
-* **nes_pal_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step PAL (step every 4 quarter frames at 200 Hz)): gate start +4.92 ms (ref 0.07 ms, ours 4.99 ms); gate end +31.41 ms (ref 273.63 ms, ours 305.03 ms); envelope step timing: worst ours - ref +9.77 ms
+* **nes_tri_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames (240 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
+* **nes_tri_lin127** (triangle t = 31, control 0, linear counter 127 quarter frames (240 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
+* **nes_tri_len_i00** (triangle t = 31, control 0, linear 127, length index 0 (10 half frames)): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS)
+* **nes_tri5_lin064** (triangle t = 31, control 0, linear counter 64 quarter frames, 5-step (192 Hz), length 254): level L +2.51 dB (ref -25.0 dBFS); level R +2.51 dB (ref -25.0 dBFS); gate start -4.17 ms (ref 4.17 ms, ours 0.00 ms); gate end -4.24 ms (ref 337.53 ms, ours 333.29 ms)
+* **nes_noise_l01** (noise long mode, period index 1 (8 CPU cycles)): level L +0.51 dB (ref -32.7 dBFS); level R +0.51 dB (ref -32.7 dBFS)
+* **nes_noise_l02** (noise long mode, period index 2 (16 CPU cycles)): level L +0.59 dB (ref -29.8 dBFS); level R +0.59 dB (ref -29.8 dBFS)
+* **nes_noise_l03** (noise long mode, period index 3 (32 CPU cycles)): level L +0.72 dB (ref -27.3 dBFS); level R +0.72 dB (ref -27.3 dBFS)
+* **nes_noise_l04** (noise long mode, period index 4 (64 CPU cycles)): level L +0.54 dB (ref -25.1 dBFS); level R +0.54 dB (ref -25.1 dBFS)
+* **nes_noise_s00** (noise short (93-step) mode, period index 0 (4 CPU cycles), f0 4811.22 Hz): level L +0.70 dB (ref -40.9 dBFS); level R +0.70 dB (ref -40.9 dBFS); H2 +1.08 dB (ref -0.5, ours 0.6 dB re H1); H3 +2.87 dB (ref -3.1, ours -0.2 dB re H1); H4 +2.37 dB (ref -37.4, ours -35.1 dB re H1)
+* **nes_noise_s01** (noise short (93-step) mode, period index 1 (8 CPU cycles), f0 2405.61 Hz): H4 +1.08 dB (ref -0.7, ours 0.4 dB re H1); H5 +1.89 dB (ref -1.2, ours 0.7 dB re H1); H6 +2.88 dB (ref -3.3, ours -0.4 dB re H1); H7 +4.06 dB (ref -14.5, ours -10.4 dB re H1); H8 +2.35 dB (ref -37.6, ours -35.3 dB re H1)
+* **nes_noise_s02** (noise short (93-step) mode, period index 2 (16 CPU cycles), f0 1202.80 Hz): H8 +1.08 dB (ref -0.8, ours 0.3 dB re H1); H9 +1.46 dB (ref -1.0, ours 0.4 dB re H1); H10 +1.89 dB (ref -1.4, ours 0.5 dB re H1)
+* **nes_noise_s03** (noise short (93-step) mode, period index 3 (32 CPU cycles), f0 601.40 Hz): level L +0.67 dB (ref -31.9 dBFS); level R +0.67 dB (ref -31.9 dBFS)
+* **nes_noise_s04** (noise short (93-step) mode, period index 4 (64 CPU cycles), f0 300.70 Hz): level L +0.71 dB (ref -27.9 dBFS); level R +0.71 dB (ref -27.9 dBFS)
+* **nes_noise_s15** (noise short (93-step) mode, period index 15 (4068 CPU cycles), f0 4.73 Hz): level L -0.63 dB (ref -26.8 dBFS); level R -0.63 dB (ref -26.8 dBFS)
+* **nes_dmc_r00_loop** (DMC rate 0 (4181.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.07 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.30 dB (ref -42.0, ours -43.3 dB re H1); H8 +1.32 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.97 dB (ref -56.2, ours -58.2 dB re H1)
+* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.05 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.23 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.77 dB (ref -56.6, ours -54.8 dB re H1); H10 -1.31 dB (ref -56.9, ours -58.2 dB re H1)
+* **nes_dmc_r08_loop** (DMC rate 8 (9419.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.04 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.18 dB (ref -42.2, ours -43.4 dB re H1); H8 +2.06 dB (ref -56.8, ours -54.8 dB re H1)
+* **nes_dmc_r12_loop** (DMC rate 12 (16884.7 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H2 -1.00 dB (ref -30.5, ours -31.5 dB re H1); H4 -1.05 dB (ref -42.3, ours -43.3 dB re H1); H8 +2.84 dB (ref -57.5, ours -54.7 dB re H1)
+* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): H8 +5.01 dB (ref -59.4, ours -54.4 dB re H1); H9 +1.09 dB (ref -37.5, ours -36.4 dB re H1); H10 +2.51 dB (ref -60.5, ours -57.5 dB re H1)
+* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L -2.19 dB (ref -24.6 dBFS); level R -2.19 dB (ref -24.6 dBFS); segment 'tri, dmc 0' level +2.47 dB (ref -24.9 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref +0.57 dB; segment 'tri, dmc 64' level -2.14 dB (ref -24.4 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref +0.59 dB; segment 'tri, dmc 96' level -3.65 dB (ref -24.6 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref +0.38 dB; segment 'tri, dmc 127' level -4.88 dB (ref -24.8 dBFS); segment 'tri, dmc 127' re first segment: ours -7.24, ref +0.11 dB
+* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -3.90 dB (ref -23.7 dBFS); level R -3.90 dB (ref -23.7 dBFS); segment 'noise, dmc 64' level -4.16 dB (ref -23.6 dBFS); segment 'noise, dmc 64' re first segment: ours -3.45, ref +0.61 dB; segment 'noise, dmc 127' level -6.51 dB (ref -24.1 dBFS); segment 'noise, dmc 127' re first segment: ours -6.37, ref +0.04 dB
+* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +0.85 dB (ref -22.3 dBFS); level R +0.85 dB (ref -22.3 dBFS); segment 'tri alone' level +2.47 dB (ref -24.9 dBFS); segment 'tri + noise' level +2.31 dB (ref -22.3 dBFS); segment 'tri + noise, dmc 64' level -1.78 dB (ref -22.1 dBFS); segment 'tri + noise, dmc 64' re first segment: ours -1.36, ref +2.89 dB
+* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +1.47 dB (ref -22.4 dBFS); level R +1.47 dB (ref -22.4 dBFS); segment 'tri alone' level +2.46 dB (ref -25.0 dBFS); segment 'tri alone' re first segment: ours +0.12, ref -2.34 dB; segment 'p1 + tri' level +1.09 dB (ref -20.6 dBFS); segment 'p1 + tri' re first segment: ours +3.05, ref +1.97 dB
+* **nes_pal_tri_t0126** (triangle, t = 126 (409.11 Hz), PAL): level L +2.46 dB (ref -24.9 dBFS); level R +2.46 dB (ref -24.9 dBFS); H1 +2.46 dB (ref 0.0, ours 2.5 dB re H1); H2 +2.44 dB (ref -27.1, ours -24.6 dB re H1); H3 +2.48 dB (ref -19.2, ours -16.7 dB re H1); H4 +2.55 dB (ref -39.5, ours -36.9 dB re H1); H5 +2.49 dB (ref -28.5, ours -26.0 dB re H1); H6 +2.34 dB (ref -46.9, ours -44.6 dB re H1); H7 +2.69 dB (ref -35.3, ours -32.6 dB re H1); H8 +2.72 dB (ref -53.3, ours -50.5 dB re H1); H9 +2.61 dB (ref -40.8, ours -38.2 dB re H1); H10 +4.04 dB (ref -60.3, ours -56.0 dB re H1)
+* **nes_pal_env_v03** (pulse 1 (t = 63), decay envelope V = 3, loop off, 4-step PAL (step every 4 quarter frames at 200 Hz)): gate start +4.88 ms (ref 0.07 ms, ours 4.94 ms); gate end +31.41 ms (ref 273.63 ms, ours 305.03 ms); envelope step timing: worst ours - ref +9.75 ms
 * **nes_pal_len_i04** (pulse 1 (t = 63), length index 4 (40 half frames at 100 Hz), halt off, PAL): gate end +41.22 ms (ref 358.84 ms, ours 400.07 ms)
-* **nes_pal_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, PAL): level L +0.52 dB (ref -23.4 dBFS); level R +0.52 dB (ref -23.4 dBFS); sweep pitch track |ours - ref| median 498.10, p90 897.64, max 8776.9 cents
-* **nes_pal_noise_s02** (noise short (93-step) mode, period index 2 (14 CPU cycles), f0 1276.96 Hz, PAL): H10 +1.02 dB (ref -1.7, ours -0.7 dB re H1)
-* **nes_pal_dmc_r04_loop** (DMC rate 4 (6023.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.05 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.28 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.33 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.92 dB (ref -56.2, ours -58.2 dB re H1)
-* **nes_pal_dmc_r15_loop** (DMC rate 15 (33252.1 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.12 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.56 dB (ref -41.8, ours -43.3 dB re H1); H6 -1.42 dB (ref -48.7, ours -50.1 dB re H1); H10 -3.92 dB (ref -54.3, ours -58.2 dB re H1)
+* **nes_pal_sweep_down_s2_p1** (pulse 1, sweep down, shift 2, period P = 5, from t = 1024, PAL): level L +0.65 dB (ref -23.4 dBFS); level R +0.65 dB (ref -23.4 dBFS); sweep pitch track |ours - ref| median 498.15, p90 897.64, max 8776.9 cents
+* **nes_pal_noise_s02** (noise short (93-step) mode, period index 2 (14 CPU cycles), f0 1276.96 Hz, PAL): level L +0.54 dB (ref -34.8 dBFS); level R +0.54 dB (ref -34.8 dBFS); H8 +1.33 dB (ref -0.9, ours 0.4 dB re H1); H9 +1.74 dB (ref -1.2, ours 0.5 dB re H1); H10 +2.24 dB (ref -1.7, ours 0.6 dB re H1)
+* **nes_pal_dmc_r04_loop** (DMC rate 4 (6023.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.07 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.30 dB (ref -42.1, ours -43.4 dB re H1); H8 +1.31 dB (ref -56.1, ours -54.8 dB re H1); H10 -1.94 dB (ref -56.2, ours -58.2 dB re H1)
+* **nes_pal_dmc_r15_loop** (DMC rate 15 (33252.1 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40, PAL): H2 -1.11 dB (ref -30.4, ours -31.5 dB re H1); H4 -1.48 dB (ref -41.8, ours -43.3 dB re H1); H6 -1.19 dB (ref -48.7, ours -49.9 dB re H1); H9 +1.04 dB (ref -37.5, ours -36.4 dB re H1); H10 -3.29 dB (ref -54.3, ours -57.6 dB re H1)
 
-#### Test side against the documented schedule and mixer formula (NES: ours with the integrated-step kernel vs NSFPlay core)
+#### Test side against the documented schedule and mixer formula (NES: ours with the legacy ImpulseSum kernel vs NSFPlay core)
 
 None.
 
-### NES: ours (engine, ImpulseSum kernel) vs ours with the integrated-step kernel (F2 measurement)
+### NES: ours with the legacy ImpulseSum kernel vs ours (engine, integrated-step kernel) (F2 measurement)
 
 #### 2a03
 
@@ -2672,7 +2682,7 @@ From the edges of the raw renders (largest sample step over 1.1 periods of the t
 | nes_sweep5_down_s2_p1 | 0.07 / 0.27 / 0.9 | 0.06 / 0.46 / 15.0 | 0.05 / 0.35 / 15.0 |
 | nes_pal_sweep_down_s2_p1 | 0.07 / 0.20 / 1.6 | 0.05 / 0.64 / 25.4 | 0.05 / 0.40 / 25.4 |
 
-#### Deviations beyond thresholds (NES: ours (engine, ImpulseSum kernel) vs ours with the integrated-step kernel (F2 measurement))
+#### Deviations beyond thresholds (NES: ours with the legacy ImpulseSum kernel vs ours (engine, integrated-step kernel) (F2 measurement))
 
 * **nes_pulse_t0008** (pulse 1, duty 2, constant volume 15, t = 8 (12428.98 Hz)): level L +1.14 dB (ref -23.6 dBFS); level R +1.14 dB (ref -23.6 dBFS); H1 +1.14 dB (ref 0.0, ours 1.1 dB re H1)
 * **nes_pulse_t0012** (pulse 1, duty 2, constant volume 15, t = 12 (8604.68 Hz)): level L +0.53 dB (ref -23.5 dBFS); level R +0.53 dB (ref -23.5 dBFS)
@@ -2696,7 +2706,7 @@ From the edges of the raw renders (largest sample step over 1.1 periods of the t
 * **nes_noise_s04** (noise short (93-step) mode, period index 4 (64 CPU cycles), f0 300.70 Hz): level L +0.50 dB (ref -27.6 dBFS); level R +0.50 dB (ref -27.6 dBFS)
 * **nes_pal_noise_s02** (noise short (93-step) mode, period index 2 (14 CPU cycles), f0 1276.96 Hz, PAL): level L +0.60 dB (ref -34.9 dBFS); level R +0.60 dB (ref -34.9 dBFS); H10 +1.22 dB (ref -0.4, ours 0.8 dB re H1)
 
-#### Test side against the documented schedule and mixer formula (NES: ours (engine, ImpulseSum kernel) vs ours with the integrated-step kernel (F2 measurement))
+#### Test side against the documented schedule and mixer formula (NES: ours with the legacy ImpulseSum kernel vs ours (engine, integrated-step kernel) (F2 measurement))
 
 None.
 
@@ -2706,29 +2716,29 @@ None.
 
 | stimulus | lag (smp) | null (dB) | pitch (cents) | level L / R (dB) | max harm (dB) | max env timing (%) | env shape (dB) | spectral (dB) | devs |
 |---|---|---|---|---|---|---|---|---|---|
-| nes_pulse_ref | +242 inv | 8.4 | +0.21 | +0.00 / +0.00 | 0.11 |  | 6.26 | 4.63 | 0 |
-| nes_pulse_duty0 | +192 | 7.2 | +0.21 | +0.07 / +0.07 | 0.11 |  | 10.57 | 13.45 | 0 |
-| nes_pulse_duty1 | +192 | 8.7 | +0.21 | +0.04 / +0.04 | 0.11 |  | 10.15 | 14.41 | 0 |
-| nes_pulse_duty3 | +292 | 8.7 | +0.21 | -0.00 / -0.00 | 0.11 |  | 7.22 | 13.66 | 0 |
-| nes_pulse2_ref | +242 inv | 9.4 | +0.21 | +0.02 / +0.02 | 0.11 |  | 7.74 | 13.34 | 0 |
-| nes_pulse_t0050 | +258 | 4.3 | +0.21 | +0.12 / +0.12 | 1.95 |  | 7.81 | 14.40 | 1 |
-| nes_pulse_t0120 | +203 | 7.2 | +0.21 | +0.03 / +0.03 | 0.10 |  | 9.18 | 15.15 | 0 |
-| nes_pulse_t0400 | +192 | 9.5 | +0.21 | +0.10 / +0.10 | 0.11 |  | 10.40 | 14.32 | 0 |
-| nes_pulse_t1023 | +284 inv | 5.9 | +0.21 | +0.68 / +0.68 | 0.86 |  | 7.26 | 8.84 | 2 |
-| nes_tri_t0032 | +461 inv | 3.7 | +0.21 | +3.20 / +3.20 | 36.02 |  | 7.49 | 13.39 | 11 |
-| nes_tri_t0126 | +437 inv | 4.8 | +0.21 | +3.24 / +3.24 | 36.12 |  | 9.44 | 10.95 | 12 |
-| nes_tri_t0383 | +443 inv | 3.6 | +0.21 | +3.73 / +3.73 | 36.64 |  | 8.67 | 7.85 | 12 |
-| nes_noise_l04 | +252 inv | -5.2 |  | +3.48 / +3.48 |  |  | 9.09 | 4.33 | 2 |
-| nes_noise_l08 | +222 inv | -4.3 |  | +2.50 / +2.50 |  |  | 8.53 | 3.99 | 2 |
-| nes_noise_l12 | +232 inv | -4.0 |  | +2.67 / +2.67 |  |  | 11.90 | 4.28 | 2 |
-| nes_noise_s05 | +273 | -2.9 | +0.21 | +0.66 / +0.66 | 3.84 |  | 9.18 | 7.53 | 12 |
-| nes_dmc_r04_loop | +269 inv | 8.9 | +0.21 | -1.96 / -1.96 | 26.42 |  | 7.83 | 11.17 | 11 |
-| nes_dmc_r15_loop | +254 inv | 8.2 | +0.21 | -2.27 / -2.27 | 26.05 |  | 7.30 | 15.96 | 11 |
-| nes_mix_pulse | +242 inv | 0.1 |  | -0.54 / -0.54 |  |  | 5.42 | 3.88 | 23 |
-| nes_mix_tri_dmc | +437 inv | 7.7 |  | -1.12 / -1.12 |  |  | 4.10 | 3.77 | 11 |
-| nes_mix_noise_dmc | +222 inv | -2.8 |  | -1.15 / -1.15 |  |  | 6.14 | 2.31 | 7 |
-| nes_mix_tri_noise | +437 inv | -0.4 |  | +1.59 / +1.59 |  |  | 7.24 | 3.77 | 5 |
-| nes_mix_pulse_tri | +242 inv | 1.0 |  | +1.70 / +1.70 |  |  | 9.45 | 3.30 | 6 |
+| nes_pulse_ref | +243 inv | 7.7 | +0.21 | +0.00 / +0.00 | 0.18 |  | 6.26 | 4.52 | 0 |
+| nes_pulse_duty0 | +193 | 5.8 | +0.21 | +0.04 / +0.04 | 0.19 |  | 9.83 | 13.45 | 0 |
+| nes_pulse_duty1 | +193 | 7.7 | +0.21 | +0.04 / +0.04 | 0.19 |  | 9.36 | 14.39 | 0 |
+| nes_pulse_duty3 | +293 | 7.7 | +0.21 | -0.01 / -0.01 | 0.19 |  | 7.22 | 13.66 | 0 |
+| nes_pulse2_ref | +243 inv | 8.6 | +0.21 | +0.02 / +0.02 | 0.18 |  | 7.73 | 13.32 | 0 |
+| nes_pulse_t0050 | +188 inv | 4.9 | +0.21 | +0.05 / +0.05 | 0.94 |  | 10.52 | 14.93 | 0 |
+| nes_pulse_t0120 | +275 inv | 7.5 | +0.21 | -0.01 / -0.01 | 0.54 |  | 7.71 | 14.80 | 0 |
+| nes_pulse_t0400 | +193 | 9.1 | +0.21 | +0.11 / +0.11 | 0.13 |  | 9.56 | 14.31 | 0 |
+| nes_pulse_t1023 | +284 inv | 5.8 | +0.21 | +0.70 / +0.70 | 0.89 |  | 7.27 | 8.78 | 2 |
+| nes_tri_t0032 | +462 inv | 2.8 | +0.21 | +3.20 / +3.20 | 35.96 |  | 7.49 | 13.32 | 11 |
+| nes_tri_t0126 | +438 inv | 4.7 | +0.21 | +3.26 / +3.26 | 36.13 |  | 9.48 | 10.79 | 12 |
+| nes_tri_t0383 | +444 inv | 3.6 | +0.21 | +3.75 / +3.75 | 36.66 |  | 8.68 | 7.71 | 12 |
+| nes_noise_l04 | +252 inv | -4.9 |  | +3.05 / +3.05 |  |  | 8.90 | 3.98 | 2 |
+| nes_noise_l08 | +222 inv | -4.3 |  | +2.40 / +2.40 |  |  | 8.50 | 3.62 | 2 |
+| nes_noise_l12 | +233 inv | -4.0 |  | +2.67 / +2.67 |  |  | 11.96 | 3.90 | 2 |
+| nes_noise_s05 | +167 | -2.7 | +0.21 | +0.35 / +0.35 | 3.82 |  | 13.27 | 7.56 | 10 |
+| nes_dmc_r04_loop | +270 inv | 8.9 | +0.21 | -1.94 / -1.94 | 26.44 |  | 7.79 | 11.14 | 11 |
+| nes_dmc_r15_loop | +255 inv | 7.7 | +0.21 | -2.26 / -2.26 | 26.05 |  | 7.31 | 15.94 | 11 |
+| nes_mix_pulse | +243 inv | -0.0 |  | -0.54 / -0.54 |  |  | 5.43 | 3.78 | 23 |
+| nes_mix_tri_dmc | +438 inv | 7.5 |  | -1.10 / -1.10 |  |  | 4.11 | 3.48 | 11 |
+| nes_mix_noise_dmc | +222 inv | -2.8 |  | -1.24 / -1.24 |  |  | 6.14 | 1.87 | 7 |
+| nes_mix_tri_noise | +438 inv | -0.4 |  | +1.56 / +1.56 |  |  | 7.24 | 3.38 | 5 |
+| nes_mix_pulse_tri | +243 inv | 0.8 |  | +1.71 / +1.71 |  |  | 9.45 | 3.14 | 6 |
 
 #### 2a03 mixer and multi-segment stimuli
 
@@ -2737,65 +2747,64 @@ Levels after the global gain. 're first' = level relative to the first segment o
 | stimulus | segment | ref (dBFS) | ours - ref (dB) | ours re first | ref re first | formula re first |
 |---|---|---|---|---|---|---|
 | nes_mix_pulse | p1 15 | -16.11 | -0.03 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse | p2 15 | -15.64 | -0.52 | -0.01 | +0.48 | +0.00 |
-| nes_mix_pulse | p1 15 + p2 15 | -13.57 | -0.80 | +1.77 | +2.54 | +1.81 |
+| nes_mix_pulse | p2 15 | -15.64 | -0.53 | -0.02 | +0.47 | +0.00 |
+| nes_mix_pulse | p1 15 + p2 15 | -13.57 | -0.81 | +1.76 | +2.54 | +1.81 |
 | nes_mix_pulse | p1 8 + p2 8 | -19.09 | +0.44 | -2.51 | -2.98 | -2.52 |
-| nes_mix_pulse | p1 4 + p2 4 | -21.67 | -2.27 | -7.79 | -5.56 | -7.81 |
-| nes_mix_pulse | p1 15 + p2 4 | -16.42 | +0.20 | -0.07 | -0.30 | -0.06 |
-| nes_mix_tri_dmc | tri, dmc 0 | -19.09 | +3.08 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_dmc | tri, dmc 32 | -19.10 | +0.97 | -2.12 | -0.02 | -2.13 |
-| nes_mix_tri_dmc | tri, dmc 64 | -19.14 | -0.89 | -4.02 | -0.05 | -4.02 |
-| nes_mix_tri_dmc | tri, dmc 96 | -19.17 | -2.57 | -5.74 | -0.08 | -5.73 |
-| nes_mix_tri_dmc | tri, dmc 127 | -19.45 | -3.81 | -7.24 | -0.36 | -7.23 |
-| nes_mix_noise_dmc | noise, dmc 0 | -19.70 | +1.88 | +0.00 | +0.00 | +0.00 |
-| nes_mix_noise_dmc | noise, dmc 64 | -20.01 | -1.26 | -3.45 | -0.32 | -3.57 |
-| nes_mix_noise_dmc | noise, dmc 127 | -20.78 | -3.41 | -6.37 | -1.08 | -6.48 |
-| nes_mix_tri_noise | tri alone | -18.88 | +2.87 | +0.00 | +0.00 | +0.00 |
-| nes_mix_tri_noise | tri + noise | -16.30 | +2.74 | +2.45 | +2.58 | +2.54 |
-| nes_mix_tri_noise | tri + noise, dmc 64 | -16.93 | -0.44 | -1.36 | +1.95 | -1.31 |
+| nes_mix_pulse | p1 4 + p2 4 | -21.68 | -2.26 | -7.80 | -5.57 | -7.81 |
+| nes_mix_pulse | p1 15 + p2 4 | -16.42 | +0.20 | -0.08 | -0.30 | -0.06 |
+| nes_mix_tri_dmc | tri, dmc 0 | -19.09 | +3.10 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_dmc | tri, dmc 32 | -19.10 | +0.99 | -2.12 | -0.01 | -2.13 |
+| nes_mix_tri_dmc | tri, dmc 64 | -19.14 | -0.87 | -4.02 | -0.05 | -4.02 |
+| nes_mix_tri_dmc | tri, dmc 96 | -19.17 | -2.56 | -5.74 | -0.08 | -5.73 |
+| nes_mix_tri_dmc | tri, dmc 127 | -19.45 | -3.79 | -7.24 | -0.36 | -7.23 |
+| nes_mix_noise_dmc | noise, dmc 0 | -19.70 | +1.78 | +0.00 | +0.00 | +0.00 |
+| nes_mix_noise_dmc | noise, dmc 64 | -20.01 | -1.36 | -3.46 | -0.32 | -3.57 |
+| nes_mix_noise_dmc | noise, dmc 127 | -20.78 | -3.51 | -6.38 | -1.08 | -6.48 |
+| nes_mix_tri_noise | tri alone | -18.88 | +2.89 | +0.00 | +0.00 | +0.00 |
+| nes_mix_tri_noise | tri + noise | -16.30 | +2.70 | +2.38 | +2.57 | +2.54 |
+| nes_mix_tri_noise | tri + noise, dmc 64 | -16.93 | -0.49 | -1.42 | +1.95 | -1.31 |
 | nes_mix_pulse_tri | p1 alone | -16.35 | +0.21 | +0.00 | +0.00 | +0.00 |
-| nes_mix_pulse_tri | tri alone | -18.06 | +2.04 | +0.12 | -1.71 | +0.11 |
-| nes_mix_pulse_tri | p1 + tri | -15.08 | +1.98 | +3.05 | +1.27 | +3.07 |
+| nes_mix_pulse_tri | tri alone | -18.06 | +2.06 | +0.14 | -1.71 | +0.11 |
+| nes_mix_pulse_tri | p1 + tri | -15.08 | +1.99 | +3.06 | +1.27 | +3.07 |
 
 Intermodulation products (component amplitude in dB re sqrt(2) x segment RMS; no linear component exists at these frequencies):
 
 | stimulus | segment | Hz | ours | ref | formula |
 |---|---|---|---|---|---|
 | nes_mix_pulse | p1 15 + p2 15 | 116.1 | -24.0 | -52.8 | -24.0 |
-| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -82.8 | -56.4 | -72.1 |
-| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.6 | -58.9 | -83.3 |
+| nes_mix_pulse | p1 15 + p2 15 | 324.3 | -81.9 | -56.5 | -72.1 |
+| nes_mix_pulse | p1 15 + p2 15 | 672.6 | -89.2 | -58.9 | -83.3 |
 | nes_mix_pulse | p1 15 + p2 15 | 996.9 | -24.0 | -66.6 | -24.0 |
-| nes_mix_pulse | p1 8 + p2 8 | 116.1 | -28.8 | -51.9 | -28.8 |
-| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -98.0 | -55.0 | -74.4 |
-| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.5 | -55.4 | -81.9 |
-| nes_mix_pulse | p1 8 + p2 8 | 996.9 | -28.8 | -61.6 | -28.8 |
-| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.5 | -46.0 | -34.4 |
-| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -83.0 | -44.9 | -76.1 |
-| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -81.3 | -56.0 | -80.0 |
+| nes_mix_pulse | p1 8 + p2 8 | 116.1 | -28.8 | -52.0 | -28.8 |
+| nes_mix_pulse | p1 8 + p2 8 | 324.3 | -90.7 | -55.0 | -74.4 |
+| nes_mix_pulse | p1 8 + p2 8 | 672.6 | -84.4 | -55.5 | -81.9 |
+| nes_mix_pulse | p1 8 + p2 8 | 996.9 | -28.8 | -61.7 | -28.8 |
+| nes_mix_pulse | p1 4 + p2 4 | 116.1 | -34.4 | -46.0 | -34.4 |
+| nes_mix_pulse | p1 4 + p2 4 | 324.3 | -93.0 | -44.9 | -76.1 |
+| nes_mix_pulse | p1 4 + p2 4 | 672.6 | -84.0 | -56.0 | -80.0 |
 | nes_mix_pulse | p1 4 + p2 4 | 996.9 | -34.4 | -61.4 | -34.4 |
 | nes_mix_pulse | p1 15 + p2 4 | 116.1 | -32.2 | -46.6 | -32.2 |
-| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -84.7 | -47.5 | -73.8 |
-| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.8 | -52.6 | -93.9 |
-| nes_mix_pulse | p1 15 + p2 4 | 996.9 | -32.2 | -62.4 | -32.2 |
+| nes_mix_pulse | p1 15 + p2 4 | 324.3 | -85.8 | -47.5 | -73.8 |
+| nes_mix_pulse | p1 15 + p2 4 | 672.6 | -82.9 | -52.6 | -93.9 |
+| nes_mix_pulse | p1 15 + p2 4 | 996.9 | -32.2 | -62.5 | -32.2 |
 
 #### Deviations beyond thresholds (NES: ours vs Game Music Emu NSF player (FFmpeg libgme; NSF subset))
 
-* **nes_pulse_t0050** (pulse 1, duty 2, constant volume 15, t = 50 (2193.35 Hz)): H7 +1.95 dB (ref -24.0, ours -22.1 dB re H1)
-* **nes_pulse_t1023** (pulse 1, duty 2, constant volume 15, t = 1023 (109.24 Hz)): level L +0.68 dB (ref -16.8 dBFS); level R +0.68 dB (ref -16.8 dBFS)
-* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +3.20 dB (ref -19.2 dBFS); level R +3.20 dB (ref -19.2 dBFS); H1 +3.15 dB (ref 0.0, ours 3.1 dB re H1); H2 +36.02 dB (ref -111.6, ours -24.0 dB re H1); H3 +3.40 dB (ref -19.5, ours -16.1 dB re H1); H4 +23.56 dB (ref -104.9, ours -36.4 dB re H1); H5 +4.06 dB (ref -29.7, ours -25.6 dB re H1); H6 +15.66 dB (ref -115.3, ours -44.3 dB re H1); H7 +5.91 dB (ref -38.5, ours -32.6 dB re H1); H8 +8.73 dB (ref -111.8, ours -51.3 dB re H1); H9 +9.74 dB (ref -52.1, ours -42.3 dB re H1)
-* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +3.24 dB (ref -19.2 dBFS); level R +3.24 dB (ref -19.2 dBFS); H1 +3.21 dB (ref 0.0, ours 3.2 dB re H1); H2 +36.12 dB (ref -131.1, ours -23.9 dB re H1); H3 +3.30 dB (ref -19.3, ours -16.0 dB re H1); H4 +23.78 dB (ref -117.0, ours -36.2 dB re H1); H5 +3.31 dB (ref -28.6, ours -25.3 dB re H1); H6 +16.10 dB (ref -119.5, ours -43.9 dB re H1); H7 +3.32 dB (ref -35.3, ours -32.0 dB re H1); H8 +10.09 dB (ref -114.8, ours -49.9 dB re H1); H9 +3.35 dB (ref -41.0, ours -37.6 dB re H1); H10 +4.65 dB (ref -118.2, ours -55.4 dB re H1)
-* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +3.73 dB (ref -19.8 dBFS); level R +3.73 dB (ref -19.8 dBFS); H1 +3.72 dB (ref 0.0, ours 3.7 dB re H1); H2 +36.64 dB (ref -120.9, ours -23.4 dB re H1); H3 +3.36 dB (ref -18.8, ours -15.4 dB re H1); H4 +24.31 dB (ref -110.7, ours -35.7 dB re H1); H5 +3.33 dB (ref -28.1, ours -24.8 dB re H1); H6 +16.65 dB (ref -113.3, ours -43.4 dB re H1); H7 +3.33 dB (ref -34.8, ours -31.4 dB re H1); H8 +10.65 dB (ref -123.8, ours -49.4 dB re H1); H9 +3.29 dB (ref -40.3, ours -37.0 dB re H1); H10 +5.21 dB (ref -116.6, ours -54.8 dB re H1)
-* **nes_noise_l04** (noise long mode, period index 4 (64 CPU cycles)): level L +3.48 dB (ref -21.6 dBFS); level R +3.48 dB (ref -21.6 dBFS)
-* **nes_noise_l08** (noise long mode, period index 8 (202 CPU cycles)): level L +2.50 dB (ref -20.2 dBFS); level R +2.50 dB (ref -20.2 dBFS)
+* **nes_pulse_t1023** (pulse 1, duty 2, constant volume 15, t = 1023 (109.24 Hz)): level L +0.70 dB (ref -16.8 dBFS); level R +0.70 dB (ref -16.8 dBFS)
+* **nes_tri_t0032** (triangle, t = 32 (1694.86 Hz)): level L +3.20 dB (ref -19.2 dBFS); level R +3.20 dB (ref -19.2 dBFS); H1 +3.15 dB (ref 0.0, ours 3.1 dB re H1); H2 +35.96 dB (ref -111.6, ours -24.0 dB re H1); H3 +3.23 dB (ref -19.5, ours -16.3 dB re H1); H4 +23.25 dB (ref -104.9, ours -36.7 dB re H1); H5 +3.55 dB (ref -29.7, ours -26.1 dB re H1); H6 +14.92 dB (ref -115.3, ours -45.1 dB re H1); H7 +4.88 dB (ref -38.5, ours -33.7 dB re H1); H8 +7.37 dB (ref -111.8, ours -52.6 dB re H1); H9 +7.98 dB (ref -52.1, ours -44.1 dB re H1)
+* **nes_tri_t0126** (triangle, t = 126 (440.40 Hz)): level L +3.26 dB (ref -19.2 dBFS); level R +3.26 dB (ref -19.2 dBFS); H1 +3.23 dB (ref 0.0, ours 3.2 dB re H1); H2 +36.13 dB (ref -131.0, ours -23.9 dB re H1); H3 +3.31 dB (ref -19.3, ours -16.0 dB re H1); H4 +23.78 dB (ref -117.0, ours -36.2 dB re H1); H5 +3.30 dB (ref -28.6, ours -25.3 dB re H1); H6 +16.07 dB (ref -119.5, ours -43.9 dB re H1); H7 +3.28 dB (ref -35.3, ours -32.0 dB re H1); H8 +10.02 dB (ref -114.8, ours -50.0 dB re H1); H9 +3.26 dB (ref -41.0, ours -37.7 dB re H1); H10 +4.56 dB (ref -118.2, ours -55.4 dB re H1)
+* **nes_tri_t0383** (triangle, t = 383 (145.65 Hz)): level L +3.75 dB (ref -19.8 dBFS); level R +3.75 dB (ref -19.8 dBFS); H1 +3.74 dB (ref 0.0, ours 3.7 dB re H1); H2 +36.66 dB (ref -120.8, ours -23.3 dB re H1); H3 +3.38 dB (ref -18.8, ours -15.4 dB re H1); H4 +24.33 dB (ref -110.7, ours -35.7 dB re H1); H5 +3.34 dB (ref -28.1, ours -24.8 dB re H1); H6 +16.66 dB (ref -113.3, ours -43.3 dB re H1); H7 +3.34 dB (ref -34.8, ours -31.4 dB re H1); H8 +10.66 dB (ref -123.8, ours -49.3 dB re H1); H9 +3.30 dB (ref -40.3, ours -37.0 dB re H1); H10 +5.20 dB (ref -116.6, ours -54.8 dB re H1)
+* **nes_noise_l04** (noise long mode, period index 4 (64 CPU cycles)): level L +3.05 dB (ref -21.6 dBFS); level R +3.05 dB (ref -21.6 dBFS)
+* **nes_noise_l08** (noise long mode, period index 8 (202 CPU cycles)): level L +2.40 dB (ref -20.2 dBFS); level R +2.40 dB (ref -20.2 dBFS)
 * **nes_noise_l12** (noise long mode, period index 12 (762 CPU cycles)): level L +2.67 dB (ref -20.7 dBFS); level R +2.67 dB (ref -20.7 dBFS)
-* **nes_noise_s05** (noise short (93-step) mode, period index 5 (96 CPU cycles), f0 200.47 Hz): level L +0.66 dB (ref -20.9 dBFS); level R +0.66 dB (ref -20.9 dBFS); H1 -3.60 dB (ref 0.0, ours -3.6 dB re H1); H2 -3.82 dB (ref 0.2, ours -3.6 dB re H1); H3 -3.84 dB (ref 0.2, ours -3.6 dB re H1); H4 -3.82 dB (ref 0.2, ours -3.6 dB re H1); H5 -3.78 dB (ref 0.1, ours -3.6 dB re H1); H6 -3.73 dB (ref 0.1, ours -3.7 dB re H1); H7 -3.67 dB (ref -0.0, ours -3.7 dB re H1); H8 -3.59 dB (ref -0.1, ours -3.7 dB re H1); H9 -3.51 dB (ref -0.2, ours -3.7 dB re H1); H10 -3.40 dB (ref -0.4, ours -3.8 dB re H1)
-* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): level L -1.96 dB (ref -21.0 dBFS); level R -1.96 dB (ref -21.0 dBFS); H1 -1.98 dB (ref 0.0, ours -2.0 dB re H1); H2 +26.42 dB (ref -115.6, ours -33.6 dB re H1); H3 -2.26 dB (ref -18.7, ours -20.9 dB re H1); H4 +14.55 dB (ref -134.0, ours -45.5 dB re H1); H5 -2.28 dB (ref -27.3, ours -29.6 dB re H1); H6 +7.79 dB (ref -119.2, ours -52.2 dB re H1); H7 -2.29 dB (ref -32.8, ours -35.1 dB re H1); H8 +3.11 dB (ref -116.2, ours -56.9 dB re H1); H9 -2.28 dB (ref -36.8, ours -39.1 dB re H1)
-* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): level L -2.27 dB (ref -20.7 dBFS); level R -2.27 dB (ref -20.7 dBFS); H1 -2.34 dB (ref 0.0, ours -2.3 dB re H1); H2 +26.05 dB (ref -135.6, ours -33.9 dB re H1); H3 -2.29 dB (ref -19.0, ours -21.3 dB re H1); H4 +14.14 dB (ref -128.0, ours -45.9 dB re H1); H5 -2.20 dB (ref -27.8, ours -30.0 dB re H1); H6 +7.31 dB (ref -125.8, ours -52.7 dB re H1); H7 -1.96 dB (ref -33.7, ours -35.7 dB re H1); H8 +2.51 dB (ref -128.6, ours -57.5 dB re H1); H9 -1.43 dB (ref -38.3, ours -39.7 dB re H1)
-* **nes_mix_pulse** (pulse 1 (t = 253, 440.4 Hz) and pulse 2 (t = 200, 556.6 Hz), duty 2, volume combinations): level L -0.54 dB (ref -16.3 dBFS); level R -0.54 dB (ref -16.3 dBFS); segment 'p2 15' level -0.52 dB (ref -15.6 dBFS); segment 'p1 15 + p2 15' level -0.80 dB (ref -13.6 dBFS); segment 'p1 15 + p2 15' re first segment: ours +1.77, ref +2.54 dB; segment 'p1 15 + p2 15' IMD 116.1 Hz: ours -24.0, ref -52.8 dB; segment 'p1 15 + p2 15' IMD 324.3 Hz: ours -82.8, ref -56.4 dB; segment 'p1 15 + p2 15' IMD 672.6 Hz: ours -89.6, ref -58.9 dB; segment 'p1 15 + p2 15' IMD 996.9 Hz: ours -24.0, ref -66.6 dB; segment 'p1 8 + p2 8' IMD 116.1 Hz: ours -28.8, ref -51.9 dB; segment 'p1 8 + p2 8' IMD 324.3 Hz: ours -98.0, ref -55.0 dB; segment 'p1 8 + p2 8' IMD 672.6 Hz: ours -84.5, ref -55.4 dB; segment 'p1 8 + p2 8' IMD 996.9 Hz: ours -28.8, ref -61.6 dB; segment 'p1 4 + p2 4' level -2.27 dB (ref -21.7 dBFS); segment 'p1 4 + p2 4' re first segment: ours -7.79, ref -5.56 dB; segment 'p1 4 + p2 4' IMD 116.1 Hz: ours -34.5, ref -46.0 dB; segment 'p1 4 + p2 4' IMD 324.3 Hz: ours -83.0, ref -44.9 dB; segment 'p1 4 + p2 4' IMD 672.6 Hz: ours -81.3, ref -56.0 dB; segment 'p1 4 + p2 4' IMD 996.9 Hz: ours -34.4, ref -61.4 dB; segment 'p1 15 + p2 4' IMD 116.1 Hz: ours -32.2, ref -46.6 dB; segment 'p1 15 + p2 4' IMD 324.3 Hz: ours -84.7, ref -47.5 dB; segment 'p1 15 + p2 4' IMD 672.6 Hz: ours -82.8, ref -52.6 dB; segment 'p1 15 + p2 4' IMD 996.9 Hz: ours -32.2, ref -62.4 dB
-* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L -1.12 dB (ref -19.2 dBFS); level R -1.12 dB (ref -19.2 dBFS); segment 'tri, dmc 0' level +3.08 dB (ref -19.1 dBFS); segment 'tri, dmc 32' level +0.97 dB (ref -19.1 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref -0.02 dB; segment 'tri, dmc 64' level -0.89 dB (ref -19.1 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref -0.05 dB; segment 'tri, dmc 96' level -2.57 dB (ref -19.2 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref -0.08 dB; segment 'tri, dmc 127' level -3.81 dB (ref -19.4 dBFS); segment 'tri, dmc 127' re first segment: ours -7.24, ref -0.36 dB
-* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -1.15 dB (ref -20.0 dBFS); level R -1.15 dB (ref -20.0 dBFS); segment 'noise, dmc 0' level +1.88 dB (ref -19.7 dBFS); segment 'noise, dmc 64' level -1.26 dB (ref -20.0 dBFS); segment 'noise, dmc 64' re first segment: ours -3.45, ref -0.32 dB; segment 'noise, dmc 127' level -3.41 dB (ref -20.8 dBFS); segment 'noise, dmc 127' re first segment: ours -6.37, ref -1.08 dB
-* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +1.59 dB (ref -16.6 dBFS); level R +1.59 dB (ref -16.6 dBFS); segment 'tri alone' level +2.87 dB (ref -18.9 dBFS); segment 'tri + noise' level +2.74 dB (ref -16.3 dBFS); segment 'tri + noise, dmc 64' re first segment: ours -1.36, ref +1.95 dB
-* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +1.70 dB (ref -16.2 dBFS); level R +1.70 dB (ref -16.2 dBFS); segment 'tri alone' level +2.04 dB (ref -18.1 dBFS); segment 'tri alone' re first segment: ours +0.12, ref -1.71 dB; segment 'p1 + tri' level +1.98 dB (ref -15.1 dBFS); segment 'p1 + tri' re first segment: ours +3.05, ref +1.27 dB
+* **nes_noise_s05** (noise short (93-step) mode, period index 5 (96 CPU cycles), f0 200.47 Hz): H1 -3.58 dB (ref 0.0, ours -3.6 dB re H1); H2 -3.80 dB (ref 0.2, ours -3.6 dB re H1); H3 -3.82 dB (ref 0.2, ours -3.6 dB re H1); H4 -3.80 dB (ref 0.2, ours -3.6 dB re H1); H5 -3.77 dB (ref 0.1, ours -3.6 dB re H1); H6 -3.72 dB (ref 0.1, ours -3.6 dB re H1); H7 -3.66 dB (ref -0.0, ours -3.7 dB re H1); H8 -3.59 dB (ref -0.1, ours -3.7 dB re H1); H9 -3.51 dB (ref -0.2, ours -3.7 dB re H1); H10 -3.41 dB (ref -0.4, ours -3.8 dB re H1)
+* **nes_dmc_r04_loop** (DMC rate 4 (6257.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): level L -1.94 dB (ref -21.0 dBFS); level R -1.94 dB (ref -21.0 dBFS); H1 -1.96 dB (ref 0.0, ours -2.0 dB re H1); H2 +26.44 dB (ref -115.5, ours -33.6 dB re H1); H3 -2.24 dB (ref -18.7, ours -20.9 dB re H1); H4 +14.57 dB (ref -134.0, ours -45.4 dB re H1); H5 -2.27 dB (ref -27.3, ours -29.6 dB re H1); H6 +7.79 dB (ref -119.2, ours -52.2 dB re H1); H7 -2.28 dB (ref -32.8, ours -35.1 dB re H1); H8 +3.11 dB (ref -116.2, ours -56.9 dB re H1); H9 -2.29 dB (ref -36.8, ours -39.1 dB re H1)
+* **nes_dmc_r15_loop** (DMC rate 15 (33143.9 Hz), 17-byte loop of a 34-bit triangle pattern, $4011 = 40): level L -2.26 dB (ref -20.7 dBFS); level R -2.26 dB (ref -20.7 dBFS); H1 -2.32 dB (ref 0.0, ours -2.3 dB re H1); H2 +26.05 dB (ref -135.5, ours -34.0 dB re H1); H3 -2.33 dB (ref -19.0, ours -21.3 dB re H1); H4 +14.06 dB (ref -128.0, ours -45.9 dB re H1); H5 -2.36 dB (ref -27.8, ours -30.2 dB re H1); H6 +7.04 dB (ref -125.8, ours -53.0 dB re H1); H7 -2.28 dB (ref -33.7, ours -36.0 dB re H1); H8 +2.11 dB (ref -128.6, ours -57.9 dB re H1); H9 -1.98 dB (ref -38.3, ours -40.3 dB re H1)
+* **nes_mix_pulse** (pulse 1 (t = 253, 440.4 Hz) and pulse 2 (t = 200, 556.6 Hz), duty 2, volume combinations): level L -0.54 dB (ref -16.3 dBFS); level R -0.54 dB (ref -16.3 dBFS); segment 'p2 15' level -0.53 dB (ref -15.6 dBFS); segment 'p1 15 + p2 15' level -0.81 dB (ref -13.6 dBFS); segment 'p1 15 + p2 15' re first segment: ours +1.76, ref +2.54 dB; segment 'p1 15 + p2 15' IMD 116.1 Hz: ours -24.0, ref -52.8 dB; segment 'p1 15 + p2 15' IMD 324.3 Hz: ours -81.9, ref -56.5 dB; segment 'p1 15 + p2 15' IMD 672.6 Hz: ours -89.2, ref -58.9 dB; segment 'p1 15 + p2 15' IMD 996.9 Hz: ours -24.0, ref -66.6 dB; segment 'p1 8 + p2 8' IMD 116.1 Hz: ours -28.8, ref -52.0 dB; segment 'p1 8 + p2 8' IMD 324.3 Hz: ours -90.7, ref -55.0 dB; segment 'p1 8 + p2 8' IMD 672.6 Hz: ours -84.4, ref -55.5 dB; segment 'p1 8 + p2 8' IMD 996.9 Hz: ours -28.8, ref -61.7 dB; segment 'p1 4 + p2 4' level -2.26 dB (ref -21.7 dBFS); segment 'p1 4 + p2 4' re first segment: ours -7.80, ref -5.57 dB; segment 'p1 4 + p2 4' IMD 116.1 Hz: ours -34.4, ref -46.0 dB; segment 'p1 4 + p2 4' IMD 324.3 Hz: ours -93.0, ref -44.9 dB; segment 'p1 4 + p2 4' IMD 672.6 Hz: ours -84.0, ref -56.0 dB; segment 'p1 4 + p2 4' IMD 996.9 Hz: ours -34.4, ref -61.4 dB; segment 'p1 15 + p2 4' IMD 116.1 Hz: ours -32.2, ref -46.6 dB; segment 'p1 15 + p2 4' IMD 324.3 Hz: ours -85.8, ref -47.5 dB; segment 'p1 15 + p2 4' IMD 672.6 Hz: ours -82.9, ref -52.6 dB; segment 'p1 15 + p2 4' IMD 996.9 Hz: ours -32.2, ref -62.5 dB
+* **nes_mix_tri_dmc** (triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)): level L -1.10 dB (ref -19.2 dBFS); level R -1.10 dB (ref -19.2 dBFS); segment 'tri, dmc 0' level +3.10 dB (ref -19.1 dBFS); segment 'tri, dmc 32' level +0.99 dB (ref -19.1 dBFS); segment 'tri, dmc 32' re first segment: ours -2.12, ref -0.01 dB; segment 'tri, dmc 64' level -0.87 dB (ref -19.1 dBFS); segment 'tri, dmc 64' re first segment: ours -4.02, ref -0.05 dB; segment 'tri, dmc 96' level -2.56 dB (ref -19.2 dBFS); segment 'tri, dmc 96' re first segment: ours -5.74, ref -0.08 dB; segment 'tri, dmc 127' level -3.79 dB (ref -19.4 dBFS); segment 'tri, dmc 127' re first segment: ours -7.24, ref -0.36 dB
+* **nes_mix_noise_dmc** (noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127 (triangle at its power-up step, 15)): level L -1.24 dB (ref -20.0 dBFS); level R -1.24 dB (ref -20.0 dBFS); segment 'noise, dmc 0' level +1.78 dB (ref -19.7 dBFS); segment 'noise, dmc 64' level -1.36 dB (ref -20.0 dBFS); segment 'noise, dmc 64' re first segment: ours -3.46, ref -0.32 dB; segment 'noise, dmc 127' level -3.51 dB (ref -20.8 dBFS); segment 'noise, dmc 127' re first segment: ours -6.38, ref -1.08 dB
+* **nes_mix_tri_noise** (triangle t = 126 alone, + noise index 8 volume 15, + DMC 64): level L +1.56 dB (ref -16.6 dBFS); level R +1.56 dB (ref -16.6 dBFS); segment 'tri alone' level +2.89 dB (ref -18.9 dBFS); segment 'tri + noise' level +2.70 dB (ref -16.3 dBFS); segment 'tri + noise, dmc 64' re first segment: ours -1.42, ref +1.95 dB
+* **nes_mix_pulse_tri** (pulse 1 (t = 253, 440.4 Hz, volume 15) alone, triangle (t = 100, 553.8 Hz) alone, both (separate mixer groups)): level L +1.71 dB (ref -16.2 dBFS); level R +1.71 dB (ref -16.2 dBFS); segment 'tri alone' level +2.06 dB (ref -18.1 dBFS); segment 'tri alone' re first segment: ours +0.14, ref -1.71 dB; segment 'p1 + tri' level +1.99 dB (ref -15.1 dBFS); segment 'p1 + tri' re first segment: ours +3.06, ref +1.27 dB
 
 #### Test side against the documented schedule and mixer formula (NES: ours vs Game Music Emu NSF player (FFmpeg libgme; NSF subset))
 

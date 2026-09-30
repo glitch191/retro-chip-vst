@@ -1731,6 +1731,10 @@ the fidelity review of 2026-09-28).
   both clocks downsample, so the kernel (cutoff 0.45) is identical and switching NTSC/PAL on the
   audio thread needs no re-allocation. The synths track changes only; after `reset()` the
   power-up DC level (A20) is taken as the reference so a reset does not produce a thump.
+* Kernel: `IntegratedStep` since 2026-09-30 (product-owner decision), as the SNES and Genesis
+  engines: exact band-limited steps with a flat pass band. The earlier `ImpulseSum` kernel
+  boosted the top octave by (w/2)/sin(w/2) (+0.9 dB at 11 kHz at 44.1 kHz; refcheck finding
+  F2); `chiptool regs nes --kernel impulse` still renders it for that measurement.
 * While the triangle is ultrasonic (A2) its stepping sequencer value is left out of the level
   comparison (the mixer uses 7.5 anyway), so the mixer is only evaluated when another channel
   changes rather than on every CPU cycle.

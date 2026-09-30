@@ -70,6 +70,7 @@ void EngineHost::attachParameters (const ParamRegistry& registry, juce::AudioPro
     voiceModeParam = apvts.getRawParameterValue (ParamIds::voiceMode);
     polyChannelsParam = apvts.getRawParameterValue (ParamIds::polyChannels);
     masterGainParam = apvts.getRawParameterValue (ParamIds::masterGain);
+    presetGainParam = apvts.getRawParameterValue (ParamIds::presetGain);
     arpEnabledParam = apvts.getRawParameterValue (ParamIds::arpEnabled);
     arpPatternParam = apvts.getRawParameterValue (ParamIds::arpPattern);
     arpOctavesParam = apvts.getRawParameterValue (ParamIds::arpOctaves);
@@ -80,7 +81,7 @@ void EngineHost::attachParameters (const ParamRegistry& registry, juce::AudioPro
     arpHoldParam = apvts.getRawParameterValue (ParamIds::arpHold);
     glideTimeParam = apvts.getRawParameterValue (ParamIds::glideTime);
     glideModeParam = apvts.getRawParameterValue (ParamIds::glideMode);
-    jassert (chipParam != nullptr && masterGainParam != nullptr);
+    jassert (chipParam != nullptr && masterGainParam != nullptr && presetGainParam != nullptr);
 
     const int idx = juce::jlimit (0, kNumChips - 1, static_cast<int> (readRaw (chipParam, 0.0f)));
     current = static_cast<chipdsp::ChipId> (idx);
@@ -125,9 +126,9 @@ void EngineHost::prepare (double newSampleRate, int maxBlockSize)
     glideParamsValid = false;
     rawOutputValid = false;
 
-    // Start at the current master gain: reset() copies targetGain into gain, and without this
+    // Start at the current output gain: reset() copies targetGain into gain, and without this
     // the first block after prepare() would ramp from unity to the stored gain.
-    targetGain = juce::Decibels::decibelsToGain (readRaw (masterGainParam, 0.0f), -60.0f);
+    targetGain = outputGainTarget();
 
     prepared = true;
     reset();
@@ -407,7 +408,15 @@ void EngineHost::pushParameters() noexcept
 
     configureAllocator (false);
 
-    targetGain = juce::Decibels::decibelsToGain (readRaw (masterGainParam, 0.0f), -60.0f);
+    targetGain = outputGainTarget();
+}
+
+float EngineHost::outputGainTarget() const noexcept
+{
+    // preset_gain (the preset's playing level) and master_gain add in dB and share one ramp.
+    // Both act after the chip's output, so channel ratios and the NES mixer curve are untouched.
+    const float db = readRaw (masterGainParam, 0.0f) + readRaw (presetGainParam, 0.0f);
+    return juce::Decibels::decibelsToGain (db, -60.0f);
 }
 
 void EngineHost::configureAllocator (bool force) noexcept

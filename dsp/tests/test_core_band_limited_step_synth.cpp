@@ -177,8 +177,8 @@ TEST_CASE("BandLimitedStepSynth: integrated-step kernel settles exactly and is c
 TEST_CASE("BandLimitedStepSynth: integrated-step kernel is flat, impulse-sum kernel boosts by (w/2)/sin(w/2)", "[resampler]")
 {
     // refcheck-report.md finding F2: sampled impulses integrated by a discrete running sum give
-    // H(w) / (1 - e^-jw) instead of H(w) / (jw). The integrated-step kernel removes that; the
-    // impulse-sum kernel (kept for the NES) keeps it.
+    // H(w) / (1 - e^-jw) instead of H(w) / (jw). The integrated-step kernel (every engine) removes
+    // that; the legacy impulse-sum kernel (chiptool regs nes --kernel impulse) keeps it.
     for (double f : { 1000.0, 5000.0, 11190.0, 13980.0 })
     {
         const double w = 2.0 * std::numbers::pi * f / 44100.0;

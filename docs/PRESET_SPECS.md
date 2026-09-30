@@ -12,6 +12,7 @@ tools/presetgen/__init__.py
 tools/presetgen/model.py        Preset dataclass, parameter bounds loaded from tools/presetgen/params/<chip>.json
 tools/presetgen/naming.py       mechanical naming from parameters
 tools/presetgen/qa.py           perceptual de-duplication + report -> docs/PRESET_QA.md
+tools/presetgen/level.py        playing level: global preset_gain from the rendered features
 tools/presetgen/seeds/nes.py    curated seed patches + variation rules per category
 tools/presetgen/seeds/snes.py
 tools/presetgen/seeds/genesis.py
@@ -28,7 +29,8 @@ guesses hardware bounds. Until the engines exist they are hand-written from
 ## Preset document
 
 See `docs/PLUGIN_SPECS.md` ("Presets"). Keys are engine parameter keys without the chip
-prefix. `global` may set arpeggiator/glide parameters (used by "Arp" categories).
+prefix. `global` may set arpeggiator/glide parameters (used by "Arp" categories), the
+channel mask `poly_channels` and the playing-level gain `preset_gain` (below).
 
 ## Categories and subcategories
 
@@ -79,6 +81,35 @@ envelope distance; pairs under the documented thresholds are removed too. The re
 lists every removal with the pair and the reason. Batch processing uses a process pool
 sized to `os.cpu_count() - 1` (override with `--jobs`), and results are sorted by
 deterministic keys before writing.
+
+QA compares globals with `poly_channels` and `preset_gain` left out (`qa.IGNORED_GLOBALS`):
+the mask only routes notes, and `preset_gain` is computed from the renders after the
+de-duplication. The feature comparisons (including the 1 dB level rule) keep measuring the
+chip output without `preset_gain`.
+
+## Playing level (`level.py`)
+
+The chip output is hardware-relative, so each preset carries `global.preset_gain` (dB,
+-24..+36), which the plugin applies after the chip together with `master_gain`. The
+generator derives it from the long pass of `chiptool features` (C4, velocity 100, 48 kHz,
+held 1.4 s of 2 s, after the 0.4 s pre-roll), which is rendered without `preset_gain`:
+
+* `held_rms_db`: stereo RMS (mean of the left and right squares) over the 10 ms windows
+  between note-on and note-off whose RMS is within 20 dB of the loudest window, i.e. the
+  part of the hold where the note sounds; dBFS with 1.0 = 0 dBFS (a full-scale sine is
+  -3 dBFS);
+* `peak_db`, `peak_short_db`: largest absolute sample of either channel over the long pass
+  and over the short pass (C3, 80 ms).
+
+Rule: `gain = min(-18 - held_rms_db, -1 - max(peak_db, peak_short_db))`, rounded to the
+nearest 0.5 dB, lowered by 0.5 dB when the rounding would put the peak above -1 dBFS, and
+clamped to -24..+36 dB. The held note then plays at about -18 dBFS RMS unless its peak
+reaches -1 dBFS first (percussive and decaying sounds) or the +36 dB bound stops it (the
+softest PSG variants). Arpeggiator presets are measured as the single note the features
+render plays, like the others. A silent render keeps 0 dB; a preset without features gets
+no `preset_gain` (the plugin then uses 0 dB). Only `gen_presets.py --features` writes it;
+the candidate banks of step 3 in the README have none. The report lists the distribution
+per chip.
 
 ## Naming
 

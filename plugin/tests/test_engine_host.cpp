@@ -556,6 +556,80 @@ TEST_CASE ("Master gain scales the main and channel outputs", "[enginehost][gain
     CHECK (maxBusError <= 1.0e-6f);
 }
 
+TEST_CASE ("Preset gain scales the outputs and adds to the master gain in dB", "[enginehost][gain]")
+{
+    constexpr int kBlocks = 30;
+    auto render = [] (float masterDb, float presetDb, std::vector<float>& mainOut, std::vector<float>& busOut)
+    {
+        auto proc = rcvtest::makeProcessor();
+        rcvtest::setRaw (*proc, rcv::ParamIds::masterGain, masterDb);
+        rcvtest::setRaw (*proc, rcv::ParamIds::presetGain, presetDb);
+        rcvtest::enableChannelBuses (*proc, 1);
+        rcvtest::Runner runner (*proc, kSampleRate, kBlock);
+        for (int b = 0; b < kBlocks; ++b)
+        {
+            if (b == 0)
+                runner.noteOn (1, 57, 110);
+            runner.process();
+            mainOut.insert (mainOut.end(), runner.mainChannel (0), runner.mainChannel (0) + kBlock);
+            busOut.insert (busOut.end(), runner.busChannel (1, 0), runner.busChannel (1, 0) + kBlock);
+        }
+    };
+
+    std::vector<float> unityMain, unityBus, loudMain, loudBus, mixedMain, mixedBus;
+    render (0.0f, 0.0f, unityMain, unityBus);
+    render (0.0f, 12.0f, loudMain, loudBus);      // preset_gain alone
+    render (-6.0f, 3.5f, mixedMain, mixedBus);    // the two gains add in dB: -2.5 dB
+
+    const float loudGain = std::pow (10.0f, 12.0f / 20.0f);
+    const float mixedGain = std::pow (10.0f, -2.5f / 20.0f);
+    float maxError = 0.0f;
+    for (size_t i = 0; i < unityMain.size(); ++i)
+    {
+        const float tolerance = 1.0e-6f * std::max (1.0f, std::abs (loudGain * unityMain[i]));
+        maxError = std::max (maxError, std::abs (loudMain[i] - loudGain * unityMain[i]) - tolerance);
+        maxError = std::max (maxError, std::abs (loudBus[i] - loudGain * unityBus[i]) - tolerance);
+        maxError = std::max (maxError, std::abs (mixedMain[i] - mixedGain * unityMain[i]) - tolerance);
+        maxError = std::max (maxError, std::abs (mixedBus[i] - mixedGain * unityBus[i]) - tolerance);
+    }
+    CHECK (rcvtest::rms (unityMain.data(), static_cast<int> (unityMain.size())) > 1.0e-3);
+    CHECK (maxError <= 1.0e-6f);
+}
+
+TEST_CASE ("A preset_gain change ramps over one block like master_gain", "[enginehost][gain]")
+{
+    // Two identical processors; the second one gets preset_gain +20 dB (x10) before block 20.
+    auto reference = rcvtest::makeProcessor();
+    auto changed = rcvtest::makeProcessor();
+    rcvtest::Runner a (*reference, kSampleRate, kBlock);
+    rcvtest::Runner b (*changed, kSampleRate, kBlock);
+    a.noteOn (1, 57, 110);
+    b.noteOn (1, 57, 110);
+    float rampError = 0.0f, afterError = 0.0f, level = 0.0f;
+    for (int block = 0; block < 22; ++block)
+    {
+        if (block == 20)
+            rcvtest::setRaw (*changed, rcv::ParamIds::presetGain, 20.0f);
+        a.process();
+        b.process();
+        for (int i = 0; i < kBlock; ++i)
+        {
+            const float x = a.mainChannel (0)[i];
+            const float y = b.mainChannel (0)[i];
+            if (block < 20)
+                afterError = std::max (afterError, std::abs (y - x));
+            else if (block == 20)   // linear ramp from x1 to x10 over the block
+                rampError = std::max (rampError, std::abs (y - x * (1.0f + 9.0f * static_cast<float> (i + 1) / kBlock)));
+            else
+                afterError = std::max (afterError, std::abs (y - 10.0f * x));
+            level = std::max (level, std::abs (x));
+        }
+    }
+    REQUIRE (level > 1.0e-3f);
+    CHECK (rampError <= 1.0e-5f);
+    CHECK (afterError <= 1.0e-5f);
+}
+
 TEST_CASE ("Sustain pedal holds note-offs until it is released", "[enginehost][sustain]")
 {
     auto proc = rcvtest::makeProcessor();

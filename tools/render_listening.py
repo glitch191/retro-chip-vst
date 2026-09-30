@@ -202,6 +202,8 @@ def write_index(path: Path, rows: list[dict], commit: str) -> None:
         "* **after**: the working tree (`assets/presets`, `assets/samples`).",
         "* Both sides use the same, current engine build: the pairs isolate the preset and sample",
         "  changes (CC0 samples, SNES and Genesis seed redesign), not the engine fixes.",
+        "* Levels: `chiptool render` applies each preset's `global.preset_gain`, as the plugin",
+        "  does; banks without it (before 2026-09-30) play at the hardware-relative chip level.",
         "* When the redesign renamed or replaced a preset, **before** is the closest preset of the",
         "  same family in the old bank (both names are listed).",
         "* \"identical\" means the two WAV files are byte-identical (unchanged preset, kept as a",
