@@ -297,6 +297,9 @@ int Ym2612Core::computeChannel(Channel& ch) noexcept
     const AlgoDef& algo = kAlgorithm[ch.algorithm];
     for (auto& op : ch.op)
         op.prevOut = op.out;
+    // S1 as a modulator comes from its feedback history, captured before S1 is evaluated:
+    // index = delay in samples (modulatorDelay() is 1 or 2 for S1).
+    const int s1History[3] = { 0, ch.fb1, ch.fb2 };
 
     for (int k = 0; k < 4; ++k)
     {
@@ -314,7 +317,13 @@ int Ym2612Core::computeChannel(Channel& ch) noexcept
             int sum = 0;
             for (int j = 0; j < 4; ++j)
                 if ((algo.modMask[s] >> j) & 1)
-                    sum += modulatorIsDelayed(s, j) ? ch.op[j].prevOut : ch.op[j].out;
+                {
+                    const int delay = modulatorDelay(s, j);
+                    if (j == 0)
+                        sum += s1History[delay];
+                    else
+                        sum += delay != 0 ? ch.op[j].prevOut : ch.op[j].out;
+                }
             mod = sum >> 1;
         }
         op.out = operatorOutput(static_cast<int>(op.phase20 >> 10) + mod, egOutput(ch, op));
