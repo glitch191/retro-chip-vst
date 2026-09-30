@@ -10,39 +10,50 @@ Pipeline (run tools\\refcheck\\make_stimuli.py first):
 
 1. Reference renders (binaries under third_party\\refemu, see docs/research/reference-emulators.md;
    we only run them and never read their source):
-   * Genesis: VGMPlay 0.40.9 in silent WAV-logging mode (LogSound = 1), 44100 Hz, chip
-     sample mode "native", two configurations: ``nuked`` (YM2612 = Nuked OPN2, chip type
-     "YM2612" without the Model 1 filter; SN76496 = MAME core) and ``mame`` (YM2612 = MAME /
-     Genesis Plus GX core; SN76496 = Maxim core).
+   * Genesis: VGMPlay 0.40.9 in silent WAV-logging mode (LogSound = 1) at 44100 Hz, two
+     configurations: ``nuked`` (YM2612 = Nuked OPN2, chip type "YM2612" without the Model 1
+     filter, chip sample rate 384 kHz; SN76496 = MAME core) and ``mame`` (YM2612 = MAME /
+     Genesis Plus GX core, native chip rate; SN76496 = Maxim core).
    * SNES: FFmpeg's libgme demuxer (Game Music Emu SPC player) at 32000 Hz.
 2. Our renders: ``chiptool regs`` (the same register sequences fed straight into
    Ym2612Core / Sn76489Core / SnesDsp; Genesis through the engine output path at 44100 Hz
    with the ladder effect on and the Model 1 low-pass off, SNES native 32 kHz).
-3. Analysis per stimulus (mono = (L + R) / 2 unless stated):
-   * Pre-conditioning, identical for both sides: subtract the first sample, then a 20 Hz
-     2nd-order Butterworth high-pass (removes the reference's un-blocked ladder / PSG DC,
-     which our 5 Hz coupling capacitor already removes). Documented analysis artefact.
-   * Alignment: coarse lag from the onsets (first sample above 1 % of the peak), refined
-     by time-domain cross-correlation over +/-64 samples on 4096 samples after the onset;
-     the sign of the best correlation gives the polarity (the S-DSP inverts its output).
+3. Analysis per stimulus, on the channel with more reference energy (levels per channel):
+   * Pre-conditioning (``precondition``): idle level removed and the silent lead-in zeroed;
+     Genesis references get the 5 Hz coupling capacitor our output path has; then, both
+     sides, a 60 Hz 4th-order Butterworth high-pass and (Genesis) a 15 kHz 4th-order
+     low-pass. Documented analysis choices, identical on both sides.
+   * Reference time-base correction (Nuked only, measured on fm_sine_ref against the public
+     frequency formula; the DAC stimulus is exempt), see ``main``.
+   * Alignment: YM2612 stimuli share the lag of fm_sine_ref; others: coarse lag from the
+     onsets (first sample above 1 % of the peak), refined by time-domain cross-correlation
+     over +/-64 samples on 4096 samples after the onset. The correlation sign gives the
+     polarity (the S-DSP inverts its output). The analysis runs on our time base (the
+     manifest times are exact there).
    * Level matching: ONE global gain constant per chip (YM2612, SN76489, S-DSP), the RMS
      ratio ref/ours of the calibration stimulus (fm_sine_ref, psg_tone_ref, snes_sine_ref)
      over its steady window, applied unchanged to every stimulus of that chip.
    * Pitch: peak of the Hann-windowed DTFT near the expected f0 (golden-section refined),
      ours vs ref in cents.
    * Level: RMS over the steady window, per channel (L, R), ours - ref in dB.
-   * Harmonics H1..H10: Hann-windowed DTFT magnitude at k * f0 (each side at its own f0),
-     in dB, floored at -60 dB re the reference H1; ours - ref.
-   * Envelope timing (kind env): 2 ms RMS envelope; attack crossing times of -40/-20/-6/-1 dB
-     re peak, decay crossings of -3/-6/-12/-20 dB after the peak, release crossings of
-     -6/-20/-40 dB re the level at key-off; each duration ours vs ref in %.
-   * Envelope shape: RMS dB difference of the 2 ms envelopes where the reference is within
-     60 dB of its peak.
+   * Harmonics H1..H10: Hann-windowed DTFT magnitude at k * f0_ref on both sides (at each
+     side's own f0 when the pitch differs by more than 5 cents), in dB re the reference H1,
+     floored at -60 dB; ours - ref.
+   * Envelope timing (kinds env, ssg): 4 ms sliding RMS every 0.25 ms, crossings
+     interpolated; attack times to -20/-6/-1 dB re peak (from the -40 dB crossing), decay
+     times to -3/-6/-12/-20 dB after the peak, release times to -6/-20/-40 dB re the level
+     at key-off; each duration ours vs ref in % (differences under 0.5 ms are below the
+     resolution and not flagged).
+   * Envelope modulation (kinds ssg, lfo_am): depth (5th..95th percentile of the dB
+     envelope) and period (envelope autocorrelation).
+   * Envelope shape: RMS dB difference of the envelopes where the reference is within 60 dB
+     of its peak.
    * Spectral distance: RMS dB difference of 1/6-octave band powers (Hann 4096, hop 2048,
      active frames), bands within 70 dB of the loudest reference band.
    * Null test: 10 log10(ref energy / residual energy) after alignment and gain.
 4. Writes the Markdown report (tables + every deviation beyond the thresholds: pitch 1 cent,
-   harmonics 1 dB, envelope timing 3 %, per-channel level 0.5 dB).
+   harmonics 1 dB, envelope timing 3 %, per-channel level 0.5 dB), keeping the hand-written
+   diagnosis block, and ``build-reports/refcheck/results.json``.
 
 Standard-library Python only (no numpy).
 """
@@ -72,6 +83,11 @@ TH_ENV_MIN_MS = 0.5        # envelope timing differences below this are under th
 HARM_FLOOR_DB = -60.0
 CALIBRATION = {"ym2612": "fm_sine_ref", "sn76489": "psg_tone_ref", "sdsp": "snes_sine_ref"}
 GENESIS_REFS = ("nuked", "mame")
+# Chips whose renders share one lag per comparison (measured on the calibration stimulus):
+# the YM2612 sides apply the same VGM writes at the same times, while slow attacks make a
+# per-stimulus correlation ambiguous by whole periods. The PSG's initial tone phase differs
+# between cores and the SNES reference may skip leading silence, so those align per stimulus.
+GLOBAL_LAG_UNITS = {"ym2612"}
 DIAG_BEGIN = "<!-- BEGIN DIAGNOSIS (hand-written, kept by compare.py) -->"
 DIAG_END = "<!-- END DIAGNOSIS -->"
 
@@ -180,7 +196,9 @@ def precondition(x: list[float], rate: int, on: int, coupling: bool = False, low
     (the stimuli are silent there; this drops the reference's power-on DC step); with
     'coupling' the 5 Hz one-pole coupling capacitor our Genesis output path models (same
     formula as chipdsp::OnePoleHighPass), so that DC steps (ladder offsets, PSG unipolar
-    levels) take the same path on both sides; then a 20 Hz 2nd-order Butterworth high-pass;
+    levels) take the same path on both sides; then a 60 Hz 4th-order Butterworth high-pass
+    (removes the DC-step tails that would otherwise dominate fast releases; the lowest
+    stimulus fundamental is 107 Hz, attenuated by 0.03 dB, identically on both sides);
     with 'lowpass' a 15 kHz 4th-order Butterworth low-pass (Genesis only: the players'
     resamplers treat content above 15 kHz differently, e.g. the YM2612's 26.6 kHz chatter)."""
     a, b = max(0, on - int(0.025 * rate)), max(1, on - int(0.005 * rate))
@@ -194,7 +212,8 @@ def precondition(x: list[float], rate: int, on: int, coupling: bool = False, low
             prev_out = alpha * (prev_out + v - prev_in)
             prev_in = v
             y[i] = prev_out
-    y = highpass20(y, rate)
+    for q in (0.5411961, 1.3065630):
+        y = biquad_highpass(y, rate, 60.0, q)
     if lowpass:
         for q in (0.5411961, 1.3065630):
             y = biquad_lowpass(y, rate, 15000.0, q)
@@ -237,10 +256,9 @@ def resample(x: list[float], factor: float) -> list[float]:
     return out
 
 
-def highpass20(x: list[float], rate: int) -> list[float]:
-    """20 Hz 2nd-order Butterworth high-pass (bilinear)."""
-    k = math.tan(math.pi * 20.0 / rate)
-    q = 1.0 / math.sqrt(2.0)
+def biquad_highpass(x: list[float], rate: int, fc: float, q: float) -> list[float]:
+    """2nd-order high-pass section (bilinear); two with Q 0.541/1.307 make a 4th-order Butterworth."""
+    k = math.tan(math.pi * fc / rate)
     norm = 1.0 / (1.0 + k / q + k * k)
     b0, b1, b2 = norm, -2.0 * norm, norm
     a1, a2 = 2.0 * (k * k - 1.0) * norm, (1.0 - k / q + k * k) * norm
@@ -445,7 +463,8 @@ def crossing(env: list[float], start: int, stop: int, level: float, rising: bool
 # ----- per-stimulus analysis ------------------------------------------------------------------
 
 def analyse(m: dict, rate: int, ref: tuple[list[float], list[float]], ours: tuple[list[float], list[float]],
-            gain: float | None, coupling_ref: bool = False, coupling_test: bool = False) -> dict:
+            gain: float | None, coupling_ref: bool = False, coupling_test: bool = False,
+            fixed_lag: int | None = None) -> dict:
     """coupling_ref / coupling_test: that side is a Genesis player render, which gets the
     coupling capacitor our output path has (15 kHz analysis low-pass on both Genesis sides)."""
     on = int(m["on"] * rate)
@@ -465,11 +484,26 @@ def analyse(m: dict, rate: int, ref: tuple[list[float], list[float]], ours: tupl
     # opposite-sign volumes and halve single-sided pans). Levels are reported per side.
     use_left = rms(refL[on:]) >= rms(refR[on:])
     ref_m, our_m = (refL, ourL) if use_left else (refR, ourR)
-    lag, pol, corr = align(ref_m, our_m, max(0, on - int(0.02 * rate)))
+    if fixed_lag is None:
+        lag, pol, corr = align(ref_m, our_m, max(0, on - int(0.02 * rate)))
+    else:
+        # Global lag of this chip (from its calibration stimulus); only the polarity is
+        # measured here. Avoids period-ambiguous lags on slow attacks.
+        lag = fixed_lag
+        a0 = max(0, on)
+        seg = min(len(ref_m) - a0, len(our_m) - a0 - lag, 8192)
+        c = sum(ref_m[a0 + i] * our_m[a0 + i + lag] for i in range(max(0, seg)))
+        e = math.sqrt(sum(v * v for v in ref_m[a0:a0 + seg]) * sum(v * v for v in our_m[a0 + lag:a0 + lag + seg])) or 1e-30
+        pol, corr = (1 if c >= 0 else -1), c / e
     n = len(ref_m)
 
-    oL = shifted(ourL, lag, n, pol)
-    oR = shifted(ourR, lag, n, pol)
+    # Everything below runs on the time base of the tested side (ours: the manifest times are
+    # exact there); the reference is moved by -lag. The polarity is applied to the test side.
+    refL = shifted(refL, -lag, n, 1.0)
+    refR = shifted(refR, -lag, n, 1.0)
+    ref_m = refL if use_left else refR
+    oL = [pol * v for v in ourL[:n]] + [0.0] * max(0, n - len(ourL))
+    oR = [pol * v for v in ourR[:n]] + [0.0] * max(0, n - len(ourR))
     om = oL if use_left else oR
     if gain is None:
         gain = rms(ref_m[sa:sb]) / max(rms(om[sa:sb]), 1e-12)
@@ -502,11 +536,12 @@ def analyse(m: dict, rate: int, ref: tuple[list[float], list[float]], ours: tupl
             wsum = len(xr) / 2.0
             h1 = None
             harms = []
+            f_o = f_ours if abs(res["pitch_cents"]) > 5.0 else f_ref
             for k in range(1, 11):
                 if k * f_ref >= 0.45 * rate:
                     break
                 mr = db(dtft_mag(xr, k * f_ref, rate) / wsum)
-                mo = db(dtft_mag(xo, k * f_ours, rate) / wsum)
+                mo = db(dtft_mag(xo, k * f_o, rate) / wsum)
                 if h1 is None:
                     h1 = mr
                 floor = h1 + HARM_FLOOR_DB
@@ -774,6 +809,7 @@ def main() -> None:
             continue
         # Calibration stimuli first.
         unit_gain: dict[str, float] = {}
+        unit_lag: dict[str, int] = {}
         cache: dict[str, dict] = {}
         ordered = sorted(rows, key=lambda m: 0 if m["name"] in CALIBRATION.values() else 1)
         for m in ordered:
@@ -802,7 +838,10 @@ def main() -> None:
             n = min(len(rl), len(tl))
             g = unit_gain.get(m["unit"])
             r = analyse(m, rate, (rl[:n], rr[:n]), (tl[:n], tr[:n]), g,
-                        coupling_ref=chip == "genesis", coupling_test=chip == "genesis" and test != "ours")
+                        coupling_ref=chip == "genesis", coupling_test=chip == "genesis" and test != "ours",
+                        fixed_lag=unit_lag.get(m["unit"]) if m["unit"] in GLOBAL_LAG_UNITS else None)
+            if m["name"] == CALIBRATION.get(m["unit"]) and m["unit"] in GLOBAL_LAG_UNITS:
+                unit_lag[m["unit"]] = r["lag"]
             r["timebase"] = tb
             if g is None:
                 unit_gain[m["unit"]] = r["gain"]
