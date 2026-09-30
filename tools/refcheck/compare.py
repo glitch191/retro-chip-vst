@@ -15,9 +15,15 @@ Pipeline (run tools\\refcheck\\make_stimuli.py first):
      filter, chip sample rate 384 kHz; SN76496 = MAME core) and ``mame`` (YM2612 = MAME /
      Genesis Plus GX core, native chip rate; SN76496 = Maxim core).
    * SNES: FFmpeg's libgme demuxer (Game Music Emu SPC player) at 32000 Hz.
+   * NES: VGMPlay 0.40.9 with its two NES APU cores, ``nsfplay`` (NSFPlay-derived, hardware-like
+     option set) and ``nesmame`` (MAME core), native chip rate, 44100 Hz; and, for the NSF subset
+     (static tones and mixer segments), Game Music Emu's NSF player through FFmpeg (``gmensf``).
 2. Our renders: ``chiptool regs`` (the same register sequences fed straight into
-   Ym2612Core / Sn76489Core / SnesDsp; Genesis through the engine output path at 44100 Hz
-   with the ladder effect on and the Model 1 low-pass off, SNES native 32 kHz).
+   Ym2612Core / Sn76489Core / SnesDsp / NesApu; Genesis through the engine output path at 44100 Hz
+   with the ladder effect on and the Model 1 low-pass off, SNES native 32 kHz, NES through the
+   Nes2A03Engine output path at 44100 Hz with console_filter = 0 (5 Hz DC blocker only), once
+   with the engine's ImpulseSum step kernel (``ours``) and once with the integrated-step kernel
+   (``ours_int``) so that the known kernel difference (refcheck F2) is measured separately).
 3. Analysis per stimulus, on the channel with more reference energy (levels per channel):
    * Pre-conditioning (``precondition``): idle level removed and the silent lead-in zeroed;
      Genesis references get the 5 Hz coupling capacitor our output path has; then, both
@@ -51,6 +57,14 @@ Pipeline (run tools\\refcheck\\make_stimuli.py first):
    * Spectral distance: RMS dB difference of 1/6-octave band powers (Hann 4096, hop 2048,
      active frames), bands within 70 dB of the loudest reference band.
    * Null test: 10 log10(ref energy / residual energy) after alignment and gain.
+   * NES only (mono: one channel analysed): the 15 kHz analysis low-pass as for the Genesis;
+     one gain constant from nes_pulse_ref and one time base from nes_dmc_direct ($4011 square,
+     edges set by the write times alone) for the timing stimuli; multi-segment stimuli (mixer
+     non-linearity): per-segment levels, levels relative to the first segment against the exact
+     mixer formula, intermodulation probes; gate events (length / linear counter, envelope end,
+     sweep mute, one-shot DMC) and the envelope staircase timed on the raw renders against the
+     frame-sequencer schedule computed by make_stimuli.py; sweep pitch tracks against the
+     documented trajectory. Threshold for these events: 1 ms plus half a period of the tone.
 4. Writes the Markdown report (tables + every deviation beyond the thresholds: pitch 1 cent,
    harmonics 1 dB, envelope timing 3 %, per-channel level 0.5 dB), keeping the hand-written
    diagnosis block, and ``build-reports/refcheck/results.json``.
@@ -71,6 +85,7 @@ import struct
 import subprocess
 import sys
 import wave
+from concurrent.futures import ProcessPoolExecutor
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 REFEMU = os.path.join(ROOT, "third_party", "refemu")
@@ -165,20 +180,34 @@ def vgmplay_dir(config: str) -> str:
 
 
 def render_all(manifest: list[dict], stimuli: str, work: str, chiptool: str) -> None:
-    ffmpeg = find_ffmpeg()
-    dirs = {c: vgmplay_dir(c) for c in GENESIS_REFS}
+    chips = {m["chip"] for m in manifest}
+    ffmpeg = find_ffmpeg() if "snes" in chips or any(m.get("nsf") for m in manifest) else ""
+    dirs = {c: vgmplay_dir(c) for c in (GENESIS_REFS if "genesis" in chips else ()) + (NES_REFS if "nes" in chips else ())}
     for m in manifest:
         name = m["name"]
         src = os.path.join(stimuli, m["file"])
-        if m["chip"] == "genesis":
-            for c, d in dirs.items():
+        if m["chip"] in ("genesis", "nes"):
+            for c in (GENESIS_REFS if m["chip"] == "genesis" else NES_REFS):
+                d = dirs[c]
                 tmp_vgm = os.path.join(d, name + ".vgm")
                 shutil.copy2(src, tmp_vgm)
                 subprocess.run([os.path.join(d, "VGMPlay.exe"), tmp_vgm], cwd=d, stdin=subprocess.DEVNULL,
                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=60)
                 os.replace(os.path.join(d, name + ".wav"), os.path.join(work, f"{name}.ref_{c}.wav"))
                 os.remove(tmp_vgm)
-            subprocess.run([chiptool, "regs", "genesis", src, os.path.join(work, f"{name}.ours.wav")], check=True)
+            if m["chip"] == "genesis":
+                subprocess.run([chiptool, "regs", "genesis", src, os.path.join(work, f"{name}.ours.wav")], check=True)
+            else:
+                # Engine output path (ImpulseSum kernel), and the integrated-step kernel of the
+                # F2 fix for the separate measurement of that known output-path difference.
+                subprocess.run([chiptool, "regs", "nes", src, os.path.join(work, f"{name}.ours.wav")], check=True)
+                subprocess.run([chiptool, "regs", "nes", src, os.path.join(work, f"{name}.ours_int.wav"),
+                                "--kernel", "integrated"], check=True)
+                if m.get("nsf"):
+                    # Third NES renderer: Game Music Emu's NSF player (same writes, frame-quantised).
+                    subprocess.run([ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "libgme",
+                                    "-sample_rate", "44100", "-i", os.path.join(stimuli, m["nsf"]), "-t", f"{m['end']:.3f}",
+                                    "-c:a", "pcm_s16le", os.path.join(work, f"{name}.ref_gmensf.wav")], check=True)
         else:
             subprocess.run([ffmpeg, "-hide_banner", "-loglevel", "error", "-y", "-f", "libgme", "-sample_rate", "32000",
                             "-i", src, "-t", f"{m['end']:.3f}", "-c:a", "pcm_s16le",
@@ -485,13 +514,25 @@ def analyse(m: dict, rate: int, ref: tuple[list[float], list[float]], ours: tupl
     """coupling_ref / coupling_test: that side is a Genesis player render, which gets the
     coupling capacitor our output path has (15 kHz analysis low-pass on both Genesis sides)."""
     on = int(m["on"] * rate)
-    lp = m["chip"] == "genesis"
-    refL, refR = (precondition(c, rate, on, coupling=coupling_ref, lowpass=lp) for c in ref)
-    ourL, ourR = (precondition(c, rate, on, coupling=coupling_test, lowpass=lp) for c in ours)
+    lp = m["chip"] in ("genesis", "nes")
+    if m["chip"] == "nes":
+        # Mono chip: both players and ours write L = R; analyse one channel, report it twice.
+        refL = refR = precondition(ref[0], rate, on, coupling=coupling_ref, lowpass=lp)
+        ourL = ourR = precondition(ours[0], rate, on, coupling=coupling_test, lowpass=lp)
+    else:
+        refL, refR = (precondition(c, rate, on, coupling=coupling_ref, lowpass=lp) for c in ref)
+        ourL, ourR = (precondition(c, rate, on, coupling=coupling_test, lowpass=lp) for c in ours)
     off = int(m["off"] * rate)
     steady = m.get("steady")
     if steady:
         sa, sb = int(steady[0] * rate), int(steady[1] * rate)
+    elif m["kind"] == "gate" or m.get("gate_expected"):
+        # Level window inside the gate (the note may end long before 'off').
+        g0 = m.get("gate_start", m["on"])
+        g1 = min(m["off"], m["gate_expected"] or m["off"])
+        sa, sb = int((g0 + min(0.02, 0.2 * (g1 - g0))) * rate), int((g1 - min(0.01, 0.1 * (g1 - g0))) * rate)
+        if m["kind"] in ("env", "sweep"):
+            sa, sb = int((g0 + 0.005) * rate), int((g0 + 0.035) * rate)
     else:
         sa = on + int((0.1 if m["kind"] == "tone" else 0.15) * rate)
         sb = off - int(0.02 * rate)
@@ -575,10 +616,28 @@ def analyse(m: dict, rate: int, ref: tuple[list[float], list[float]], ours: tupl
     first = max(0, to_i(on - int(0.005 * rate)))
     diffs = [o - r for r, o in list(zip(env_r, env_o))[first:] if r > peak - 60.0]
     res["env_shape_db"] = math.sqrt(sum(d * d for d in diffs) / len(diffs)) if diffs else 0.0
-    if m["kind"] in ("env", "ssg"):
+    if m["kind"] in ("env", "ssg") and m["unit"] != "2a03":
+        # (2A03 envelopes are staircases: fixed dB thresholds can sit on a step and flip by a
+        # whole step for a 0.1 dB difference; they are timed step by step instead, env_steps.)
         res["env_timing"] = env_timing(env_r, env_o, to_i(on), to_i(off))
     if m["kind"] in ("ssg", "lfo_am"):
         res["modulation"] = modulation(env_r, env_o, to_i(on + int(0.05 * rate)), to_i(off - int(0.02 * rate)))
+
+    if m["kind"] == "segments":
+        res["segments"] = segment_levels(m, rate, ref_m, om, gain)
+    if "gate_expected" in m:
+        # On the raw renders (aligned, gain and polarity applied): the analysis high-pass would
+        # turn the DC step at a note end into a tail of about 12 ms.
+        ch = 0 if use_left else 1
+        raw_r = shifted(ref[ch], -lag, n, 1.0)
+        raw_o = [pol * gain * v for v in ours[ch][:n]] + [0.0] * max(0, n - len(ours[ch]))
+        res["gate"] = gate_times(m, rate, raw_r, raw_o)
+    if "env_steps" in m:
+        ch = 0 if use_left else 1
+        res["env_steps"] = env_steps(m, rate, shifted(ref[ch], -lag, n, 1.0),
+                                     [pol * gain * v for v in ours[ch][:n]] + [0.0] * max(0, n - len(ours[ch])))
+    if m["kind"] == "sweep":
+        res["sweep"] = sweep_track(m, rate, ref_m, om)
 
     br = band_powers(ref_m, rate, on, min(n, off + int(0.3 * rate)))
     bo = band_powers(om, rate, on, min(n, off + int(0.3 * rate)))
@@ -587,6 +646,229 @@ def analyse(m: dict, rate: int, ref: tuple[list[float], list[float]], ours: tupl
         d = [o - r for r, o in zip(br, bo) if r > top - 70.0]
         res["spectral_db"] = math.sqrt(sum(v * v for v in d) / len(d)) if d else 0.0
     return res
+
+
+def probe_db(x: list[float], rate: float, freqs: list[float]) -> list[float]:
+    """Same measure as make_stimuli.probe_db: component amplitude (Hann DTFT, 2 |X| / sum(w))
+    in dB re sqrt(2) x the AC RMS of the segment."""
+    n = len(x)
+    mean = sum(x) / n
+    w = hann(n)
+    xw = [(v - mean) * wv for v, wv in zip(x, w)]
+    ref = math.sqrt(2.0 * sum((v - mean) ** 2 for v in x) / n) or 1e-30
+    return [db(2.0 * dtft_mag(xw, f, rate) / sum(w) / ref) for f in freqs]
+
+
+def segment_levels(m: dict, rate: int, ref: list[float], ours: list[float], gain: float) -> list[dict]:
+    """Per-segment levels (RMS, or peak for mode 'peak') of both sides after the global gain,
+    the formula prediction ('pred', AC RMS in mixer units, scaled by the same gain), levels
+    relative to the first RMS segment (gain independent: this is what checks the non-linear
+    mixer), and intermodulation probes where the stimulus lists them."""
+    out = []
+    first = None
+    for seg in m["segments"]:
+        a, b = int(seg["t0"] * rate), int(seg["t1"] * rate)
+        peak = seg.get("mode") == "peak"
+        f = (lambda x: max(abs(v) for v in x)) if peak else rms
+        e = dict(label=seg["label"], mode="peak" if peak else "rms", ref_db=db(f(ref[a:b])), ours_db=db(f(ours[a:b])))
+        e["diff_db"] = e["ours_db"] - e["ref_db"]
+        e["silent"] = seg.get("pred") == 0.0        # documented silence (e.g. volume 0)
+        if seg.get("pred"):
+            e["pred_db"] = db(seg["pred"] * gain)
+        if not peak and first is None and seg.get("pred"):
+            first = e
+        if seg.get("probes"):
+            e["probes"] = [dict(hz=hz, ref_db=r, ours_db=o, pred_db=p) for hz, r, o, p in
+                           zip(seg["probes"], probe_db(ref[a:b], rate, seg["probes"]), probe_db(ours[a:b], rate, seg["probes"]),
+                               seg.get("probes_pred", [None] * len(seg["probes"])))]
+        out.append(e)
+    if first is not None:
+        for e in out:
+            if e["mode"] == "rms" and not e["silent"]:
+                e["ref_rel_db"] = e["ref_db"] - first["ref_db"]
+                e["ours_rel_db"] = e["ours_db"] - first["ours_db"]
+                if "pred_db" in e:
+                    e["pred_rel_db"] = e["pred_db"] - first["pred_db"]
+    return out
+
+
+def p2p_track(x: list[float], w: int) -> list[float]:
+    """Peak-to-peak value of x over the trailing window [i - w + 1, i] (monotonic queues)."""
+    from collections import deque
+    hi, lo, out = deque(), deque(), []
+    for i, v in enumerate(x):
+        while hi and x[hi[-1]] <= v:
+            hi.pop()
+        hi.append(i)
+        while lo and x[lo[-1]] >= v:
+            lo.pop()
+        lo.append(i)
+        if hi[0] <= i - w:
+            hi.popleft()
+        if lo[0] <= i - w:
+            lo.popleft()
+        out.append(x[hi[0]] - x[lo[0]])
+    return out
+
+
+def gate_times(m: dict, rate: int, ref: list[float], ours: list[float]) -> dict:
+    """Start and end of a note gated by the chip itself (length counter, linear counter,
+    envelope reaching 0, sweep mute, one-shot DMC), from the edges of each raw render: the
+    activity is the largest sample-to-sample step over a trailing window of 1.1 periods of the
+    tone (edges of a square or of the triangle / DMC staircase; blind to DC steps and to slow
+    DC-blocker tails, and a held level, e.g. a halted triangle, counts as silence).
+    start = first edge (activity above steady - 20 dB); end = last edge before the key-off
+    write that is larger than steady + gate_db (default -20 dB; envelope decays -30 dB, i.e.
+    the level-1 edges count and level 0 is the end). The steady value is each
+    side's median over the first 5..30 ms of the gate. Times in ms after the note-start write,
+    with the documented schedule of make_stimuli ('expected') and the resolution (half a period
+    of the last audible tone: its last edge precedes the clock by up to that much)."""
+    t_on = m["on"]
+    g0 = m.get("gate_start", t_on)
+    g1 = m.get("gate_expected")
+    cpu = 1662607.0 if m.get("pal") else 1789773.0
+    f_start = f_end = m["f0"]
+    steps = m.get("sweep_steps")
+    if steps and g1 is not None:
+        last = steps[-2] if len(steps) > 1 and steps[-1][0] >= g1 - 1e-9 else steps[-1]
+        f_end = cpu / (16.0 * (last[1] + 1))
+    w_start = max(4, int(round(1.1 * rate / max(f_start, 1.0))))
+    thr_end = 10.0 ** (m.get("gate_db", -20.0) / 20.0)
+    stop = m["off"] if g1 is None else g1
+
+    def one(x: list[float]) -> tuple[float | None, float | None]:
+        d = [0.0] + [abs(x[i] - x[i - 1]) for i in range(1, len(x))]
+        act = p2p_track(d, w_start)
+        a = int((g0 + 0.005) * rate) + w_start
+        b = max(a + 1, min(int((g0 + 0.03) * rate) + w_start, int((stop - 0.001) * rate)))
+        seg = sorted(act[a:b])
+        steady = seg[len(seg) // 2]
+        if steady <= 0.0:
+            return None, None
+        start = next((i for i in range(max(0, int((t_on - 0.01) * rate)), len(act)) if act[i] > 0.1 * steady), None)
+        end = None
+        if g1 is not None and start is not None:
+            # The last edge before the key-off write (the gate is silent from its end to 'off').
+            stop_i = min(len(d), int((m["off"] + 0.002) * rate))
+            end = next((i for i in range(stop_i - 1, start, -1) if d[i] > thr_end * steady), None)
+        conv = lambda i: None if i is None else i * 1000.0 / rate - t_on * 1000.0
+        return conv(start), conv(end)
+
+    rs, re_ = one(ref)
+    os_, oe = one(ours)
+    return dict(start_ref_ms=rs, start_ours_ms=os_, start_expected_ms=(g0 - t_on) * 1000.0,
+                end_ref_ms=re_, end_ours_ms=oe, end_expected_ms=None if g1 is None else (g1 - t_on) * 1000.0,
+                resolution_ms=500.0 / max(f_end, 1.0), approx=bool(m.get("gate_approx")))
+
+
+def env_steps(m: dict, rate: int, ref: list[float], ours: list[float]) -> dict:
+    """Times of the 2A03 envelope steps against the documented staircase m['env_steps']
+    ([time, level], research "Envelope generator"): the square's amplitude is its AC RMS over a
+    trailing window of 4 periods of the raw render (independent of DC and of where the band-limited
+    edges fall between samples); a step is the crossing of the midpoint between the two levels'
+    mixer amplitudes (pulse group formula, scaled to each side's own level-15 value), searched
+    within +/- 45 % of the step interval around the documented time, and dated at the window
+    centre. Resolution: half a period of the tone (a level change waits for the next edge)."""
+    steps = m["env_steps"]
+    w = max(8, int(round(4.0 * rate / m["f0"])))
+    amp = lambda k: 0.0 if k == 0 else 95.88 / (8128.0 / k + 100.0)
+
+    def ac_track(x: list[float]) -> list[float]:
+        s1 = s2 = 0.0
+        out = []
+        for i, v in enumerate(x):
+            s1 += v
+            s2 += v * v
+            if i >= w:
+                u = x[i - w]
+                s1 -= u
+                s2 -= u * u
+            k = min(i + 1, w)
+            out.append(math.sqrt(max(s2 / k - (s1 / k) ** 2, 0.0)))
+        return out
+
+    def one(x: list[float]) -> list:
+        p = ac_track(x)
+        t0 = steps[0][0]
+        t1 = steps[1][0] if len(steps) > 1 else t0 + 0.004
+        a = int((t0 + 0.0005) * rate) + w
+        b = max(a + 1, int((t1 - 0.0005) * rate))
+        seg = sorted(p[a:b])
+        a15 = seg[len(seg) // 2]
+        out = []
+        for j in range(1, len(steps)):
+            (tp, lp), (t, lv) = steps[j - 1], steps[j]
+            dt = t - tp
+            thr = 0.5 * (amp(lp) + amp(lv)) / amp(15) * a15
+            lo = max(0, int((t - 0.45 * dt) * rate) + w // 2)
+            hi = min(len(p), int((t + 0.45 * dt) * rate) + w // 2)
+            hit = (lambda v: v < thr) if lv < lp else (lambda v: v > thr)
+            i = next((i for i in range(lo, hi) if hit(p[i])), None)
+            out.append(None if i is None else (i - w / 2.0) / rate)
+        return out
+
+    r, o = one(ref), one(ours)
+    doc = [st[0] for st in steps[1:]]
+    diff = lambda a, b: [1000.0 * (x - y) for x, y in zip(a, b) if x is not None and y is not None]
+    worst = lambda d: max(d, key=abs) if d else None
+    d_rd = sorted(diff(r, doc))
+    return dict(n=len(doc), found_ref=sum(x is not None for x in r), found_ours=sum(x is not None for x in o),
+                ours_vs_ref_ms=worst(diff(o, r)), ours_vs_doc_ms=worst(diff(o, doc)), ref_vs_doc_ms=worst(diff(r, doc)),
+                ref_median_vs_doc_ms=d_rd[len(d_rd) // 2] if d_rd else None, resolution_ms=500.0 / m["f0"])
+
+
+def zc_freq(x: list[float], rate: int) -> float | None:
+    """Mean frequency from the upward zero crossings of a segment (linear interpolation)."""
+    cr = []
+    for i in range(1, len(x)):
+        if x[i - 1] < 0.0 <= x[i]:
+            cr.append(i - 1 + (-x[i - 1]) / (x[i] - x[i - 1]))
+    if len(cr) < 2:
+        return None
+    return (len(cr) - 1) * rate / (cr[-1] - cr[0])
+
+
+def sweep_track(m: dict, rate: int, ref: list[float], ours: list[float]) -> dict:
+    """Frame-wise pitch of a sweep (zero-crossing frequency on frames of 0.6 x the documented step
+    interval, 128..1024 samples, hop an eighth of a frame), ours
+    vs the reference and both vs the documented trajectory (m['sweep_steps']: [time, period];
+    pulse f = cpu / (16 (t + 1))), on the frames that contain no documented period change (nor
+    one in the 2 ms before them): a reference whose steps come at other times then differs by
+    whole steps. Summaries: median / 90th percentile / max |cents|."""
+    cpu = 1662607.0 if m.get("pal") else 1789773.0
+    steps = m["sweep_steps"]
+    end = m["off"] if m.get("gate_expected") is None else m["gate_expected"]
+    # Frames of 0.6 x the shortest documented step interval (128..1024 samples), hop n / 8.
+    gaps = [b[0] - a[0] for a, b in zip(steps[1:], steps[2:])]
+    n = int(min(1024, max(128, 0.6 * min(gaps) * rate if gaps else 1024)))
+    hop = max(16, n // 8)
+    lo = max(rms(ref[int(m["on"] * rate):int(end * rate)]), 1e-12)
+    d_ref, d_spec_o, d_spec_r = [], [], []
+    for s in range(int((m["on"] + 0.005) * rate), int((end - 0.003) * rate) - n, hop):
+        fr, fo = zc_freq(ref[s:s + n], rate), zc_freq(ours[s:s + n], rate)
+        if rms(ref[s:s + n]) < lo * 0.01:
+            continue
+        t0, t1 = s / rate, (s + n) / rate
+        inside = [st for st in steps if st[0] <= t0]
+        # Clean frames only: no documented period change inside the frame or in the 20 ms
+        # before it (the analysis filters' transient after a pitch step).
+        nxt = [st for st in steps if t0 - 0.002 < st[0] < t1 and st is not steps[0]]
+        if inside and not nxt:
+            if fr and fo:
+                d_ref.append(1200.0 * math.log2(fo / fr))
+            f_spec = cpu / (16.0 * (inside[-1][1] + 1))
+            if fo:
+                d_spec_o.append(1200.0 * math.log2(fo / f_spec))
+            if fr:
+                d_spec_r.append(1200.0 * math.log2(fr / f_spec))
+
+    def summ(d: list[float]) -> dict:
+        a = sorted(abs(v) for v in d)
+        if not a:
+            return dict(n=0, median=None, p90=None, max=None)
+        return dict(n=len(a), median=a[len(a) // 2], p90=a[int(0.9 * (len(a) - 1))], max=a[-1])
+
+    return dict(ours_vs_ref=summ(d_ref), ours_vs_spec=summ(d_spec_o), ref_vs_spec=summ(d_spec_r), frame=n)
 
 
 def env_timing(env_r: list[float], env_o: list[float], i_on: int, i_off: int) -> list[dict]:
@@ -694,7 +976,10 @@ def deviations(r: dict) -> list[str]:
         if abs(h["diff_db"]) > TH_HARM_DB and max(h["ref_db"], h["ours_db"]) > HARM_FLOOR_DB:
             out.append(f"H{h['k']} {h['diff_db']:+.2f} dB (ref {h['ref_db']:.1f}, ours {h['ours_db']:.1f} dB re H1)")
     for e in r.get("env_timing", []):
-        if abs(e["diff_pct"]) > TH_ENV_PCT and abs(e["ours_ms"] - e["ref_ms"]) > TH_ENV_MIN_MS:
+        # NES envelopes step on the frame sequencer: a whole quarter frame late is under 3 % of
+        # a long decay, so an absolute limit applies there as well.
+        d_ms = abs(e["ours_ms"] - e["ref_ms"])
+        if (abs(e["diff_pct"]) > TH_ENV_PCT and d_ms > TH_ENV_MIN_MS) or (r["unit"] == "2a03" and d_ms > TH_NES_EVENT_MS):
             out.append(f"{e['stage']}: {e['diff_pct']:+.1f} % (ref {e['ref_ms']:.1f} ms, ours {e['ours_ms']:.1f} ms)")
     mod = r.get("modulation")
     if mod:
@@ -708,6 +993,70 @@ def deviations(r: dict) -> list[str]:
     v = r.get("vibrato")
     if v and abs(v["ours_pp_cents"] - v["ref_pp_cents"]) > max(TH_PITCH_CENTS, 0.05 * v["ref_pp_cents"]):
         out.append(f"vibrato depth {v['ours_pp_cents']:.1f} vs ref {v['ref_pp_cents']:.1f} cents p-p")
+    if r["kind"] == "mute":
+        lv = r["level"]["L"]
+        if max(lv["ref_db"], lv["ours_db"]) > -60.0 and abs(lv["diff_db"]) > 6.0:
+            out.append(f"mute: ref {lv['ref_db']:.1f} dBFS, ours {lv['ours_db']:.1f} dBFS")
+    for e in r.get("segments", []):
+        if e.get("silent"):
+            if max(e["ref_db"], e["ours_db"]) > -60.0 and abs(e["diff_db"]) > 6.0:
+                out.append(f"segment '{e['label']}' not silent: ref {e['ref_db']:.1f}, ours {e['ours_db']:.1f} dBFS")
+            continue
+        if e["mode"] == "rms" and max(e["ref_db"], e["ours_db"]) > -70.0 and abs(e["diff_db"]) > TH_LEVEL_DB:
+            out.append(f"segment '{e['label']}' level {e['diff_db']:+.2f} dB (ref {e['ref_db']:.1f} dBFS)")
+        if e["mode"] == "peak" and max(e["ref_db"], e["ours_db"]) > -60.0 and abs(e["diff_db"]) > 3.0:
+            out.append(f"segment '{e['label']}' peak {e['diff_db']:+.2f} dB (ref {e['ref_db']:.1f}, ours {e['ours_db']:.1f} dBFS)")
+        if "ref_rel_db" in e and abs(e["ours_rel_db"] - e["ref_rel_db"]) > TH_LEVEL_DB:
+            out.append(f"segment '{e['label']}' re first segment: ours {e['ours_rel_db']:+.2f}, ref {e['ref_rel_db']:+.2f} dB")
+        for p in e.get("probes", []):
+            if max(p["ref_db"], p["ours_db"]) > -60.0 and abs(p["ours_db"] - p["ref_db"]) > TH_HARM_DB:
+                out.append(f"segment '{e['label']}' IMD {p['hz']:.1f} Hz: ours {p['ours_db']:.1f}, ref {p['ref_db']:.1f} dB")
+    g = r.get("gate")
+    if g:
+        for stage in ("start", "end"):
+            o, rf = g[f"{stage}_ours_ms"], g[f"{stage}_ref_ms"]
+            if (o is None) != (rf is None):
+                out.append(f"gate {stage}: ref {rf}, ours {o}")
+            elif o is not None and abs(o - rf) > max(TH_NES_EVENT_MS, g.get("resolution_ms", 0.0)):
+                out.append(f"gate {stage} {o - rf:+.2f} ms (ref {rf:.2f} ms, ours {o:.2f} ms)")
+    es = r.get("env_steps")
+    if es:
+        tol = TH_NES_EVENT_MS + es["resolution_ms"]
+        if es["found_ref"] != es["found_ours"]:
+            out.append(f"envelope steps found: ref {es['found_ref']}, ours {es['found_ours']} of {es['n']}")
+        if es["ours_vs_ref_ms"] is not None and abs(es["ours_vs_ref_ms"]) > tol:
+            out.append(f"envelope step timing: worst ours - ref {es['ours_vs_ref_ms']:+.2f} ms")
+    sw = r.get("sweep")
+    if sw:
+        s = sw["ours_vs_ref"]
+        if s["n"] and (s["median"] > TH_PITCH_CENTS or s["p90"] > 10.0):
+            out.append(f"sweep pitch track |ours - ref| median {s['median']:.2f}, p90 {s['p90']:.2f}, max {s['max']:.1f} cents")
+    return out
+
+
+def spec_deviations(r: dict) -> list[str]:
+    """Ours against the documented schedule / formula (independent of the reference)."""
+    out = []
+    g = r.get("gate")
+    if g and not g["approx"]:
+        for stage in ("start", "end"):
+            o, x = g[f"{stage}_ours_ms"], g[f"{stage}_expected_ms"]
+            if o is not None and x is not None and abs(o - x) > max(TH_NES_EVENT_MS, g.get("resolution_ms", 0.0)):
+                out.append(f"gate {stage} {o - x:+.2f} ms vs documented {x:.2f} ms")
+    es = r.get("env_steps")
+    if es and es["ours_vs_doc_ms"] is not None and abs(es["ours_vs_doc_ms"]) > TH_NES_EVENT_MS + es["resolution_ms"]:
+        out.append(f"envelope steps vs documented: worst {es['ours_vs_doc_ms']:+.2f} ms")
+    if es and es["found_ours"] != es["n"]:
+        out.append(f"envelope steps vs documented: {es['found_ours']} of {es['n']} found")
+    sw = r.get("sweep")
+    # Frames under 512 samples (sweep periods P <= 1) resolve about 2 cents: the analysis
+    # filters' transient after each 8 ms step is still inside the next frame.
+    if sw and sw["ours_vs_spec"]["n"] and sw["ours_vs_spec"]["median"] > (TH_PITCH_CENTS if sw.get("frame", 1024) >= 512 else 2.0):
+        s = sw["ours_vs_spec"]
+        out.append(f"sweep vs documented trajectory: median {s['median']:.2f}, p90 {s['p90']:.2f} cents")
+    for e in r.get("segments", []):
+        if "pred_rel_db" in e and abs(e["ours_rel_db"] - e["pred_rel_db"]) > TH_LEVEL_DB:
+            out.append(f"segment '{e['label']}' re first: ours {e['ours_rel_db']:+.2f}, formula {e['pred_rel_db']:+.2f} dB")
     return out
 
 
@@ -735,6 +1084,69 @@ HEADER = ("| stimulus | lag (smp) | null (dB) | pitch (cents) | level L / R (dB)
           "max env timing (%) | env shape (dB) | spectral (dB) | devs |\n|---|---|---|---|---|---|---|---|---|---|")
 
 
+def nes_tables(res: list[dict]) -> list[str]:
+    """NES-specific tables: mixer segments and intermodulation, frame-sequencer events, sweeps."""
+    f = lambda v, fmt="+.2f": "" if v is None else format(v, fmt)
+    lines = []
+    seg_rows = [r for r in res if r.get("segments")]
+    if seg_rows:
+        lines.append("#### 2a03 mixer and multi-segment stimuli\n")
+        lines.append("Levels after the global gain. 're first' = level relative to the first segment of the same stimulus "
+                     "(gain independent; the formula column is the exact non-linear mixer of research \"Mixer\"). "
+                     "Peak segments: dBFS of the largest sample.\n")
+        lines.append("| stimulus | segment | ref (dBFS) | ours - ref (dB) | ours re first | ref re first | formula re first |\n"
+                     "|---|---|---|---|---|---|---|")
+        for r in seg_rows:
+            for e in r["segments"]:
+                lines.append(f"| {r['name']} | {e['label']}{' (peak)' if e['mode'] == 'peak' else ''} | {e['ref_db']:.2f} | "
+                             f"{e['diff_db']:+.2f} | {f(e.get('ours_rel_db'))} | {f(e.get('ref_rel_db'))} | {f(e.get('pred_rel_db'))} |")
+        lines.append("")
+        probes = [(r, e, p) for r in seg_rows for e in r["segments"] for p in e.get("probes", [])]
+        if probes:
+            lines.append("Intermodulation products (component amplitude in dB re sqrt(2) x segment RMS; no linear "
+                         "component exists at these frequencies):\n")
+            lines.append("| stimulus | segment | Hz | ours | ref | formula |\n|---|---|---|---|---|---|")
+            for r, e, p in probes:
+                lines.append(f"| {r['name']} | {e['label']} | {p['hz']:.1f} | {p['ours_db']:.1f} | {p['ref_db']:.1f} | "
+                             f"{f(p['pred_db'], '.1f')} |")
+            lines.append("")
+    gate_rows = [r for r in res if r.get("gate")]
+    if gate_rows:
+        lines.append("#### 2a03 frame-sequencer events (ms after the note-start write)\n")
+        lines.append("From the edges of the raw renders (largest sample step over 1.1 periods of the tone): start = "
+                     "first edge, end = last edge (envelope decays: level 0). 'documented' = schedule computed by make_stimuli.py "
+                     "from research \"Frame counter\" / \"Sweep unit\" (a = approximate); res = half a period of the "
+                     "tone at the end (the last edge precedes the clock by up to that much).\n")
+        lines.append("| stimulus | start ours | start ref | start documented | end ours | end ref | end documented | res |\n"
+                     "|---|---|---|---|---|---|---|---|")
+        for r in gate_rows:
+            g = r["gate"]
+            lines.append(f"| {r['name']} | {f(g['start_ours_ms'], '.2f')} | {f(g['start_ref_ms'], '.2f')} | "
+                         f"{f(g['start_expected_ms'], '.2f')} | {f(g['end_ours_ms'], '.2f')} | {f(g['end_ref_ms'], '.2f')} | "
+                         f"{f(g['end_expected_ms'], '.2f')}{' a' if g['approx'] else ''} | {g.get('resolution_ms', 0.0):.2f} |")
+        lines.append("")
+    es_rows = [r for r in res if r.get("env_steps")]
+    if es_rows:
+        lines.append("#### 2a03 envelope staircase (worst step-time difference, ms; steps found of documented)\n")
+        lines.append("| stimulus | steps ours / ref / doc | ours - documented | ref - documented (worst / median) | ours - ref |\n"
+                     "|---|---|---|---|---|")
+        for r in es_rows:
+            e = r["env_steps"]
+            lines.append(f"| {r['name']} | {e['found_ours']} / {e['found_ref']} / {e['n']} | {f(e['ours_vs_doc_ms'])} | "
+                         f"{f(e['ref_vs_doc_ms'])} / {f(e['ref_median_vs_doc_ms'])} | {f(e['ours_vs_ref_ms'])} |")
+        lines.append("")
+    sweep_rows = [r for r in res if r.get("sweep")]
+    if sweep_rows:
+        lines.append("#### 2a03 sweeps (frame-wise pitch, |cents|: median / 90th percentile / max)\n")
+        lines.append("| stimulus | ours vs ref | ours vs documented | ref vs documented |\n|---|---|---|---|")
+        c = lambda s: "" if not s["n"] else f"{s['median']:.2f} / {s['p90']:.2f} / {s['max']:.1f}"
+        for r in sweep_rows:
+            s = r["sweep"]
+            lines.append(f"| {r['name']} | {c(s['ours_vs_ref'])} | {c(s['ours_vs_spec'])} | {c(s['ref_vs_spec'])} |")
+        lines.append("")
+    return lines
+
+
 def write_report(path: str, results: dict, manifest: list[dict], gains: dict, timebase: dict) -> None:
     desc = {m["name"]: m.get("desc", "") for m in manifest}
     # The hand-written diagnosis between the markers survives regeneration.
@@ -751,7 +1163,8 @@ def write_report(path: str, results: dict, manifest: list[dict], gains: dict, ti
     lines.append(diagnosis + "\n")
     lines.append("## Generated results\n")
     lines.append("Thresholds: pitch 1 cent, harmonics 1 dB (bins within 60 dB of H1), envelope timing 3 %, "
-                 "per-channel level 0.5 dB. Columns: lag = our delay in samples after alignment (inv = inverted "
+                 "per-channel level 0.5 dB; NES frame-sequencer events 1 ms plus half a period of the tone, sweep "
+                 "pitch tracks 1 cent median / 10 cents 90th percentile. Columns: lag = our delay in samples after alignment (inv = inverted "
                  "polarity); null = reference energy over residual energy after alignment and gain; env shape = RMS dB "
                  "difference of the 4 ms sliding RMS envelopes; spectral = RMS dB difference of 1/6-octave band powers.\n")
     lines.append("### Global gain constants (one per chip)\n")
@@ -765,7 +1178,7 @@ def write_report(path: str, results: dict, manifest: list[dict], gains: dict, ti
                      "public frequency formula (VGMPlay integration artefact, see the diagnosis).\n")
     for cmp_name, res in results.items():
         lines.append(f"### {cmp_name}\n")
-        for unit in ("ym2612", "sn76489", "sdsp"):
+        for unit in ("ym2612", "sn76489", "sdsp", "2a03"):
             rows = [r for r in res if r["unit"] == unit]
             if not rows:
                 continue
@@ -773,6 +1186,8 @@ def write_report(path: str, results: dict, manifest: list[dict], gains: dict, ti
             lines.append(HEADER)
             lines.extend(summary_row(r) for r in rows)
             lines.append("")
+        if any(r["unit"] == "2a03" for r in res):
+            lines.extend(nes_tables(res))
         lines.append(f"#### Deviations beyond thresholds ({cmp_name})\n")
         any_dev = False
         for r in res:
@@ -783,6 +1198,12 @@ def write_report(path: str, results: dict, manifest: list[dict], gains: dict, ti
         if not any_dev:
             lines.append("None.")
         lines.append("")
+        spec = [(r, spec_deviations(r)) for r in res if r["unit"] == "2a03"]
+        if spec:
+            lines.append(f"#### Test side against the documented schedule and mixer formula ({cmp_name})\n")
+            flagged = [f"* **{r['name']}**: " + "; ".join(d) for r, d in spec if d]
+            lines.extend(flagged or ["None."])
+            lines.append("")
     with open(path, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
 
@@ -798,22 +1219,22 @@ def main() -> None:
     ap.add_argument("--json", default=os.path.join(ROOT, "build-reports", "refcheck", "results.json"))
     ap.add_argument("--no-render", action="store_true")
     ap.add_argument("--only", default="")
+    ap.add_argument("--chips", default="", help="comma-separated subset (genesis,snes,nes); the other chips' "
+                    "results are taken from the existing --json file")
+    ap.add_argument("--jobs", type=int, default=max(1, (os.cpu_count() or 2) - 1))
     args = ap.parse_args()
 
-    manifest = json.load(open(os.path.join(args.stimuli, "manifest.json"), encoding="utf-8"))
+    full_manifest = json.load(open(os.path.join(args.stimuli, "manifest.json"), encoding="utf-8"))
+    manifest = full_manifest
+    chips = {c.strip() for c in args.chips.split(",") if c.strip()} or {m["chip"] for m in manifest}
+    manifest = [m for m in manifest if m["chip"] in chips]
     if args.only:
-        keep = {v for v in CALIBRATION.values()}
+        keep = set(CALIBRATION.values()) | set(LAG_CALIBRATION.values())
         manifest = [m for m in manifest if args.only in m["name"] or m["name"] in keep]
     os.makedirs(args.work, exist_ok=True)
     if not args.no_render:
         render_all(manifest, os.path.abspath(args.stimuli), os.path.abspath(args.work), os.path.abspath(args.chiptool))
 
-    comparisons = {"ours vs Nuked OPN2 + MAME SN76496 (VGMPlay)": ("ours", "ref_nuked"),
-                   "ours vs MAME/GPGX YM2612 + Maxim SN76489 (VGMPlay)": ("ours", "ref_mame"),
-                   "reference vs reference: MAME/GPGX + Maxim against Nuked + MAME": ("ref_mame", "ref_nuked"),
-                   "ours vs Game Music Emu SPC (FFmpeg libgme)": ("ours", "ref_gme")}
-    results: dict[str, list[dict]] = {}
-    gains: dict = {}
     # Reference time-base correction (documented measurement artefact): VGMPlay's Nuked OPN2
     # output runs fast by a factor that depends on VGMPlay's ChipSmplRate setting, so the
     # factor is measured on fm_sine_ref against the expected frequency from the public formula
@@ -829,59 +1250,124 @@ def main() -> None:
         f_meas = peak_freq(windowed(mono, on + int(0.1 * rate), int(cal["off"] * rate) - int(0.02 * rate)), cal["f0"], rate)
         timebase["ref_nuked"] = f_meas / cal["f0"]
         print(f"Nuked time-base factor {timebase['ref_nuked']:.6f} ({1200 * math.log2(timebase['ref_nuked']):+.3f} cents)")
-    resampled: dict[tuple[str, str], tuple[list[float], list[float]]] = {}
-    for cmp_name, (test, refk) in comparisons.items():
-        chip = "snes" if refk == "ref_gme" else "genesis"
-        rows = [m for m in manifest if m["chip"] == chip]
-        if not rows:
-            continue
-        # Calibration stimuli first.
-        unit_gain: dict[str, float] = {}
-        unit_lag: dict[str, int] = {}
-        cache: dict[str, dict] = {}
-        ordered = sorted(rows, key=lambda m: 0 if m["name"] in CALIBRATION.values() else 1)
-        for m in ordered:
-            rp = os.path.join(args.work, f"{m['name']}.{refk}.wav")
-            tp = os.path.join(args.work, f"{m['name']}.{test}.wav")
-            rate, rl, rr = read_wav(rp)
-            # The DAC stimulus is exempt: its pitch is set by the VGM write timing, which the
-            # player gets right (measured: uncorrected DAC pitch matches ours and the MAME core).
-            tb = timebase.get(refk, 1.0) if m["unit"] == "ym2612" and not m["name"].startswith("fm_dac") else 1.0
-            if tb != 1.0:
-                key = (m["name"], refk)
-                if key not in resampled:
-                    # y[i] = x(i / tb): a reference running fast by tb is slowed back down.
-                    # Cached on disk next to the render (16-bit), keyed by the factor.
-                    cp = os.path.join(args.work, f"{m['name']}.{refk}.tb{tb:.6f}.wav")
-                    if os.path.exists(cp) and os.path.getmtime(cp) >= os.path.getmtime(rp):
-                        _, cl_, cr_ = read_wav(cp)
-                        resampled[key] = (cl_, cr_)
-                    else:
-                        resampled[key] = (resample(rl, 1.0 / tb), resample(rr, 1.0 / tb))
-                        write_wav(cp, rate, *resampled[key])
-                rl, rr = resampled[key]
-            rate2, tl, tr = read_wav(tp)
-            if rate != rate2:
-                raise SystemExit(f"{m['name']}: sample rates differ ({rate} vs {rate2})")
-            n = min(len(rl), len(tl))
-            g = unit_gain.get(m["unit"])
-            r = analyse(m, rate, (rl[:n], rr[:n]), (tl[:n], tr[:n]), g,
-                        coupling_ref=chip == "genesis", coupling_test=chip == "genesis" and test != "ours",
-                        fixed_lag=unit_lag.get(m["unit"]) if m["unit"] in GLOBAL_LAG_UNITS and m["kind"] != "noise" else None)
-            if m["name"] == CALIBRATION.get(m["unit"]) and m["unit"] in GLOBAL_LAG_UNITS:
-                unit_lag[m["unit"]] = r["lag"]
-            r["timebase"] = tb
-            if g is None:
+
+    results: dict[str, list[dict]] = {}
+    with ProcessPoolExecutor(max_workers=args.jobs) as pool:
+        for cmp_name, chip, test, refk in COMPARISONS:
+            rows = [m for m in manifest if m["chip"] == chip and (refk != "ref_gmensf" or m.get("nsf"))]
+            if not rows:
+                continue
+            # Calibration stimuli first (gain and, for GLOBAL_LAG_UNITS, the lag), then the rest
+            # in parallel with those constants.
+            cal_rows = [m for m in rows if m["name"] == CALIBRATION.get(m["unit"])]
+            unit_gain: dict[str, float] = {}
+            unit_lag: dict[str, int] = {}
+            cache: dict[str, dict] = {}
+            for m in cal_rows:
+                r = run_row((m, args.work, chip, test, refk, timebase, None, None))
                 unit_gain[m["unit"]] = r["gain"]
-                gains[(cmp_name, m["unit"])] = r["gain"]
-            cache[m["name"]] = r
-            print(f"{cmp_name[:28]:28s} {m['name']:24s} null {r['null_db']:6.1f} dB  devs {len(deviations(r))}", flush=True)
-        results[cmp_name] = [cache[m["name"]] for m in rows]
+                if m["unit"] in GLOBAL_LAG_UNITS:
+                    unit_lag[m["unit"]] = r["lag"]
+                cache[m["name"]] = r
+            # Units whose time base is measured on a separate stimulus (LAG_CALIBRATION).
+            for m in rows:
+                if m["name"] == LAG_CALIBRATION.get(m["unit"]):
+                    r = run_row((m, args.work, chip, test, refk, timebase, unit_gain.get(m["unit"]), None))
+                    unit_lag[m["unit"]] = r["lag"]
+                    cache[m["name"]] = r
+            jobs = [(m, args.work, chip, test, refk, timebase, unit_gain.get(m["unit"]),
+                     unit_lag.get(m["unit"]) if uses_global_lag(m) else None) for m in rows if m["name"] not in cache]
+            for m, r in zip([j[0] for j in jobs], pool.map(run_row, jobs)):
+                cache[m["name"]] = r
+            for m in rows:
+                r = cache[m["name"]]
+                print(f"{cmp_name[:28]:28s} {m['name']:24s} null {r['null_db']:6.1f} dB  devs {len(deviations(r))}", flush=True)
+            results[cmp_name] = [cache[m["name"]] for m in rows]
+
+    # Merge with the stored results of the chips not run now, keeping the comparison order.
+    stored: dict = {}
+    if os.path.exists(args.json):
+        stored = json.load(open(args.json, encoding="utf-8"))
+    merged: dict[str, list[dict]] = {}
+    for cmp_name, chip, _, _ in COMPARISONS:
+        if cmp_name in results:
+            merged[cmp_name] = results[cmp_name]
+        elif cmp_name in stored and chip not in chips:
+            merged[cmp_name] = stored[cmp_name]
     os.makedirs(os.path.dirname(args.json), exist_ok=True)
     with open(args.json, "w", encoding="utf-8") as f:
-        json.dump({k: v for k, v in results.items()}, f, indent=1)
-    write_report(args.report, results, manifest, gains, timebase)
+        json.dump(merged, f, indent=1)
+    # Gain constants and time base, from the rows (also for merged, stored comparisons).
+    gains = {(cmp_name, r["unit"]): r["gain"] for cmp_name, res in merged.items() for r in res
+             if r["name"] == CALIBRATION.get(r["unit"])}
+    for res in merged.values():
+        for r in res:
+            if r["unit"] == "ym2612" and r.get("timebase", 1.0) != 1.0:
+                timebase["ref_nuked"] = r["timebase"]
+    write_report(args.report, merged, full_manifest, gains, timebase)
     print(f"report -> {args.report}")
+
+
+# (name, chip, test side, reference side); side = render suffix in the work directory.
+COMPARISONS = [
+    ("ours vs Nuked OPN2 + MAME SN76496 (VGMPlay)", "genesis", "ours", "ref_nuked"),
+    ("ours vs MAME/GPGX YM2612 + Maxim SN76489 (VGMPlay)", "genesis", "ours", "ref_mame"),
+    ("reference vs reference: MAME/GPGX + Maxim against Nuked + MAME", "genesis", "ref_mame", "ref_nuked"),
+    ("ours vs Game Music Emu SPC (FFmpeg libgme)", "snes", "ours", "ref_gme"),
+    ("NES: ours vs NSFPlay core (VGMPlay)", "nes", "ours", "ref_nsfplay"),
+    ("NES: ours vs MAME core (VGMPlay)", "nes", "ours", "ref_nesmame"),
+    ("NES: reference vs reference: MAME core against NSFPlay core", "nes", "ref_nesmame", "ref_nsfplay"),
+    ("NES: ours with the integrated-step kernel vs NSFPlay core", "nes", "ours_int", "ref_nsfplay"),
+    ("NES: ours (engine, ImpulseSum kernel) vs ours with the integrated-step kernel (F2 measurement)", "nes", "ours", "ours_int"),
+    ("NES: ours vs Game Music Emu NSF player (FFmpeg libgme; NSF subset)", "nes", "ours", "ref_gmensf"),
+]
+NES_TIMING_KINDS = {"env", "ssg", "gate", "sweep", "segments"}
+# Time-base (lag) calibration measured on another stimulus than the gain: the 2A03 pulse phase
+# at a note start depends on the timer divider, which a $4003 write does not reset (research
+# "Pulse channels") but players may; the $4011 direct-load square has edges set by the write
+# times alone.
+LAG_CALIBRATION = {"2a03": "nes_dmc_direct"}
+
+
+def uses_global_lag(m: dict) -> bool:
+    """YM2612 and S-DSP: every stimulus but noise (see GLOBAL_LAG_UNITS). 2A03: the timing
+    stimuli, whose frame-sequencer events must be compared on one time base (a per-stimulus
+    correlation could absorb a quarter-frame offset); tones and noise align per stimulus
+    because the initial timer and LFSR phases of the players are unknown."""
+    if m["unit"] == "2a03":
+        return m["kind"] in NES_TIMING_KINDS
+    return m["unit"] in GLOBAL_LAG_UNITS and m["kind"] != "noise"
+
+
+
+def run_row(job: tuple) -> dict:
+    """One stimulus of one comparison (runs in a worker process)."""
+    m, work, chip, test, refk, timebase, gain, fixed_lag = job
+    rp = os.path.join(work, f"{m['name']}.{refk}.wav")
+    tp = os.path.join(work, f"{m['name']}.{test}.wav")
+    rate, rl, rr = read_wav(rp)
+    # The DAC stimulus is exempt: its pitch is set by the VGM write timing, which the
+    # player gets right (measured: uncorrected DAC pitch matches ours and the MAME core).
+    tb = timebase.get(refk, 1.0) if m["unit"] == "ym2612" and not m["name"].startswith("fm_dac") else 1.0
+    if tb != 1.0:
+        # y[i] = x(i / tb): a reference running fast by tb is slowed back down. Cached on disk
+        # next to the render (16-bit), keyed by the factor.
+        cp = os.path.join(work, f"{m['name']}.{refk}.tb{tb:.6f}.wav")
+        if os.path.exists(cp) and os.path.getmtime(cp) >= os.path.getmtime(rp):
+            _, rl, rr = read_wav(cp)
+        else:
+            rl, rr = resample(rl, 1.0 / tb), resample(rr, 1.0 / tb)
+            write_wav(cp, rate, rl, rr)
+    rate2, tl, tr = read_wav(tp)
+    if rate != rate2:
+        raise SystemExit(f"{m['name']}: sample rates differ ({rate} vs {rate2})")
+    n = min(len(rl), len(tl))
+    # Player renders get the output coupling capacitor our Genesis / NES output paths have.
+    coupled = lambda side: chip in ("genesis", "nes") and side.startswith("ref_")
+    r = analyse(m, rate, (rl[:n], rr[:n]), (tl[:n], tr[:n]), gain,
+                coupling_ref=coupled(refk), coupling_test=coupled(test), fixed_lag=fixed_lag)
+    r["timebase"] = tb
+    return r
 
 
 if __name__ == "__main__":
