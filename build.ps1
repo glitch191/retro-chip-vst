@@ -14,7 +14,7 @@
     Skip running the chipdsp unit tests after the build.
 
 .PARAMETER Install
-    Copy the built .vst3 bundle to %LOCALAPPDATA%\Programs\Common\VST3 (per-user, no admin).
+    Copy the built .vst3 bundle to C:\Program Files\Common Files\VST3 (asks for elevation).
 
 .PARAMETER Clean
     Delete the preset's build directory before configuring.
@@ -95,15 +95,25 @@ if (-not $NoTests) {
     if ($LASTEXITCODE -ne 0) { throw "Tests failed ($LASTEXITCODE)" }
 }
 
-# --- Optional install to the per-user VST3 folder ----------------------------------
+# --- Optional install to the system VST3 folder -------------------------------------
+# C:\Program Files\Common Files\VST3 needs administrator rights: when this script is not
+# elevated, the copy runs in an elevated PowerShell (one UAC prompt).
 if ($Install) {
     $bundle = Get-ChildItem -Path $buildDir -Recurse -Directory -Filter "*.vst3" | Select-Object -First 1
     if (-not $bundle) { throw "No .vst3 bundle found under $buildDir (was the plugin built?)" }
-    $dest = Join-Path $env:LOCALAPPDATA "Programs\Common\VST3"
-    New-Item -ItemType Directory -Force -Path $dest | Out-Null
+    $dest = Join-Path $env:CommonProgramFiles "VST3"
     $target = Join-Path $dest $bundle.Name
-    if (Test-Path $target) { Remove-Item -Recurse -Force $target }
-    Copy-Item -Recurse -Path $bundle.FullName -Destination $target
+    $copy = "New-Item -ItemType Directory -Force -Path '$dest' | Out-Null; " +
+            "if (Test-Path '$target') { Remove-Item -Recurse -Force '$target' }; " +
+            "Copy-Item -Recurse -Path '$($bundle.FullName)' -Destination '$target'"
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    if ($isAdmin) {
+        Invoke-Expression $copy
+    } else {
+        $p = Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile", "-Command", $copy -Wait -PassThru
+        if ($p.ExitCode -ne 0) { throw "Install failed (elevated copy exit code $($p.ExitCode))" }
+    }
+    if (-not (Test-Path $target)) { throw "Install failed: $target not found" }
     Write-Host "Installed: $target"
 }
 

@@ -30,7 +30,7 @@ One command, from a PowerShell prompt at the repository root:
 
 ```powershell
 .\build.ps1                 # configure, build, run all tests (preset windows-x64-release)
-.\build.ps1 -Install        # same, then copy the .vst3 to the per-user VST3 folder
+.\build.ps1 -Install        # same, then copy the .vst3 to C:\Program Files\Common Files\VST3
 .\build.ps1 -Preset dsp-only-release   # chipdsp and its tests only, no JUCE
 .\build.ps1 -NoTests        # skip ctest
 .\build.ps1 -Clean          # delete build\<preset> first
@@ -60,12 +60,9 @@ The bundle is written to:
 build\windows-x64-release\plugin\RetroChip_artefacts\Release\VST3\Retro Chip.vst3
 ```
 
-To install it, either:
-
-* run `.\build.ps1 -Install`, which copies it to `%LOCALAPPDATA%\Programs\Common\VST3`
-  (per user, no administrator rights; the host must scan that folder), or
-* copy the `Retro Chip.vst3` folder to `C:\Program Files\Common Files\VST3`
-  (all users, needs administrator rights).
+To install it, run `.\build.ps1 -Install`, which copies it to
+`C:\Program Files\Common Files\VST3` (the standard VST3 folder; Windows asks once for
+administrator rights), or copy the `Retro Chip.vst3` folder there by hand.
 
 Then rescan plugins in the host.
 
