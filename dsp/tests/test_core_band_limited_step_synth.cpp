@@ -122,3 +122,69 @@ TEST_CASE("BandLimitedStepSynth: level carries across blocks", "[resampler]")
     synth.endBlock(b.data(), 128);
     REQUIRE(b[127] == Approx(0.5f).margin(1e-4));
 }
+
+namespace
+{
+    // Fundamental of a +-1 square wave of frequency f built from band-limited steps, relative to
+    // the ideal 4/pi, in dB. 4410 samples at 44.1 kHz = an integer number of periods for f in 10 Hz steps.
+    double squareFundamentalDb(BandLimitedStepSynth::Kernel kernel, double freq)
+    {
+        const double host = 44100.0;
+        const int n = 4410;
+        const int lead = 441;
+        BandLimitedStepSynth synth;
+        synth.prepare(1789773.0, host, lead + n + 64, kernel);
+        std::vector<float> out(static_cast<size_t>(lead + n), 0.0f);
+        const double half = host / freq / 2.0;
+        float level = 1.0f;
+        synth.addDelta(0.0, level);
+        for (double t = half; t < lead + n + 32; t += half)
+        {
+            synth.addDelta(t, -2.0f * level);
+            level = -level;
+        }
+        synth.endBlock(out.data(), lead + n);
+        const std::vector<float> steady(out.begin() + lead, out.end());
+        return 20.0 * std::log10(toneAmplitude(steady, freq, host) / (4.0 / std::numbers::pi));
+    }
+} // namespace
+
+TEST_CASE("BandLimitedStepSynth: integrated-step kernel settles exactly and is centred on the event", "[resampler]")
+{
+    BandLimitedStepSynth synth;
+    for (double native : { 32000.0, 53267.0, 223722.0 })
+    {
+        synth.prepare(native, 44100.0, 256, BandLimitedStepSynth::Kernel::IntegratedStep);
+        for (int phase = 0; phase < BandLimitedStepSynth::kPhases; ++phase)
+        {
+            synth.reset();
+            std::vector<float> out(256, 0.0f);
+            synth.addDelta(60.0 + static_cast<double>(phase) / BandLimitedStepSynth::kPhases, 1.0f);
+            synth.endBlock(out.data(), 256);
+            REQUIRE(out[40] == Approx(0.0f).margin(1e-6));
+            REQUIRE(out[255] == Approx(1.0f).margin(1e-6));
+        }
+        // A step at t = 60.5 is symmetric about 60.5: S(-0.5) + S(0.5) = 1.
+        synth.reset();
+        std::vector<float> out(256, 0.0f);
+        synth.addDelta(60.5, 1.0f);
+        synth.endBlock(out.data(), 256);
+        CHECK(out[60] + out[61] == Approx(1.0f).margin(1e-5));
+        CHECK(out[60] < 0.5f);
+    }
+}
+
+TEST_CASE("BandLimitedStepSynth: integrated-step kernel is flat, impulse-sum kernel boosts by (w/2)/sin(w/2)", "[resampler]")
+{
+    // refcheck-report.md finding F2: sampled impulses integrated by a discrete running sum give
+    // H(w) / (1 - e^-jw) instead of H(w) / (jw). The integrated-step kernel removes that; the
+    // impulse-sum kernel (kept for the NES) keeps it.
+    for (double f : { 1000.0, 5000.0, 11190.0, 13980.0 })
+    {
+        const double w = 2.0 * std::numbers::pi * f / 44100.0;
+        const double boostDb = 20.0 * std::log10((w / 2.0) / std::sin(w / 2.0));
+        INFO("f = " << f << " Hz, formula boost " << boostDb << " dB");
+        CHECK(std::abs(squareFundamentalDb(BandLimitedStepSynth::Kernel::IntegratedStep, f)) < 0.05);
+        CHECK(squareFundamentalDb(BandLimitedStepSynth::Kernel::ImpulseSum, f) == Approx(boostDb).margin(0.05));
+    }
+}
