@@ -244,6 +244,37 @@ TEST_CASE("Pipeline delays: every modulation path uses its documented sample del
     }
 }
 
+TEST_CASE("Algorithm 7: S1 reaches the accumulator one sample after the other carriers", "[genesis][operator][algorithm]")
+{
+    // Ambiguity 41 (refcheck finding F1): S1 is read through its history register as a
+    // carrier too. Both reference emulators put an S1-alone tone one FM sample later than an
+    // S4-alone tone (0.83 host samples at 44.1 kHz = 1.00 FM sample).
+    Ym2612Core ym;
+    const int tl[4] = { 0, 0, 0, 0 };
+    patch(ym, 7, 0, tl);
+    const int mul[4] = { 1, 2, 3, 1 };
+    for (int s = 0; s < 4; ++s)
+        writeOp(ym, 0, s, 0x30, mul[s]);
+    int prevS1 = 0;
+    int bad = 0;
+    bool s1Moves = false;
+    for (int n = 0; n < 1500; ++n)
+    {
+        ym.clockSample();
+        const int s1 = ym.operatorLastOutput(0, 0);
+        int sum = carrierTo9Bit(prevS1);
+        for (int s = 1; s < 4; ++s)
+            sum += carrierTo9Bit(ym.operatorLastOutput(0, s));
+        if (ym.channelOutput(0) != clampChannel9(sum))
+            ++bad;
+        s1Moves = s1Moves || s1 != prevS1;
+        prevS1 = s1;
+    }
+    CHECK(s1Moves);
+    CHECK(bad == 0);
+    STATIC_CHECK(kS1CarrierDelay == 1);
+}
+
 TEST_CASE("Key-on resets the phase counter, key-off does not", "[genesis][operator]")
 {
     Ym2612Core ym;

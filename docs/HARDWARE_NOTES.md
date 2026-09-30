@@ -3,7 +3,7 @@
 Each entry records a point where the public documentation is ambiguous, incomplete or
 contradictory, the sources consulted, the choice implemented and the alternative. This
 file consolidates the "Ambiguities" sections of `docs/research/nes.md` (A1..A26),
-`docs/research/snes.md` (1..24), `docs/research/genesis.md` (1..40) and
+`docs/research/snes.md` (1..26), `docs/research/genesis.md` (1..41) and
 `docs/research/plugin.md`, plus the decisions taken while integrating the engines in the
 plugin. The research files hold the full reasoning, quotes and numbers; the reference in
 brackets after each title points to the entry there. Full source list: `docs/SOURCES.md`.
@@ -383,6 +383,37 @@ share slots; loading a preset clears the other factory samples, so the budget ho
 any preset sequence (smallest free APU RAM seen in the sweep: 29,136 bytes).
 Alternative: one fixed slot per sample (would need more than 32 slots).
 
+### SNES: root note of the pipe-organ sample [snes 25]
+Ambiguity: the VCSL file `Rode_Man3Open_A3.wav` is labelled with the key played (A3), but
+the open stop sounds an octave higher (no energy at 220 Hz, harmonic series on 440 Hz).
+Sources: VCSL (CC0, `docs/SOURCES.md` "Samples"); spectrum of the converted sample.
+Decision: a sample's root is its sounding pitch: root 69 (A4); the Pipe Organ seed offers
+an OctDown variant for the 8-foot pitch.
+Alternative: keep the key label as the root and transpose every organ seed by -12.
+
+### SNES: CC0 sample loops [integration]
+Ambiguity: none in the hardware; a loop of L frames can only hold partials at multiples of
+rate / L, so a loop that holds a fractional number of periods plays off-key (the grand
+piano's first loop was 13 cents flat, the string section 10 cents).
+Sources: `docs/research/snes.md` "Samples, loops and BRR encoding",
+`docs/research/snes-sound-design.md` "Sample fixes".
+Decision: `tools/samplegen/cc0_import.py` accepts only loop lengths (on 16-frame BRR
+boundaries) whose loop pitch is within 3 cents of the root.
+Alternative: accept the nearest loop point and correct the root note (every other key of
+the attack would then be off-key).
+
+### SNES: preset instrument and echo settings [snes 26]
+Ambiguity: no public document lists the ADSR, GAIN or echo values of commercial games,
+except in tables extracted from the games (rejected by the product-owner rule).
+Sources: SnesLab and Super Famicom Wiki N-SPC pages, AddmusicK readme, Super MIDI Pak
+manual (`docs/research/snes-sound-design.md`).
+Decision: envelopes designed from the envelope mechanics and each recording's acoustic
+envelope (plucked and struck sounds A15, decay to a sustain level, fade while held;
+sustained sounds hold, with a GAIN release written at note off); echo in EDL 3..6, EFB
+0x28..0x60, EVOL 0x28..0x40 with the documented FIR sets, a range that contains the Super
+MIDI Pak starting point (EDL 5, EFB 0x3C, EVOL 0x40).
+Alternative: game-extracted instrument tables (not allowed).
+
 ## Genesis YM2612
 
 ### Genesis YM2612: chip revision and ladder effect [genesis 11, 27; research "Ladder effect"]
@@ -485,8 +516,22 @@ Alternative: none.
 ### Genesis YM2612: operator order and pipeline [genesis 22]
 Ambiguity: optional detail, not disputed.
 Sources: Nemesis p13, jsgroth part 4.
-Decision: S1, S3, S2, S4 with the documented delayed paths.
+Decision: S1, S3, S2, S4 with the documented delayed paths (S2->S3, S2->S4 one sample;
+S3->S4 none), plus the S1 history delay of [genesis 41].
 Alternative: none.
+
+### Genesis YM2612: pipeline delay of S1 as a modulator [genesis 41]
+Ambiguity: the delays derived from the evaluation order (S1->S2 0, S1->S3 1, S1->S4 0) are
+our reading of an excerpt; no public text states the S1 delays. Two independent reference
+emulators run as black boxes (Nuked OPN2, MAME / Genesis Plus GX) agree with each other and
+differ from that derivation by up to 9.5 dB on algorithms 0-3.
+Sources: Nemesis p13, jsgroth part 4 (excerpt); differential check
+(`docs/research/refcheck-report.md` finding F1, `docs/research/reference-emulators.md`).
+Decision: every S1 path one sample later, as if S1 were read from its feedback history:
+S1->S2 1, S1->S3 2, S1->S4 1 (all eight algorithms then within the check's noise of Nuked);
+S1 as a carrier (algorithm 7) also reaches the accumulator one sample after S2-S4, which
+both references show as a one-FM-sample offset of an S1-alone tone.
+Alternative: the derivation from the order alone (the code before 2026-09-30).
 
 ### Genesis YM2612: timers and CSM [genesis 23]
 Ambiguity: not needed by a driver-based instrument.
@@ -614,6 +659,19 @@ Decision: `model1_lowpass` = first-order 3.39 kHz (VA0-VA2); the VA3-VA6 2.84 kH
 documented but not exposed; Model 2 is not modelled.
 Alternative: a biquad fitted to a Model 2 recording.
 
+### Genesis and SNES: resampler kernel [integration, refcheck F2]
+Ambiguity: none in the hardware; the host-rate conversion must not colour the chip output.
+The original kernel (sampled windowed-sinc impulses summed by a discrete running sum)
+boosted the top octave by (w/2)/sin(w/2), w = 2 pi f / host rate: +0.94 dB at 11.2 kHz and
++1.48 dB at 14 kHz at 44.1 kHz, measured on PSG squares and seen against both reference
+emulators.
+Sources: `docs/research/refcheck-report.md` finding F2.
+Decision: the Genesis (FM and PSG) and SNES engines use the `IntegratedStep` kernel (taps =
+first differences of the integrated windowed sinc: exact band-limited steps, flat pass band).
+The NES keeps the `ImpulseSum` kernel so its output does not change (product-owner decision
+2026-09-29); its top octave keeps the boost.
+Alternative: switch the NES too (changes only its top octave, by the formula above).
+
 ### Genesis: output coupling capacitor [genesis 37]
 Ambiguity: no source gives the high-pass.
 Sources: none.
@@ -720,3 +778,31 @@ after a pre-roll: C4 held, C3 short; stereo log-mel on active frames, 10 ms enve
 pitch track); thresholds at or below the usual JNDs; different globals and render-blind
 keys never merge presets.
 Alternative: parameter rules only (kept as the first stage).
+
+### Presets: Genesis FM level target [integration, genesis-sound-design Decision 1]
+Ambiguity: a single-note peak of -12..-3 dBFS cannot be reached by one FM voice without
+breaking the hardware-relative mix (six full-scale FM channels map to 1.0, so one channel
+tops out near -15.6 dBFS).
+Sources: `docs/research/genesis-sound-design.md`, "Genesis: output level" above.
+Decision: the loudest carrier sits at TL 0-10 (with a headroom rule on multi-carrier
+algorithms so the 9-bit channel sum does not clamp); `master_gain` compensates.
+Alternative: a preset-managed output gain, or a different `master_gain` default (plugin
+decisions).
+
+### Presets: Genesis white noise on the tone-3 clock [integration, genesis-sound-design Decision 4]
+Ambiguity: the old seed assumed that white noise on rate 3 shifts at 16 times the key
+frequency; the driver adds 48 semitones only in periodic mode, so white noise shifts at the
+key frequency (262 Hz at C4) and the old "Pitched Snare" was a -50 dBFS rumble.
+Sources: `docs/research/genesis.md` "Driver tick model".
+Decision: the driver is unchanged; the seed became "Pitched Noise" with `psg_transpose`
++24 or +12. The LFSR outputs nothing for its first 15 shifts, so at the lowest keys the
+note starts late (kept: hardware behaviour).
+Alternative: a driver offset for white noise too (would change the documented driver).
+
+### Presets: categories of leads, guitars and organs [integration]
+Ambiguity: `docs/PRESET_SPECS.md` has no Genesis lead or organ category.
+Sources: `docs/PRESET_SPECS.md`, `docs/research/genesis-sound-design.md` "Category mapping".
+Decision: taxonomy unchanged: FM leads and guitars in `FM Brass` / `Brass` (tag `lead`,
+`guitar`), wind leads in `FM Pad` / `LFO`, organs in `FM Pad` (tag `organ`); the browser
+search finds them by name and tag.
+Alternative: new `FM Lead` / `FM Organ` categories (a product decision, open).

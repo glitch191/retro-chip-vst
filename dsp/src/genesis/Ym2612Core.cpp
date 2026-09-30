@@ -334,10 +334,12 @@ int Ym2612Core::computeChannel(Channel& ch) noexcept
         }
     }
 
+    // S1 as a carrier (algorithm 7) also reaches the accumulator from its history register,
+    // one sample late (Ambiguity 41, refcheck finding F1).
     int sum = 0;
     for (int s = 0; s < 4; ++s)
         if ((algo.carrierMask >> s) & 1)
-            sum += carrierTo9Bit(ch.op[s].out);
+            sum += carrierTo9Bit(s == 0 ? s1History[kS1CarrierDelay] : ch.op[s].out);
 
     for (auto& op : ch.op)
         op.phase20 = (op.phase20 + phaseIncrement(ch, op)) & 0xFFFFFu;

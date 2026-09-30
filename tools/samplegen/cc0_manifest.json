@@ -440,10 +440,10 @@
       "chip": "snes",
       "name": "organ_pipe",
       "category": "organ",
-      "description": "Pipe organ, open manual 3, A3, short loop",
+      "description": "Pipe organ, open manual 3, key A3 sounding A4 (no 8-foot fundamental), short loop",
       "licence": "CC0-1.0",
       "rate": 16000,
-      "root_note": 57,
+      "root_note": 69,
       "loop": {
         "mode": "loop",
         "start_ms": 450,
@@ -459,8 +459,8 @@
           "path": "Aerophones/Edge-blown Aerophones/Pipe Organ/Loud/Rode_Man3Open_A3.wav",
           "git_blob": "c71f73bc8a4245b05ab1b708bdb3c59d8a374731",
           "bytes": 2188610,
-          "note": 57,
-          "target_note": 57
+          "note": 69,
+          "target_note": 69
         }
       ],
       "processing": {
@@ -473,25 +473,25 @@
       "chip": "snes",
       "name": "bass_upright",
       "category": "bass",
-      "description": "Solo contrabass pizzicato, A2, 11 kHz",
+      "description": "Solo contrabass pizzicato, E2, 11 kHz",
       "licence": "CC0-1.0",
       "rate": 11025,
-      "root_note": 45,
+      "root_note": 40,
       "loop": {
         "mode": "one_shot",
-        "length_ms": 700,
-        "fade_ms": 80.0,
+        "length_ms": 900,
+        "fade_ms": 100.0,
         "tail_db": -48.0
       },
       "layers": [
         {
           "repo": "VSCO-2-CE",
-          "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav",
-          "git_blob": "311a5027a127715530f1e723a21f7927d280d493",
-          "bytes": 623260,
-          "note": 45,
+          "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr1.wav",
+          "git_blob": "1cada4277b16b2eb8b240d4a6da4bbd3aca989a0",
+          "bytes": 518876,
+          "note": 40,
           "pitch_ms": 150.0,
-          "target_note": 45
+          "target_note": 40
         }
       ],
       "processing": {
