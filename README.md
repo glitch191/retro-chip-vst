@@ -492,10 +492,6 @@ separate tool downloaded for validation and is not linked.
   documented tables and formulas, the tests and the reference-emulator check; the presets
   were checked by rendered features and objective measurements. The A/B listening set
   (`tools/render_listening.py`) is ready but nobody has listened to it yet.
-* Renoise was not tested by the developer (multi-out routing, automation, state recall,
-  typing in the preset search without playing the computer-keyboard notes). The product
-  owner validates it by hand.
-* The editor was not measured on a 360 Hz display.
 * The pluginval VST3 validator step was skipped (no validator path set).
 * Only Windows x64 and VST3 are built. The Standalone target
   (`-DRCV_BUILD_STANDALONE=ON`) exists for development and screenshots only.
