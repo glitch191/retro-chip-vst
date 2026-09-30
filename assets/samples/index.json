@@ -2,782 +2,1015 @@
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Hand clap",
+    "description": "Group hand clap, 11 kHz",
     "file": "genesis/clap.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "clap",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 11025,
+    "source": "VCSL:Idiophones/Struck Idiophones/Claps/Clap_rr3.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Cowbell",
+    "description": "Cowbell, 16 kHz",
     "file": "genesis/cowbell.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "cowbell",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 16000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Cowbells/Cowbell2_Normal_v3_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Short crash cymbal, 300 ms",
+    "description": "Short crash cymbal (clash cymbals, short), 16 kHz",
     "file": "genesis/crash_short.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "crash_short",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 16000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Clash Cymbals 1/cymbal_crash1_short1.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Closed hi-hat",
+    "description": "Closed hi-hat, 16 kHz",
     "file": "genesis/hat_closed.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "hat_closed",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 16000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v4_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Open hi-hat",
+    "description": "Loose (half-open) hi-hat, 16 kHz",
     "file": "genesis/hat_open.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "hat_open",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 16000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitLoose_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Kick drum",
+    "description": "Muted concert bass drum, hit hard, 11 kHz",
     "file": "genesis/kick.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "kick",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 11025,
+    "source": "VSCO-2-CE:VSCO 1 Percussion/drums/bass/bdrum_muted_fff_2.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Deep kick, 100-40 Hz",
+    "description": "Open concert bass drum, 8 kHz",
     "file": "genesis/kick_deep.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "kick_deep",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 8000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Bass Drum 2/bassdrum_hit_ff.wav"
   },
   {
     "category": "sfx",
     "chip": "genesis",
     "description": "Short noise burst",
     "file": "genesis/noise_burst.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "noise_burst",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 22050,
+    "source": "procedural: drums.noise_burst"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Rimshot",
+    "description": "Snare cross-stick, 16 kHz",
     "file": "genesis/rim.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "rim",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 16000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Snare Drum, Modern 2/Snare3M_Xstick_v2_rr2_Mid.wav"
   },
   {
     "category": "hit",
     "chip": "genesis",
-    "description": "Chunky synthetic orchestra hit with FM brass, C3",
+    "description": "Orchestra hit: C major stab layered from trumpet, horn, trombone, violin and cello staccato notes plus a timpani hit, C4, 11 kHz",
     "file": "genesis/sega_hit.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "sega_hit",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 11025,
+    "source": "VSCO-2-CE:Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v3_rr1.wav + VSCO-2-CE:Brass/Trumpet/stac/Sum_SHTrumpet_stac_G3_v3_rr1.wav + VSCO-2-CE:Brass/F Horn/stac/MOHorn_stac_C3_v3_rr1.wav + VSCO-2-CE:Brass/Tenor Trombone/stac/tenortbn_stac_A#1_v4_rr1.wav + VSCO-2-CE:Strings/Violin Section/Spic/VlnEns_Spic_C4_v2_rr1.wav + VSCO-2-CE:Strings/Violin Section/Spic/VlnEns_Spic_E4_v2_rr1.wav + VSCO-2-CE:Strings/Cello Section/spic/spic_C3_v2_RR1.wav + VSCO-2-CE:Percussion/Timpani/Timpani1_Hit_v3_rr1_Sum.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Snare drum",
+    "description": "Snare drum, snares on, 11 kHz",
     "file": "genesis/snare.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "snare",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 11025,
+    "source": "VCSL:Membranophones/Struck Membranophones/Snare Drum, Modern 2/Snare3M_HitSN_v5_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Short snare",
+    "description": "Tight snare, cut short, 11 kHz",
     "file": "genesis/snare_short.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "snare_short",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 11025,
+    "source": "VCSL:Membranophones/Struck Membranophones/Snare Drum, Modern 3/Snare4_HitSN_v4_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "genesis",
-    "description": "Tom, 120 Hz",
+    "description": "Low tom, stick, 11 kHz",
     "file": "genesis/tom.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "tom",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 11025,
+    "source": "VCSL:Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v4_rr1_Mid.wav"
   },
   {
     "category": "voice",
     "chip": "genesis",
     "description": "Formant voice 'uh', falling pitch",
     "file": "genesis/voice_uh.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "voice_uh",
     "root_note": 60,
-    "sample_rate": 22050
+    "sample_rate": 22050,
+    "source": "procedural: drums.voice"
   },
   {
     "category": "bass",
     "chip": "nes",
     "description": "100 ms filtered saw bass pluck at A2",
     "file": "nes/bass_pluck.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "bass_pluck",
     "root_note": 45,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: instruments.bass_synth"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Hand clap, four bursts and a tail",
     "file": "nes/clap.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "clap",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.clap"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Short crash cymbal, 400 ms",
     "file": "nes/crash_short.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "crash_short",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.crash"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Closed hi-hat, metallic squares plus noise",
     "file": "nes/hat_closed.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "hat_closed",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.hat"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Open hi-hat, 300 ms decay",
     "file": "nes/hat_open.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "hat_open",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.hat"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Round 808-style kick, 400 ms",
     "file": "nes/kick_808.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "kick_808",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.kick_808"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Long kick with a slower pitch drop",
     "file": "nes/kick_long.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "kick_long",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.kick"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Short punchy kick, 150-50 Hz sine drop",
     "file": "nes/kick_short.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "kick_short",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.kick"
   },
   {
     "category": "sfx",
     "chip": "nes",
     "description": "Noise burst with a falling low-pass",
     "file": "nes/noise_burst.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "noise_burst",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.noise_burst"
   },
   {
     "category": "hit",
     "chip": "nes",
     "description": "Synthetic orchestra hit, C3 chord",
     "file": "nes/orchestra_hit_synth.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "orchestra_hit_synth",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.orchestra_hit"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Rimshot, resonant ping",
     "file": "nes/rim.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "rim",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.rim"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Noisy snare with a long noise tail",
     "file": "nes/snare_noisy.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "snare_noisy",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.snare"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Tight snare, short noise tail",
     "file": "nes/snare_tight.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "snare_tight",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.snare"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "High tom, 170 Hz",
     "file": "nes/tom_high.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "tom_high",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.tom"
   },
   {
     "category": "drums",
     "chip": "nes",
     "description": "Low tom, 90 Hz",
     "file": "nes/tom_low.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "tom_low",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.tom"
   },
   {
     "category": "voice",
     "chip": "nes",
     "description": "Formant voice blip, vowel 'e'",
     "file": "nes/voice_blip.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "voice_blip",
     "root_note": 60,
-    "sample_rate": 33144
+    "sample_rate": 33144,
+    "source": "procedural: drums.voice"
   },
   {
     "category": "bass",
     "chip": "snes",
     "description": "Fingered bass, Karplus-Strong, A2",
     "file": "snes/bass_finger.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "bass_finger",
     "root_note": 45,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.bass_finger"
   },
   {
     "category": "bass",
     "chip": "snes",
     "description": "Slap bass, bright Karplus-Strong, A2",
     "file": "snes/bass_slap.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "bass_slap",
     "root_note": 45,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.bass_slap"
   },
   {
     "category": "bass",
     "chip": "snes",
     "description": "Filtered saw synth bass, A2",
     "file": "snes/bass_synth.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "bass_synth",
     "root_note": 45,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.bass_synth"
+  },
+  {
+    "category": "bass",
+    "chip": "snes",
+    "description": "Solo contrabass pizzicato, A2, 11 kHz",
+    "file": "snes/bass_upright.wav",
+    "licence": "CC0-1.0",
+    "loop_end": null,
+    "loop_start": null,
+    "name": "bass_upright",
+    "root_note": 45,
+    "sample_rate": 11025,
+    "source": "VSCO-2-CE:Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav"
   },
   {
     "category": "brass",
     "chip": "snes",
-    "description": "Brass section, filter swell, looped, A3",
+    "description": "Trumpet, horn and trombone section, A3, looped",
     "file": "snes/brass_section.wav",
-    "loop_end": 12800,
-    "loop_start": 8000,
+    "licence": "CC0-1.0",
+    "loop_end": 7072,
+    "loop_start": 5472,
     "name": "brass_section",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Brass/Trumpet/sus/Sum_SHTrumpet_sus_A2_v1_rr1.wav + VSCO-2-CE:Brass/F Horn/sus/MOHorn_sus_A2_v2_1.wav + VSCO-2-CE:Brass/Tenor Trombone/sus/tenortbn_sus_F2_v2_1.wav"
   },
   {
     "category": "choir",
     "chip": "snes",
     "description": "Choir 'ah' formants, looped, A3",
     "file": "snes/choir_ah.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 12800,
     "loop_start": 6400,
     "name": "choir_ah",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.choir"
   },
   {
     "category": "choir",
     "chip": "snes",
     "description": "Choir 'oo' formants, looped, A3",
     "file": "snes/choir_oo.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 12800,
     "loop_start": 6400,
     "name": "choir_oo",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.choir"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Hand clap",
+    "description": "Group hand clap",
     "file": "snes/clap.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "clap",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 24000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Claps/Clap_rr1.wav"
   },
   {
     "category": "winds",
     "chip": "snes",
-    "description": "Clarinet, odd harmonics, looped, A3",
+    "description": "Clarinet without vibrato, A#3, looped",
     "file": "snes/clarinet.wav",
-    "loop_end": 6400,
-    "loop_start": 3200,
+    "licence": "CC0-1.0",
+    "loop_end": 8032,
+    "loop_start": 5904,
     "name": "clarinet",
-    "root_note": 57,
-    "sample_rate": 32000
+    "root_note": 58,
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Woodwinds/Clarinet/susLong/DCClar_susLong_A#2_v2_rr1_sum.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Cowbell, 587/845 Hz squares",
+    "description": "Conga, open tone",
+    "file": "snes/conga.wav",
+    "licence": "CC0-1.0",
+    "loop_end": null,
+    "loop_start": null,
+    "name": "conga",
+    "root_note": 60,
+    "sample_rate": 16000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Conga/Conga_HitN_v3_rr1_Sum.wav"
+  },
+  {
+    "category": "drums",
+    "chip": "snes",
+    "description": "Cowbell",
     "file": "snes/cowbell.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "cowbell",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 24000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Cowbells/Cowbell1_Hit_v3_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Crash cymbal, 600 ms",
+    "description": "Suspended cymbal struck with a stick (crash), 22 kHz",
     "file": "snes/crash.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "crash",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 22050,
+    "source": "VCSL:Idiophones/Struck Idiophones/Suspended Cymbal 1/susCymb1_hit_stick_f1.wav"
   },
   {
     "category": "keys",
     "chip": "snes",
-    "description": "FM electric piano, C4",
+    "description": "Yamaha TX81Z 'FM Piano' recording, C4, looped",
     "file": "snes/epiano.wav",
-    "loop_end": null,
-    "loop_start": null,
+    "licence": "CC0-1.0",
+    "loop_end": 7440,
+    "loop_start": 6400,
     "name": "epiano",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VCSL:Electrophones/TX81Z/FM Piano/FMPiano_C4_vl2.wav"
   },
   {
     "category": "winds",
     "chip": "snes",
-    "description": "Flute with breath noise and vibrato, looped, A4",
+    "description": "Flute with vibrato and breath, A4, looped",
     "file": "snes/flute.wav",
-    "loop_end": 12800,
-    "loop_start": 6400,
+    "licence": "CC0-1.0",
+    "loop_end": 11136,
+    "loop_start": 7600,
     "name": "flute",
     "root_note": 69,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Woodwinds/Flute/susvib/LDFlute_susvib_A3_v1_1.wav"
   },
   {
     "category": "guitar",
     "chip": "snes",
     "description": "Palm-muted guitar, A3",
     "file": "snes/guitar_muted.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "guitar_muted",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.guitar"
   },
   {
     "category": "guitar",
     "chip": "snes",
     "description": "Nylon guitar, Karplus-Strong, A3",
     "file": "snes/guitar_nylon.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "guitar_nylon",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.guitar"
   },
   {
     "category": "guitar",
     "chip": "snes",
     "description": "Steel guitar, bright Karplus-Strong, A3",
     "file": "snes/guitar_steel.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "guitar_steel",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.guitar"
   },
   {
     "category": "drums",
     "chip": "snes",
     "description": "Closed hi-hat",
     "file": "snes/hat_closed.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "hat_closed",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v3_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
     "description": "Open hi-hat",
     "file": "snes/hat_open.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "hat_open",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitO_rr1_Mid.wav"
+  },
+  {
+    "category": "brass",
+    "chip": "snes",
+    "description": "Solo French horn, F3, looped",
+    "file": "snes/horn.wav",
+    "licence": "CC0-1.0",
+    "loop_end": 7312,
+    "loop_start": 5936,
+    "name": "horn",
+    "root_note": 53,
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Brass/F Horn/sus/MOHorn_sus_F2_v2_1.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Kick drum",
+    "description": "Muted concert bass drum, hit hard",
     "file": "snes/kick.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "kick",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:VSCO 1 Percussion/drums/bass/bdrum_muted_fff_1.wav"
   },
   {
     "category": "noise",
     "chip": "snes",
     "description": "Band-passed noise burst, 2.2 kHz",
     "file": "snes/noise_filtered.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": null,
     "loop_start": null,
     "name": "noise_filtered",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: drums.noise_filtered"
   },
   {
     "category": "noise",
     "chip": "snes",
     "description": "White noise, 4096-frame loop",
     "file": "snes/noise_white_loop.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 4096,
     "loop_start": 0,
     "name": "noise_white_loop",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.noise_loop"
   },
   {
     "category": "winds",
     "chip": "snes",
-    "description": "Oboe, reed formants, looped, A4",
+    "description": "Oboe without vibrato, A#4, looped",
     "file": "snes/oboe.wav",
-    "loop_end": 12800,
-    "loop_start": 6400,
+    "licence": "CC0-1.0",
+    "loop_end": 7504,
+    "loop_start": 6336,
     "name": "oboe",
-    "root_note": 69,
-    "sample_rate": 32000
+    "root_note": 70,
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Woodwinds/Oboe/Sus/Oboe_Sus_A#3_v3_Main.wav"
   },
   {
     "category": "organ",
     "chip": "snes",
     "description": "Full drawbar organ, looped, A3",
     "file": "snes/organ_full.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 6400,
     "loop_start": 3200,
     "name": "organ_full",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.organ"
   },
   {
     "category": "organ",
     "chip": "snes",
     "description": "Percussive organ, looped, A3",
     "file": "snes/organ_perc.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 14400,
     "loop_start": 11200,
     "name": "organ_perc",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.organ"
+  },
+  {
+    "category": "organ",
+    "chip": "snes",
+    "description": "Pipe organ, open manual 3, A3, short loop",
+    "file": "snes/organ_pipe.wav",
+    "licence": "CC0-1.0",
+    "loop_end": 8400,
+    "loop_start": 8000,
+    "name": "organ_pipe",
+    "root_note": 57,
+    "sample_rate": 16000,
+    "source": "VCSL:Aerophones/Edge-blown Aerophones/Pipe Organ/Loud/Rode_Man3Open_A3.wav"
   },
   {
     "category": "pad",
     "chip": "snes",
     "description": "Glassy FM pad, 16 kHz, looped, A3",
     "file": "snes/pad_glass.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 12800,
     "loop_start": 8000,
     "name": "pad_glass",
     "root_note": 57,
-    "sample_rate": 16000
+    "sample_rate": 16000,
+    "source": "procedural: instruments.pad_glass"
   },
   {
     "category": "pad",
     "chip": "snes",
     "description": "Warm detuned saw pad, 16 kHz, looped, A2",
     "file": "snes/pad_warm.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 14400,
     "loop_start": 8000,
     "name": "pad_warm",
     "root_note": 45,
-    "sample_rate": 16000
+    "sample_rate": 16000,
+    "source": "procedural: instruments.pad_warm"
   },
   {
     "category": "keys",
     "chip": "snes",
-    "description": "Additive piano, bright with inharmonic decay, C4",
+    "description": "Steinway B grand piano, loud, C4, 24 kHz, short sustain loop",
     "file": "snes/piano_bright.wav",
-    "loop_end": null,
-    "loop_start": null,
+    "licence": "CC0-1.0",
+    "loop_end": 10656,
+    "loop_start": 8992,
     "name": "piano_bright",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 24000,
+    "source": "VCSL:Chordophones/Zithers/Grand Piano, Steinway B/Sus/JHPiano_Sus_Close_C4_vl4_rr1.wav"
   },
   {
     "category": "keys",
     "chip": "snes",
-    "description": "Additive piano, soft touch, C4",
+    "description": "Upright piano, soft touch, A3, attack plus a short sustain loop",
     "file": "snes/piano_soft.wav",
-    "loop_end": null,
-    "loop_start": null,
+    "licence": "CC0-1.0",
+    "loop_end": 8608,
+    "loop_start": 6864,
     "name": "piano_soft",
-    "root_note": 60,
-    "sample_rate": 32000
+    "root_note": 57,
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Keys/Upright Piano/Player_dyn1_rr1_018.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Ride cymbal with bell ping, 600 ms",
+    "description": "Suspended cymbal, light stick hit (ride), 22 kHz",
     "file": "snes/ride.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "ride",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 22050,
+    "source": "VCSL:Idiophones/Struck Idiophones/Suspended Cymbal 2/susCymb2_hit_stick_mp1.wav"
   },
   {
     "category": "wave",
     "chip": "snes",
     "description": "Band-limited saw, 11-cycle loop, A3",
     "file": "snes/saw_loop.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 1600,
     "loop_start": 0,
     "name": "saw_loop",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.single_cycle"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Shaker, two noise grains",
+    "description": "Small shaker, one down stroke",
     "file": "snes/shaker.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "shaker",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Shaker, Small/Mid_ShakerDouble_Down_rr1.wav"
   },
   {
     "category": "wave",
     "chip": "snes",
     "description": "Sine, 11-cycle loop, A3",
     "file": "snes/sine_loop.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 1600,
     "loop_start": 0,
     "name": "sine_loop",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.single_cycle"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Snare drum",
+    "description": "Snare drum, snares on, forte",
     "file": "snes/snare.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "snare",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 24000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitSN_v7_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Snare rimshot",
+    "description": "Snare cross-stick (rim click)",
     "file": "snes/snare_rim.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "snare_rim",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 24000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Snare Drum, Modern 2/Snare3M_Xstick_v2_rr1_Mid.wav"
   },
   {
     "category": "wave",
     "chip": "snes",
     "description": "Band-limited square, 11-cycle loop, A3",
     "file": "snes/square_loop.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 1600,
     "loop_start": 0,
     "name": "square_loop",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.single_cycle"
   },
   {
     "category": "strings",
     "chip": "snes",
-    "description": "Detuned saw ensemble with chorus, looped, A3",
+    "description": "Violin and cello sections in unison, A3, vibrato, looped",
     "file": "snes/strings_ensemble.wav",
-    "loop_end": 11840,
-    "loop_start": 7040,
+    "licence": "CC0-1.0",
+    "loop_end": 11040,
+    "loop_start": 8480,
     "name": "strings_ensemble",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Strings/Violin Section/susVib/VlnEns_susVib_A2_v2.wav + VSCO-2-CE:Strings/Cello Section/susvib/susvib_A2_v3_1.wav"
   },
   {
     "category": "strings",
     "chip": "snes",
-    "description": "Pizzicato strings, A3",
+    "description": "Violin section pizzicato, A3",
     "file": "snes/strings_pizz.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "strings_pizz",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Strings/Violin Section/Pizz/VlnEns_Pizz_A2_v2_rr1.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "High tom, 170 Hz",
+    "description": "Tambourine hit",
+    "file": "snes/tambourine.wav",
+    "licence": "CC0-1.0",
+    "loop_end": null,
+    "loop_start": null,
+    "name": "tambourine",
+    "root_note": 60,
+    "sample_rate": 32000,
+    "source": "VCSL:Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Hit_v2_rr1_Mid.wav"
+  },
+  {
+    "category": "drums",
+    "chip": "snes",
+    "description": "Timpani hit, forte",
+    "file": "snes/timpani.wav",
+    "licence": "CC0-1.0",
+    "loop_end": null,
+    "loop_start": null,
+    "name": "timpani",
+    "root_note": 60,
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Percussion/Timpani/Timpani2_Hit_v4_rr1_Sum.wav"
+  },
+  {
+    "category": "drums",
+    "chip": "snes",
+    "description": "High tom, stick",
     "file": "snes/tom_high.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "tom_high",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v3_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Low tom, 80 Hz",
+    "description": "Low tom, stick",
     "file": "snes/tom_low.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "tom_low",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v3_rr1_Mid.wav"
   },
   {
     "category": "drums",
     "chip": "snes",
-    "description": "Mid tom, 120 Hz",
+    "description": "Mid tom: high tom recording played 4 semitones lower",
     "file": "snes/tom_mid.wav",
+    "licence": "CC0-1.0",
     "loop_end": null,
     "loop_start": null,
     "name": "tom_mid",
     "root_note": 60,
-    "sample_rate": 32000
+    "sample_rate": 16000,
+    "source": "VCSL:Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v4_rr1_Mid.wav"
   },
   {
     "category": "wave",
     "chip": "snes",
     "description": "Band-limited triangle, 11-cycle loop, A3",
     "file": "snes/triangle_loop.wav",
+    "licence": "original (procedural synthesis, no third-party material)",
     "loop_end": 1600,
     "loop_start": 0,
     "name": "triangle_loop",
     "root_note": 57,
-    "sample_rate": 32000
+    "sample_rate": 32000,
+    "source": "procedural: instruments.single_cycle"
   },
   {
     "category": "brass",
     "chip": "snes",
-    "description": "Solo trumpet with vibrato, looped, A4",
+    "description": "Solo tenor trombone, F3, looped",
+    "file": "snes/trombone.wav",
+    "licence": "CC0-1.0",
+    "loop_end": 8480,
+    "loop_start": 6464,
+    "name": "trombone",
+    "root_note": 53,
+    "sample_rate": 16000,
+    "source": "VSCO-2-CE:Brass/Tenor Trombone/sus/tenortbn_sus_F2_v2_1.wav"
+  },
+  {
+    "category": "brass",
+    "chip": "snes",
+    "description": "Solo trumpet with vibrato, A#4, 24 kHz, looped",
     "file": "snes/trumpet.wav",
-    "loop_end": 12800,
-    "loop_start": 6400,
+    "licence": "CC0-1.0",
+    "loop_end": 18256,
+    "loop_start": 11040,
     "name": "trumpet",
-    "root_note": 69,
-    "sample_rate": 32000
+    "root_note": 70,
+    "sample_rate": 24000,
+    "source": "VSCO-2-CE:Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A#3_v2_rr1.wav"
   }
 ]

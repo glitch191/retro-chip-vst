@@ -853,8 +853,10 @@ def _fm_pad() -> list[Seed]:
 # ----- DAC drums (channel 6 PCM) ---------------------------------------------------------------
 
 def _dac() -> list[Seed]:
-    # All samples are stored at 22050 Hz (root note 60) and resampled to dac_rate when loaded (see the
-    # module docstring), so the rate trades bandwidth and zero-order-hold grain, not pitch.
+    # The drums and the orchestra hit are CC0 recordings stored at 8-16 kHz (the voice and the noise
+    # burst are procedural, 22050 Hz), all with root note 60, and resampled to dac_rate when loaded
+    # (see the module docstring), so the rate trades zero-order-hold grain (and, below the stored
+    # rate, bandwidth), not pitch.
     low = [8000, 11025, 16000]    # kicks, toms, snares, voice: the classic 8-16 kHz driver rates
     high = [11025, 16000, 22050]  # rim, cowbell, noise: keep more of their top end
     # Hats, cymbals and claps: the Model 1 3.39 kHz low-pass removes most of what separates 16 and
@@ -864,8 +866,8 @@ def _dac() -> list[Seed]:
         dac_seed("Kick", "kick", "Standard DAC kick, one-shot (dac_keyed 0) so every key plays the same "
                  "hit; the rate axis trades crunch (8 kHz zero-order hold) for punch.",
                  keyed=0, rates=low, tags=["kick"]),
-        dac_seed("Deep Kick", "kick_deep", "Deep 100-40 Hz kick, one-shot; at 8 kHz the aliasing of the "
-                 "zero-order hold adds the grainy thump of early Mega Drive drivers.",
+        dac_seed("Deep Kick", "kick_deep", "Deep kick from an open concert bass drum, one-shot; at 8 kHz "
+                 "the aliasing of the zero-order hold adds the grainy thump of early Mega Drive drivers.",
                  keyed=0, rates=low, tags=["kick"]),
         dac_seed("Snare", "snare", "Full DAC snare, one-shot; lower rates darken and lengthen it like the "
                  "8 kHz snares of early titles.", keyed=0, rates=low, tags=["snare"]),
@@ -874,7 +876,7 @@ def _dac() -> list[Seed]:
         dac_seed("Clap", "clap", "Hand clap, one-shot at 11 or 22 kHz; the console axis compares the dull "
                  "Model 1 output (3.39 kHz low-pass) with the brighter Model 2.",
                  keyed=0, rates=bright, tags=["clap"], console_axis=True),
-        dac_seed("Rim", "rim", "Rimshot click, one-shot at 11-22 kHz.", keyed=0, rates=high, tags=["rim"]),
+        dac_seed("Rim", "rim", "Cross-stick click, one-shot at 11-22 kHz.", keyed=0, rates=high, tags=["rim"]),
         dac_seed("Closed Hat", "hat_closed", "Closed hi-hat on the DAC (games often used PSG noise instead) "
                  "at 11 or 22 kHz; on a Model 1 the 3.39 kHz low-pass takes most of the sizzle, the Model 2 "
                  "variant keeps it.", keyed=0, rates=bright, tags=["hihat"], console_axis=True),
@@ -889,8 +891,9 @@ def _dac() -> list[Seed]:
                  "a single sample covers a whole tom fill.", keyed=1, rates=low, tags=["tom", "keyed"]),
         dac_seed("Noise Burst", "noise_burst", "Noise burst for risers and explosions, keyed so the pitch "
                  "(and length) follows the key.", keyed=1, rates=high, tags=["noise", "sfx", "keyed"]),
-        dac_seed("Orchestra Hit", "sega_hit", "Keyed orchestra hit, the stock early-90s DAC stab; play "
-                 "it chromatically for hit melodies.", keyed=1, rates=low, tags=["hit", "keyed"]),
+        dac_seed("Orchestra Hit", "sega_hit", "Keyed orchestra hit (C major stab of recorded brass, "
+                 "strings and timpani), the stock early-90s DAC stab; play it chromatically for hit "
+                 "melodies.", keyed=1, rates=low, tags=["hit", "keyed"]),
         dac_seed("Voice", "voice_uh", "Keyed formant voice 'uh' for grunts and chants; low rates give the "
                  "crunchy speech of Mega Drive titles.", keyed=1, rates=low, tags=["voice", "keyed"]),
     ]

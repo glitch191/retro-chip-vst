@@ -1711,3 +1711,13 @@ specification. New ambiguities met while implementing are entries 31-40 above.
 `renderBlock`, `noteOn`, `noteOff`, `setChannelPitch`, `setParameter`, `reset` do not allocate
 (tested with a global `operator new` counter), take no locks and do no I/O. Blocks larger than
 the prepared size are split internally.
+
+### Factory DAC samples
+
+* 2026-09-29: the DAC drums (kick, deep kick, snares, clap, hats, tom, cowbell, rim, short
+  crash) and the orchestra hit are CC0 recordings (VSCO 2 CE, VCSL; `docs/SOURCES.md`,
+  "Samples (CC0 recordings)"), converted by `tools/samplegen/cc0_import.py` at 8000, 11025
+  or 16000 Hz like the samples of Mega Drive games, compressed and normalised to -0.5 dBFS
+  so that their decays stay above the 8-bit floor of `$2A`. The engine resamples them to
+  `dac_rate` at load; above the stored rate that adds no bandwidth, only the finer
+  zero-order hold. The voice "uh" and the noise burst stay procedural (22050 Hz).

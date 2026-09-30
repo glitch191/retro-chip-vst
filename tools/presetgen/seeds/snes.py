@@ -50,12 +50,19 @@ the next one; hold two notes (or use the MIDI-channel voice mode on voices 1 and
 hear the modulation. PMON is ignored on noise voices, so PMON seeds keep noise off.
 
 One-shot samples: the BRR end code sets the envelope to 0 at once, so on a one-shot the
-note ends with the sample (0.6 s for the pianos and guitars at the root key, half that an
-octave up), whatever the SR or release values; envelopes on one-shots are chosen to be
-quiet by then so the cut does not click.
+note ends with the sample (0.6 s for the guitars at the root key, half that an octave up),
+whatever the SR or release values; envelopes on one-shots are chosen to be quiet by then
+so the cut does not click. The recorded pianos are an attack plus a short sustain loop, as
+in SPC sets, so their SR alone shapes the decay.
+
+Recorded samples: the pianos, strings, brass, winds, pipe organ, upright bass and the drum
+kit are CC0 recordings converted by tools/samplegen/cc0_import.py (sources in
+tools/samplegen/cc0_manifest.json), most melodic ones at 16 kHz (P = 0x800 at the root,
+so their vibrato profiles are the half-depth `_LOW` ones), the bright piano and the
+trumpet at 24 kHz (P = 0xC00).
 
 Sample slots: `sample` = position of the sample in the snes list of
-assets/samples/index.json for the first 32 entries. That list holds more than 32 names;
+assets/samples/index.json for the first 32 entries. That list holds more than 32 names (48);
 each sample beyond position 31 shares the slot of the first not-yet-shared sample of the
 opposite family (drum kit vs everything else), and `seed()` checks that the two families
 always differ in (loop_override, noise_enable). The preset's `samples` entry names the WAV
@@ -192,8 +199,11 @@ def echo(delay: int, feedback: int, volume: int, fir: int, mask: Sequence[int]) 
 VIB_OFF = vib(0, 0, 0)
 VIB_5HZ = vib(23, 40, 40)      # 5.4 Hz (23 ticks), ~17 cents at P 0x1000, after 160 ms
 VIB_5HZ_LOW = vib(23, 20, 40)  # the same in cents for P around 0x800 (16 kHz samples, octave-down seeds)
+VIB_5HZ_LOW2 = vib(23, 10, 40)  # the same in cents for P around 0x400 (16 kHz samples an octave down)
 VIB_DELAYED = vib(23, 48, 125) # 5.4 Hz, ~20 cents, only on held notes (after 500 ms)
+VIB_DELAYED_LOW = vib(23, 24, 125)  # the same in cents for P around 0x800 (16 kHz samples)
 VIB_7HZ = vib(18, 32, 15)      # 6.9 Hz, ~13 cents shimmer, rotary-like, after 60 ms
+VIB_7HZ_LOW = vib(18, 16, 15)  # the same in cents for P around 0x800 (16 kHz samples)
 VIB_DEEP = vib(4, 64, 0)       # 31 Hz, maximum depth: an audible warble for SFX
 
 ECHO_OFF = {"echo_enable": 0, "echo_delay": 0, "echo_feedback": 0, "echo_volume": 0,
@@ -278,46 +288,48 @@ def instrument_seeds() -> list[Seed]:
     flute = adsr(10, 7, 7, 0, exp_release(20))
     organ = adsr(15, 7, 7, 0, KOFF)
     return [
-        # Piano (0.6 s one-shots: the end code ends every note by 0.6 s at the root key)
+        # Piano (recorded attack plus a short sustain loop: SR shapes the decay)
         seed("Grand Piano", "Instrument", "Piano", "piano_bright",
-             "Bright piano: A15 instant hammer, D3 to SL2 then SR14 shapes the fade inside the "
-             "0.6 s sample; GAIN exp release 18 as the damper on short notes.",
+             "Bright grand piano (24 kHz recording, 70 ms sustain loop): A15 instant hammer, D3 to "
+             "SL2 then SR14 is the string decay; GAIN exp release 18 as the damper on short notes.",
              env=piano, mixing=mix(104, 0, 0, 0), vibrato=VIB_OFF, voice=TONE, fx=ECHO_OFF, main_volume=127,
              axes={"soft": [("", piano), ("Soft", adsr(12, 2, 3, 12, exp_release(16)))], "echo": ECHO_3},
              tags=["piano", "keys"]),
         seed("Soft Piano", "Instrument", "Piano", "piano_soft",
-             "Soft-touch piano: A14 (6 ms) rounds the hammer, D2 to SL3 with SR12; the sample is "
-             "already at -27 dB when its end code stops it at 0.6 s.",
+             "Soft-touch upright piano (16 kHz recording, 110 ms sustain loop): A14 (6 ms) rounds "
+             "the hammer, D2 to SL3 then SR12 lets the note die away slowly.",
              env=adsr(14, 2, 3, 12, exp_release(16)), mixing=mix(108, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
              axes={"echo": [("off", ECHO_OFF), ("Short", ECHO_SHORT), ("Hall", ECHO_HALL)]},
              tags=["piano", "keys"]),
         seed("EPiano", "Instrument", "Piano", "epiano",
-             "FM electric piano sample: A15 D4 SL2 SR16 for the tine bark and fade; the 5.4 Hz "
-             "driver vibrato stands in for the tremolo chorus of the real instrument.",
+             "FM electric piano (recorded TX81Z, 16 kHz loop): A15 D4 SL2 SR16 for the tine bark "
+             "and fade; the half-depth 5.4 Hz driver vibrato stands in for the tremolo chorus.",
              env=adsr(15, 4, 2, 16, exp_release(20)), mixing=mix(100, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ)], "echo": ECHO_3},
+             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ_LOW)], "echo": ECHO_3},
              tags=["epiano", "keys"]),
         # Strings
         seed("Ensemble Strings", "Instrument", "Strings", "strings_ensemble",
-             "Playable string section: A9 (63 ms) bow, D0 to SL6 held (SR0) on the looped ensemble, "
-             "delayed vibrato only on long notes.",
-             env=strings, mixing=mix(96, 0, 0, 0), vibrato=VIB_DELAYED, voice=TONE, fx=ECHO_OFF, main_volume=127,
+             "Playable string section: A9 (63 ms) bow, D0 to SL6 held (SR0) on the looped violin and "
+             "cello sections, delayed vibrato (half depth for the 16 kHz sample) only on long notes.",
+             env=strings, mixing=mix(96, 0, 0, 0), vibrato=VIB_DELAYED_LOW, voice=TONE, fx=ECHO_OFF,
+             main_volume=127,
              axes={"soft": [("", strings), ("Soft", adsr(6, 0, 7, 0, exp_release(14)))], "echo": ECHO_3},
              tags=["strings", "orchestral"]),
         seed("Pizzicato", "Instrument", "Strings", "strings_pizz",
-             "Plucked strings: A15 D5 to SL1 then SR20 so the one-shot pluck stays dry and short; "
-             "the base range is violas and violins, an octave down gives cellos and basses.",
-             env=adsr(15, 5, 1, 20, exp_release(22)), mixing=mix(104, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
+             "Violin section pizzicato: A15 D7 SL7 SR0 lets the recorded 0.45 s one-shot carry its own "
+             "pluck and decay, GAIN release 22 on note off; an octave down gives cellos and basses.",
+             env=adsr(15, 7, 7, 0, exp_release(22)), mixing=mix(104, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
              axes={"transpose": [0, -12], "echo": ECHO_3},
              tags=["strings", "pizzicato", "orchestral"]),
         # Brass
         seed("Brass Section", "Instrument", "Brass", "brass_section",
-             "Brass section: A11 (24 ms) lip attack, D4 to SL5 held; the Swell variant uses GAIN "
-             "bent-line increase rate 15 (~280 ms), the classic SPC brass crescendo.",
-             env=brass, mixing=mix(100, 0, 0, 0), vibrato=VIB_DELAYED, voice=TONE, fx=ECHO_OFF, main_volume=127,
+             "Trumpet, horn and trombone section: A11 (24 ms) lip attack, D4 to SL5 held; the Swell "
+             "variant uses GAIN bent-line increase rate 15 (~280 ms), the classic SPC brass crescendo.",
+             env=brass, mixing=mix(100, 0, 0, 0), vibrato=VIB_DELAYED_LOW, voice=TONE, fx=ECHO_OFF,
+             main_volume=127,
              axes={"swell": [("", brass), ("Swell", gain(GAIN_BENT_INC, 15, exp_release(20)))], "echo": ECHO_3},
              tags=["brass", "orchestral"]),
         seed("Solo Trumpet", "Instrument", "Brass", "trumpet",
@@ -326,7 +338,22 @@ def instrument_seeds() -> list[Seed]:
              env=trumpet, mixing=mix(100, 0, 0, 0), vibrato=VIB_OFF, voice=TONE, fx=ECHO_OFF, main_volume=127,
              axes={"stab": [("", trumpet), ("Stab", adsr(15, 6, 2, 22, KOFF))], "echo": ECHO_3},
              tags=["brass", "trumpet", "lead"]),
-        # Guitar (0.6 s one-shots, like the pianos)
+        seed("French Horn", "Instrument", "Brass", "horn",
+             "Solo French horn (16 kHz loop): A10 (40 ms) soft lip attack, D5 to SL6 held, GAIN "
+             "release 18; delayed half-depth vibrato on held notes.",
+             env=adsr(10, 5, 6, 0, exp_release(18)), mixing=mix(100, 0, 0, 0), vibrato=VIB_DELAYED_LOW,
+             voice=TONE, fx=ECHO_OFF, main_volume=127,
+             axes={"echo": ECHO_3},
+             tags=["brass", "horn", "orchestral"]),
+        seed("Trombone", "Instrument", "Brass", "trombone",
+             "Solo tenor trombone (16 kHz loop): A12 D4 SL5 held, GAIN release 20; Stab is A15 D6 "
+             "SL2 SR22 with KOFF for accents.",
+             env=adsr(12, 4, 5, 0, exp_release(20)), mixing=mix(100, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
+             fx=ECHO_OFF, main_volume=127,
+             axes={"stab": [("", adsr(12, 4, 5, 0, exp_release(20))), ("Stab", adsr(15, 6, 2, 22, KOFF))],
+                   "echo": ECHO_2},
+             tags=["brass", "trombone", "orchestral"]),
+        # Guitar (0.6 s one-shots)
         seed("Nylon Guitar", "Instrument", "Guitar", "guitar_nylon",
              "Nylon guitar: A15 D3 to SL3 then SR16 lets the plucked string ring for the length of "
              "the sample; Pluck (D5 SL1 SR20) is the short arpeggio variant.",
@@ -354,18 +381,18 @@ def instrument_seeds() -> list[Seed]:
              axes={"soft": [("", flute), ("Soft", adsr(7, 7, 7, 0, exp_release(16)))], "echo": ECHO_3},
              tags=["woodwind", "flute", "lead"]),
         seed("Clarinet", "Instrument", "Woodwind", "clarinet",
-             "Clarinet (odd harmonics, looped): A11 D7 SL7 held with GAIN release 22, driver vibrato "
-             "optional since the sample is dry.",
+             "Clarinet (recorded without vibrato, 16 kHz loop): A11 D7 SL7 held with GAIN release "
+             "22, half-depth driver vibrato optional since the sample is dry.",
              env=adsr(11, 7, 7, 0, exp_release(22)), mixing=mix(100, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ)], "echo": ECHO_3},
+             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ_LOW)], "echo": ECHO_3},
              tags=["woodwind", "clarinet", "lead"]),
         seed("Oboe", "Instrument", "Woodwind", "oboe",
-             "Oboe (reed formants, looped): A11 then D3 to SL5 (~33 ms, -2.4 dB) for a reed accent "
-             "before the held tone; vibrato none, 5.4 Hz or a nervous 6.9 Hz.",
+             "Oboe (recorded without vibrato, 16 kHz loop): A11 then D3 to SL5 (~33 ms, -2.4 dB) for "
+             "a reed accent before the held tone; vibrato none, 5.4 Hz or a nervous 6.9 Hz (half depth).",
              env=adsr(11, 3, 5, 0, exp_release(22)), mixing=mix(96, 8, 0, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_OFF, main_volume=127,
-             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ), ("Vib7Hz", VIB_7HZ)], "echo": ECHO_2},
+             axes={"vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ_LOW), ("Vib7Hz", VIB_7HZ_LOW)], "echo": ECHO_2},
              tags=["woodwind", "oboe", "lead"]),
         # Organ
         seed("Drawbar Organ", "Instrument", "Organ", "organ_full",
@@ -380,6 +407,13 @@ def instrument_seeds() -> list[Seed]:
              env=organ, mixing=mix(96, 0, 0, 0), vibrato=VIB_OFF, voice=TONE, fx=ECHO_OFF, main_volume=127,
              axes={"long": [("", KOFF), ("Long", exp_release(18))], "echo": ECHO_3},
              tags=["organ", "keys", "percussive"]),
+        seed("Pipe Organ", "Instrument", "Organ", "organ_pipe",
+             "Recorded pipe organ (open manual, 25 ms loop): gate envelope A15 D7 SL7, GAIN exp "
+             "release 18 for the church tail; the long or hall echo stands in for the nave.",
+             env=adsr(15, 7, 7, 0, exp_release(18)), mixing=mix(92, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
+             fx=ECHO_OFF, main_volume=127,
+             axes={"echo": [("off", ECHO_OFF), ("Long", ECHO_LONG), ("Hall", ECHO_HALL)]},
+             tags=["organ", "pipe", "keys"]),
         seed("Chip Organ", "Instrument", "Organ", "square_loop",
              "Square-wave organ from an 11-cycle loop: gate envelope with KOFF, volume 84 because a "
              "full-scale square is louder than the recorded samples.",
@@ -413,6 +447,13 @@ def bass_seeds() -> list[Seed]:
              env=slap, mixing=mix(112, 0, 0, 0), vibrato=VIB_OFF, voice=TONE, fx=dry, main_volume=127,
              axes={"pop": [("", slap), ("Pop", adsr(15, 6, 1, 20, KOFF))], "transpose": [0, -12]},
              tags=["bass", "slap"]),
+        seed("Upright Bass", "Bass", "Sample", "bass_upright",
+             "Recorded contrabass pizzicato, an 11 kHz one-shot (0.7 s at the root, 1.4 s an octave "
+             "down): A15 D2 to SL5 then SR16 follows the string; dry and centred.",
+             env=adsr(15, 2, 5, 16, exp_release(22)), mixing=mix(116, 0, 0, 0), vibrato=VIB_OFF, voice=TONE,
+             fx=dry, main_volume=127,
+             axes={"transpose": [0, -12]},
+             tags=["bass", "acoustic", "upright"]),
         seed("Synth Bass", "Bass", "Sample", "bass_synth",
              "Filtered saw synth bass, a fixed-length 0.4 s one-shot that is still loud at its end: "
              "A15 D3 SL3 SR20 fades it to about -27 dB by then so the end code does not click; "
@@ -530,9 +571,9 @@ def pad_seeds() -> list[Seed]:
              tags=["pad", "triangle", "echo"]),
         # Strings
         seed("Slow Strings", "Pad", "Strings", "strings_ensemble",
-             "Slow string pad: A4 (630 ms) bow, SL7 held, 5.4 Hz vibrato, GAIN release 14 (~2 s); "
-             "Slower uses A2 (1.5 s).",
-             env=slow_strings, mixing=mix(92, 0, 0, 0), vibrato=VIB_5HZ, voice=TONE, fx=ECHO_SHORT,
+             "Slow string pad: A4 (630 ms) bow, SL7 held, 5.4 Hz vibrato (half depth for the 16 kHz "
+             "sample), GAIN release 14 (~2 s); Slower uses A2 (1.5 s).",
+             env=slow_strings, mixing=mix(92, 0, 0, 0), vibrato=VIB_5HZ_LOW, voice=TONE, fx=ECHO_SHORT,
              main_volume=110,
              axes={"slower": [("", slow_strings), ("Slower", adsr(2, 0, 7, 0, exp_release(12)))],
                    "echo": PAD_ECHO_3},
@@ -540,7 +581,7 @@ def pad_seeds() -> list[Seed]:
         seed("Swell Strings", "Pad", "Strings", "strings_ensemble",
              "Crescendo strings: GAIN bent-line increase rate 7 (~1.8 s, fast then slower near the "
              "top) instead of an ADSR attack, the way drivers fade strings in; Slow is rate 4 (~3.6 s).",
-             env=swell_strings, mixing=mix(92, 0, 0, 0), vibrato=VIB_DELAYED, voice=TONE, fx=ECHO_LONG,
+             env=swell_strings, mixing=mix(92, 0, 0, 0), vibrato=VIB_DELAYED_LOW, voice=TONE, fx=ECHO_LONG,
              main_volume=110,
              axes={"slow": [("", swell_strings), ("Slow", gain(GAIN_BENT_INC, 4, exp_release(12)))],
                    "echo": [("Long", ECHO_LONG), ("Hall", ECHO_HALL)]},
@@ -555,11 +596,12 @@ def pad_seeds() -> list[Seed]:
              tags=["pad", "strings", "synth"]),
         seed("Low Strings", "Pad", "Strings", "strings_ensemble",
              "Cellos and basses an octave below the keys: A5 SL7 under a long or hall echo, as a "
-             "sustained floor under the harmony; vibrato at half depth for the octave-down pitch.",
+             "sustained floor under the harmony; vibrato at quarter depth for the 16 kHz sample an "
+             "octave down.",
              env=adsr(5, 0, 7, 0, exp_release(13)), mixing=mix(96, 0, -12, 0), vibrato=VIB_OFF, voice=TONE,
              fx=ECHO_LONG, main_volume=110,
              axes={"echo": [("Long", ECHO_LONG), ("Hall", ECHO_HALL)],
-                   "vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ_LOW)]},
+                   "vib": [("off", VIB_OFF), ("Vib5Hz", VIB_5HZ_LOW2)]},
              tags=["pad", "strings", "orchestral", "low", "octave"]),
         # Choir
         seed("Choir Ah", "Pad", "Choir", "choir_ah",
@@ -621,12 +663,12 @@ def drum_seeds() -> list[Seed]:
             "Snare, dry and centred; transpose +/-4 moves the body tone, Short tightens the noise tail.",
             0, {"transpose": [0, -4, 4], "short": full_short}, ["snare"]),
         kit("Rim", "snare_rim",
-            "Rimshot click, short by nature; a fourth down for a deeper crack, a fifth up for a "
-            "woodblock-like tick.",
+            "Snare cross-stick click, short by nature; a fourth down for a deeper crack, a fifth up "
+            "for a woodblock-like tick.",
             0, {"transpose": [0, -5, 7]}, ["snare", "rim"]),
         kit("Closed Hat", "hat_closed",
-            "Closed hi-hat, 70 ms, on the drummer's left; a fourth down for a darker hat, a fifth "
-            "up for a smaller cymbal.",
+            "Closed hi-hat, 90 ms at 32 kHz, on the drummer's left; a fourth down for a darker hat, "
+            "a fifth up for a smaller cymbal.",
             PAN_HAT, {"transpose": [0, -5, 7]}, ["hihat", "cymbal"]),
         kit("Open Hat", "hat_open",
             "Open hi-hat on the drummer's left; Choke uses hardware KOFF (8 ms) so a note off closes "
@@ -647,20 +689,32 @@ def drum_seeds() -> list[Seed]:
             "tight snap.",
             0, {"transpose": [0, -5, 4]}, ["clap"]),
         kit("Crash", "crash",
-            "Crash cymbal, 600 ms one-shot, on the drummer's left; Choke (KOFF) grabs the cymbal on "
-            "note off, pitch down for a China-like wash.",
+            "Crash cymbal, 800 ms one-shot at 22 kHz, on the drummer's left; Choke (KOFF) grabs the "
+            "cymbal on note off, pitch down for a China-like wash.",
             PAN_CRASH, {"choke": full_choke, "transpose": [0, -5]}, ["crash", "cymbal"]),
         kit("Ride", "ride",
-            "Ride with bell ping on the drummer's right; Choke for muted ride patterns, three "
-            "semitones up for a lighter ride.",
+            "Ride (light stick hit on a suspended cymbal) on the drummer's right; Choke for muted "
+            "ride patterns, three semitones up for a lighter ride.",
             PAN_RIDE, {"choke": full_choke, "transpose": [0, 3]}, ["ride", "cymbal"]),
         kit("Cowbell", "cowbell",
-            "Two-square cowbell; a fifth down for an agogo-like low bell, Short to shorten the ring.",
+            "Cowbell; a fifth down for an agogo-like low bell, Short to shorten the ring.",
             0, {"transpose": [0, -7], "short": full_short}, ["cowbell", "percussion"]),
         kit("Shaker", "shaker",
-            "Two-grain shaker, centred; up a fourth for a smaller shaker, down a fourth for a "
+            "Small shaker stroke, centred; up a fourth for a smaller shaker, down a fourth for a "
             "larger one.",
             0, {"transpose": [0, 5, -5]}, ["shaker", "percussion"]),
+        kit("Timpani", "timpani",
+            "Orchestral timpani hit (0.9 s): keys retune it like the pedal, a fourth down for the "
+            "low drum, a fourth up for the high one; the one-shot rings out untouched.",
+            0, {"transpose": [0, -5, 5]}, ["timpani", "orchestral", "percussion"]),
+        kit("Conga", "conga",
+            "Open conga tone, a little right of centre; a fourth down for a tumba, a fourth up for "
+            "a quinto.",
+            PAN_TOM_MID, {"transpose": [0, -5, 5]}, ["conga", "percussion"]),
+        kit("Tambourine", "tambourine",
+            "Tambourine hit at 32 kHz on the drummer's right; Short (SL0 SR24) cuts the jingles for "
+            "16th-note patterns.",
+            PAN_RIDE, {"short": full_short}, ["tambourine", "percussion"]),
         dynamic("Dynamic Kick", "kick",
                 "Kick layers the way a driver writes accents and ghost notes: the accent a semitone "
                 "up at VxVOL 127, the ghost two semitones down, short (SL0 SR24) at VxVOL 56.",
