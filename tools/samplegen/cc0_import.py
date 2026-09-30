@@ -37,7 +37,11 @@ Conversion of one sample (``build_sample``)
 6. Loop mode ``loop``: the loop start is searched within ``start_ms +/- search_ms`` and
    the loop length within ``min_ms .. max_ms``, both on 16-frame steps (BRR blocks), by
    maximising the normalised correlation between the frames around the loop start and
-   the frames around the loop end. With ``flatten`` the loop is given an exponential gain
+   the frames around the loop end. A loop of L frames can only play partials at
+   multiples of rate / L, so on pitched samples only lengths holding a whole number of
+   periods of the root within ``max_detune_cents`` (default 3 cents) are candidates;
+   otherwise the sustained part plays off-key although the attack is in tune (a 1664-frame
+   loop on a 24 kHz C4 holds 18.14 periods and would play 13 cents flat). With ``flatten`` the loop is given an exponential gain
    ramp so that its end has the RMS level of its start (no pumping on every repeat), then
    the last ``xfade_ms`` of the loop are cross-faded into the frames that precede the
    loop start (linear, or equal-power when the match is below 0.8) and the sample is cut
@@ -79,6 +83,7 @@ BRR_BLOCK = 16
 ONSET_DB = -40.0
 PREROLL_S = 0.001
 PITCH_WINDOW = 4096
+LOOP_MAX_DETUNE_CENTS = 3.0  # loop lengths of pitched samples must keep the root within this
 SNES_BRR_BYTES_PER_BLOCK = 9
 
 
@@ -373,8 +378,23 @@ def _rms(seg):
     return math.sqrt(sum(v * v for v in seg) / len(seg)) if seg else 0.0
 
 
-def find_loop(y, rate, start_ms, search_ms, min_ms, max_ms, window):
-    """Best ``(loop_start, loop_length, score)`` on 16-frame steps (see module docstring)."""
+def loop_detune_cents(length, period):
+    """Pitch error of a loop of ``length`` frames on a tone of ``period`` frames.
+
+    A loop repeats every ``length`` frames, so its spectrum only has lines at multiples of
+    rate / length: the fundamental plays at the nearest line, round(length / period)
+    periods per loop, whatever the recording did.
+    """
+    periods = length / period
+    return 1200.0 * math.log2(max(1, round(periods)) / periods)
+
+
+def find_loop(y, rate, start_ms, search_ms, min_ms, max_ms, window, period=None, max_cents=None):
+    """Best ``(loop_start, loop_length, score)`` on 16-frame steps (see module docstring).
+
+    With ``period`` (frames per cycle of the root note) only lengths whose loop pitch is
+    within ``max_cents`` of the root are candidates.
+    """
     blk = BRR_BLOCK
     s_lo = max(blk * int(math.ceil(window / blk)), blk * int(round((start_ms - search_ms) * rate / 1000.0 / blk)))
     s_hi = blk * int(round((start_ms + search_ms) * rate / 1000.0 / blk))
@@ -395,6 +415,8 @@ def find_loop(y, rate, start_ms, search_ms, min_ms, max_ms, window):
             e = s + length
             if e + window > n:
                 break
+            if period is not None and abs(loop_detune_cents(length, period)) > max_cents:
+                continue
             eb = sq[e + window] - sq[e - window]
             if eb <= 0.0:
                 continue
@@ -496,15 +518,19 @@ def build_sample(spec, source_dir=DEFAULT_SOURCE_DIR):
     loop_start = loop_end = None
     if lp["mode"] == "loop":
         window = BRR_BLOCK * 8
+        period = None
         if spec["layers"] and "target_note" in spec["layers"][0]:
             period = rate / midi_hz(spec["root_note"])
             window = max(64, min(256, int(round(2.0 * period))))
+        max_cents = float(lp.get("max_detune_cents", LOOP_MAX_DETUNE_CENTS))
         s, length, score = find_loop(mix, rate, lp["start_ms"], lp["search_ms"], lp["min_ms"],
-                                     lp["max_ms"], window)
+                                     lp["max_ms"], window, period, max_cents)
         xfade = int(round(lp["xfade_ms"] * 0.001 * rate))
         mix = make_loop(mix, s, length, xfade, lp.get("flatten", True), window, score)
         loop_start, loop_end = s, s + length
-        report.append("loop %d..%d (%.1f ms), match %.3f" % (s, s + length, length * 1000.0 / rate, score))
+        report.append("loop %d..%d (%.1f ms), match %.3f%s"
+                      % (s, s + length, length * 1000.0 / rate, score,
+                         ", loop pitch %+.1f cents" % loop_detune_cents(length, period) if period else ""))
     else:
         limit = min(len(mix), int(round(lp["length_ms"] * 0.001 * rate)))
         peak = max((abs(v) for v in mix), default=0.0)

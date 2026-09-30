@@ -41,7 +41,9 @@ Short), Pad (Echo, Strings, Choir), Drums (Kit, Velocity), SFX (Noise, PMON).
 
 Genesis: FM Bass (Alg, Feedback, Detune), FM Keys (EPiano, Bell), FM Brass (Stab, Brass,
 SSG), FM Pad (Slow, Unison, LFO), DAC (Drums), PSG Lead (Solo, Doubled), PSG Bass,
-PSG Drums (Periodic, White).
+PSG Drums (Periodic, White). FM leads and guitars are in FM Brass / Brass, wind leads in
+FM Pad / LFO, organs and strings in FM Pad (`docs/research/genesis-sound-design.md`,
+"Category mapping").
 
 ## Seeds and variation rules
 

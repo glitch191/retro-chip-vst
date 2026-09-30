@@ -10,7 +10,9 @@ read, copied or imitated. Where a forum post or article reports what an emulator
 (for example Eke's notes on MAME, or jsgroth crediting Nuked-OPN2 for some facts), only
 the prose statement was used, as one opinion among the hardware sources, and the choice
 is recorded in `docs/HARDWARE_NOTES.md`. Tables were transcribed from the documents below
-and re-derived with small Python scripts written for this project.
+and re-derived with small Python scripts written for this project. Three emulator
+binaries were run as black boxes to compare audio output, never read (section "Reference
+emulators (comparison only)").
 
 All sources were consulted on 2026-09-28 unless noted. Format: name, URL, what was taken.
 
@@ -130,9 +132,35 @@ states the real pitch of every pitched layer; `measure_pitch` confirms it by
 autocorrelation (an octave-away label is an error) and the measured cents are folded into
 the resampling ratio, so every root note is exact. Several recordings (violin pizzicato,
 the open organ manual) correlate almost as well at half the period, which is why the
-octave comes from the label and not from the measurement.
+octave comes from the label and not from the measurement. The label is the key played,
+not always the sounding pitch: the open organ stop on key A3 sounds A4, so its root is 69
+(checked on its spectrum on 2026-09-30, `docs/research/snes.md` Ambiguity 25). On
+2026-09-30 the upright bass layer was changed from `BKCtbss_Pizz_A1_v1_rr1.wav`, whose
+pitch bends from -60 to +20 cents in its first 250 ms, to `BKCtbss_Pizz_E1_v3_rr1.wav`
+of the same collection and commit (root E2).
 
-No reference emulator was downloaded or run for this work.
+The sample conversion itself used no emulator: roots, loops and levels come from the
+recordings and the public BRR / DAC formats.
+
+## Reference emulators (comparison only)
+
+Product-owner decision of 2026-09-29: a reference emulator binary may be downloaded and
+run to compare audio output; its source code is never read, copied or imitated. They were
+run as black boxes on our own stimuli (`tools/refcheck/make_stimuli.py`: register writes,
+BRR data and an SPC700 program written for the check, no game material), from
+`third_party/refemu/` (git-ignored, nothing redistributed, no reference output committed).
+Versions, hashes, settings and the reference quirks measured:
+`docs/research/reference-emulators.md`; results: `docs/research/refcheck-report.md`.
+
+| # | Tool | URL | Consulted | Licence | Used for |
+|---|---|---|---|---|---|
+| 1 | VGMPlay 0.40.9 (legacy Windows build), configuration "nuked": Nuked OPN2 (YM2612, discrete chip) + MAME SN76496 | https://github.com/vgmrips/vgmplay-legacy/releases/download/0.40.9/VGMPlay_040-9.7z | 2026-09-29 | repository declares none; bundled cores under their own licences (Nuked OPN2 LGPL-2.1 per its project page) | Primary Genesis reference: 104 VGM stimuli (FM, PSG, DAC) |
+| 2 | Same VGMPlay build, configuration "mame": MAME / Genesis Plus GX YM2612 + Maxim SN76489 | same | 2026-09-29 | same | Genesis second opinion (separates "ours differs" from "the references disagree") |
+| 3 | FFmpeg 9.0.2 full_build-shared (gyan.dev) with its `libgme` demuxer (Game Music Emu SPC player) | https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-full_build-shared.7z | 2026-09-29 | FFmpeg build GPL v3; Game Music Emu LGPL-2.1 per its project page | SNES reference: 44 SPC stimuli at the native 32 kHz |
+
+What the comparison changed in the engines: findings F1 (YM2612 S1 pipeline delay,
+`docs/HARDWARE_NOTES.md` [genesis 41]) and F2 (resampler kernel, "Genesis and SNES:
+resampler kernel"). The emulators were never used to design presets or samples.
 
 ## Plugin layer
 
@@ -149,3 +177,15 @@ The perceptual thresholds in `tools/presetgen/qa.py` (about 1 dB for level and s
 balance, 3-5 cents for pitch, 15 % for envelope times) are the usual just-noticeable
 differences, taken from general psychoacoustic knowledge. No document was re-read for
 them, and they were calibrated on the rendered banks (`docs/PRESET_QA.md`).
+
+The Genesis seed patches were designed from public patch-design references (nesdoug,
+the Sega manual via SMS Power, plutiedev, the Furnace manual, Chowning 1973, Sound On
+Sound), consulted on 2026-09-30 and listed with what was taken in
+`docs/research/genesis-sound-design.md`. No game-ripped patch bank was used.
+
+The SNES seed patches were designed from public driver and echo documentation (SnesLab
+N-SPC and FIR pages, the Super Famicom Development Wiki N-SPC page, the AddmusicK readme,
+the Super MIDI Pak manual, Wikipedia "Vibrato", an OC ReMix forum thread), consulted on
+2026-09-30 and listed with what was taken in `docs/research/snes-sound-design.md`. No
+instrument table extracted from a game (such as the Super Mario World table shipped with
+AddmusicK) was read.

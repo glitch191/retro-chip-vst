@@ -1168,6 +1168,29 @@ symmetry/monotonicity, full period table, 16-bit output clamp, preset gains).
     on that sample overrides it. Alternative: the first version's order (every envelope
     change one sample earlier; A = 15 outputs 0x7FF on #6 instead of 0x400; it also let
     a same-sample code-1 header cancel a key-on, which contradicts Anomie S3c/S4).
+25. Root note of the pipe-organ sample (added 2026-09-30, preset sound design). The VCSL
+    file `Rode_Man3Open_A3.wav` is labelled with the key played (A3), but the open stop of
+    manual 3 sounds an octave higher: the converted sample has no energy at 220 Hz and a
+    harmonic series on 440 Hz (h1 -1.5 dB, h2 0 dB, h3 -4.9 dB, h4 -11 dB). The first
+    conversion used the label as the root and the importer's pitch check, which folds the
+    octave on the label, accepted it, so every key played an octave high. Decision: a
+    sample's root is its sounding pitch, so the manifest root and layer note are 69 (A4);
+    the Pipe Organ seed offers an OctDown variant for the 8-foot pitch. Alternative: keep
+    the key label as the root and transpose every organ seed by -12, which would mislead
+    anyone loading the sample into a slot.
+26. Typical game instrument and echo settings (added 2026-09-30, preset sound design). No
+    public document found lists the ADSR, GAIN or echo values used by individual
+    commercial games except in forms extracted from the games (for example the Super
+    Mario World instrument table that AddmusicK ships), and the SMW Central threads that
+    discuss instrument ADSR values could not be opened. The driver documentation (SnesLab
+    and Super Famicom Wiki N-SPC pages, AddmusicK readme) gives the command set but no
+    default values; the Super MIDI Pak manual gives one echo starting point (EDL 5,
+    EFB 0x3C, EVOL 0x40, identity FIR). Decision: the seeds use envelopes designed from the
+    envelope mechanics and each recording's acoustic envelope, and echo profiles in
+    EDL 3..6, EFB 0x28..0x60, EVOL 0x28..0x40 with the documented FIR sets, a range that
+    contains the Super MIDI Pak starting point (details and references in
+    `snes-sound-design.md`). Alternative: read game-extracted instrument tables, rejected
+    by the product-owner rule against material ripped from games.
 
 Corrections made by the 2026-09-28 verification pass (all sources re-fetched, tables
 re-derived with Python):
@@ -1279,6 +1302,12 @@ All consulted on 2026-09-28.
     build), https://www.gyan.dev/ffmpeg/builds/. Used for the differential check only
     (settings and known behaviour in `reference-emulators.md`, results in
     `refcheck-report.md`: bit-exact apart from player gain and polarity on static stimuli).
+14. Preset sound-design references (2026-09-30): SnesLab "N-SPC Engine" and "FIR Filter",
+    Super Famicom Development Wiki "Nintendo Music Format (N-SPC)", the AddmusicK readme
+    (syntax and hex command pages), the Super MIDI Pak documentation, Wikipedia "Vibrato"
+    and an OC ReMix forum thread on envelope shapes. Used for the seed patches only, not
+    for chip behaviour; listed with what was taken in `snes-sound-design.md`
+    (Ambiguities 25 and 26).
 
 ## Implementation decisions
 
@@ -1452,7 +1481,10 @@ top            echo buffer for EDL >= 1: ESA = 0x100 - 8 * EDL, 0x10000 - 2048 *
   (CC0 recordings)"), converted by `tools/samplegen/cc0_import.py` to game-like formats:
   melodic samples mostly at 16 kHz (bright piano and trumpet 24 kHz, bass 11 kHz), drums
   16-32 kHz, an attack plus a short loop (25-275 ms) on 16-frame boundaries ending at the
-  sample end, 2-10 KiB of BRR each. The engine stores them at their own rate (no
+  sample end, 2-10 KiB of BRR each. A loop of L frames can only hold partials at multiples
+  of rate / L, so the importer accepts only loop lengths that hold a whole number of
+  periods of the root within 3 cents (added 2026-09-30, after the grand piano's first
+  loop played 13 cents flat); the pipe organ's root is its sounding pitch (Ambiguity 25). The engine stores them at their own rate (no
   decimation), so the pitch register at the root key is 0x800 (16 kHz) or 0xC00 (24 kHz).
 
 ### Output stage
@@ -1465,7 +1497,9 @@ top            echo buffer for EDL >= 1: ESA = 0x100 - 8 * EDL, 0x10000 - 2048 *
   alone through VxVOL, MVOL, mute and the same inversion, without echo (ENGINE_SPECS).
 * Each 32 kHz output value (main L/R and, when the host asked for them, the 16 per-voice
   values) is handed to its own `BandLimitedStepSynth` as a step at the sample's host-time
-  position (cutoff at 16 kHz, zero-order hold in raw mode), then the 5 Hz DC blocker
+  position (cutoff at 16 kHz, zero-order hold in raw mode; `IntegratedStep` kernel, so the
+  pass band is flat and only the console's own zero-order-hold droop remains: refcheck
+  finding F2, the earlier impulse-sum kernel added (w/2)/sin(w/2) on top), then the 5 Hz DC blocker
   (Ambiguity 23) removes the -1 LSB inversion offset and any DC. Per-voice work is skipped
   when the channel pointers are null.
 

@@ -5,9 +5,12 @@
 //       tools/presetgen/params/<chip>.json.
 //
 //   chiptool render <preset.json> <out.wav> [--note 60] [--seconds 2] [--rate 48000]
-//                   [--velocity 100] [--channel N]
+//                   [--velocity 100] [--channel N] [--notes 60,62,64 [--step 0.4] [--gate 0.8]]
 //       Applies the preset's "params" through the engine's parameterDescriptors() keys,
 //       plays the note for 60 % of the duration and writes a stereo 16-bit WAV.
+//       --notes plays a monophonic phrase on the same channel instead: note i starts at
+//       i * step seconds and is released gate * step seconds later; the render lasts
+//       --seconds in total (the rest is the release tail).
 //
 //   chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]
 //       Renders every preset of the bank twice at 48 kHz, each after a 0.4 s silent pre-roll
@@ -403,6 +406,9 @@ struct RenderOptions
     int velocity = 100; // MIDI 0..127
     int channel = -1;   // -1: guess from the preset
     double holdSeconds = -1.0; // note-off time; < 0: kNoteOnFraction of 'seconds'
+    std::vector<int> notes;    // non-empty: phrase mode (replaces 'note' and 'holdSeconds')
+    double stepSeconds = 0.4;  // phrase: time between note-ons
+    double gate = 0.8;         // phrase: held fraction of each step
 };
 
 // Engine must already be prepared at opts.rate.
@@ -434,17 +440,53 @@ void renderPreset(chipdsp::IChipEngine& engine, const Value& preset, const Rende
     channel = std::clamp(channel, 0, engine.numChannels() - 1);
     const float velocity = static_cast<float>(std::clamp(opts.velocity, 0, 127)) / 127.0f;
 
-    engine.noteOn(channel, static_cast<float>(opts.note), velocity);
-    bool released = false;
-    for (int pos = 0; pos < total; pos += kBlockSize)
+    if (opts.notes.empty())
     {
-        if (!released && pos >= noteOffAt)
+        engine.noteOn(channel, static_cast<float>(opts.note), velocity);
+        bool released = false;
+        for (int pos = 0; pos < total; pos += kBlockSize)
         {
-            engine.noteOff(channel);
-            released = true;
+            if (!released && pos >= noteOffAt)
+            {
+                engine.noteOff(channel);
+                released = true;
+            }
+            const int n = std::min(kBlockSize, total - pos);
+            engine.renderBlock(left.data() + pos, right.data() + pos, nullptr, nullptr, n);
         }
-        const int n = std::min(kBlockSize, total - pos);
+        return;
+    }
+
+    // Phrase: events at exact sample positions, blocks split at each event.
+    struct Event { int at; bool on; int note; };
+    std::vector<Event> events;
+    const int step = static_cast<int>(std::lround(opts.stepSeconds * opts.rate));
+    const int hold = std::max(1, static_cast<int>(std::lround(opts.gate * opts.stepSeconds * opts.rate)));
+    for (size_t i = 0; i < opts.notes.size(); ++i)
+    {
+        const int start = static_cast<int>(i) * step;
+        events.push_back({ start, true, opts.notes[i] });
+        events.push_back({ start + hold, false, opts.notes[i] });
+    }
+    std::stable_sort(events.begin(), events.end(), [](const Event& a, const Event& b) {
+        return a.at != b.at ? a.at < b.at : (!a.on && b.on); // a note-off before a note-on at the same time
+    });
+    size_t next = 0;
+    for (int pos = 0; pos < total;)
+    {
+        while (next < events.size() && events[next].at <= pos)
+        {
+            if (events[next].on)
+                engine.noteOn(channel, static_cast<float>(events[next].note), velocity);
+            else
+                engine.noteOff(channel);
+            ++next;
+        }
+        int n = std::min(kBlockSize, total - pos);
+        if (next < events.size())
+            n = std::min(n, events[next].at - pos);
         engine.renderBlock(left.data() + pos, right.data() + pos, nullptr, nullptr, n);
+        pos += n;
     }
 }
 
@@ -750,6 +792,7 @@ int usage()
                  "  chiptool dump-params <nes|snes|genesis>\n"
                  "  chiptool render <preset.json> <out.wav> [--note 60] [--seconds 2] [--rate 48000]\n"
                  "                  [--velocity 100] [--channel N] [--samples DIR]\n"
+                 "                  [--notes 60,62,64 [--step 0.4] [--gate 0.8]]\n"
                  "  chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]\n"
                  "  chiptool regs genesis <stimulus.vgm> <out.wav> [--rate 44100] [--lowpass] [--asic]\n"
                  "  chiptool regs snes <stimulus.spc> <stimulus.events> <out.wav> [--seconds S]\n");
@@ -794,10 +837,20 @@ int cmdRender(int argc, char** argv)
         else if (optionValue(argc, argv, i, "--velocity", v)) opts.velocity = std::stoi(v);
         else if (optionValue(argc, argv, i, "--channel", v))  opts.channel = std::stoi(v);
         else if (optionValue(argc, argv, i, "--samples", v))  samplesDir = v;
+        else if (optionValue(argc, argv, i, "--step", v))     opts.stepSeconds = std::stod(v);
+        else if (optionValue(argc, argv, i, "--gate", v))     opts.gate = std::stod(v);
+        else if (optionValue(argc, argv, i, "--notes", v))
+        {
+            std::stringstream list(v);
+            for (std::string item; std::getline(list, item, ',');)
+                opts.notes.push_back(std::stoi(item));
+        }
         else throw std::runtime_error(std::string("unknown option ") + argv[i]);
     }
     if (opts.seconds <= 0.0 || opts.rate < 8000.0)
         throw std::runtime_error("invalid --seconds or --rate");
+    if (opts.stepSeconds <= 0.0 || opts.gate <= 0.0 || opts.gate > 1.0)
+        throw std::runtime_error("invalid --step or --gate (step > 0, 0 < gate <= 1)");
 
     const Value preset = minijson::parse(readFile(presetPath));
     const Value* chipValue = preset.find("chip");

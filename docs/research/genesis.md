@@ -698,6 +698,14 @@ evaluation order "1→3→2→4"; an operator evaluated immediately after its mo
 see that modulator's new output): delayed pairs are S2->S3 (evaluated later) and the
 consecutive pairs S1->S3, S3->S2, S2->S4; applied to the eight algorithms this gives
 exactly the list above (no algorithm uses S3->S2).
+Revised 2026-09-30 (Ambiguity 41, refcheck finding F1): S1 reaches the other operators
+through its feedback history register, one sample later than the order alone gives. The
+implemented delays, in samples, are S1->S2 1, S1->S3 2, S1->S4 1, S2->S3 1, S2->S4 1,
+S3->S4 0 (`modulatorDelay()` in `GenesisTables.h`, pinned for all eight algorithms by
+`test_genesis_operator.cpp` "Pipeline delays"). The S2 and S3 paths keep the derivation
+above. S1 as a carrier (algorithm 7) reaches the channel accumulator from the same history
+register, one sample after S2, S3 and S4 (`kS1CarrierDelay`, test "Algorithm 7: S1 reaches
+the accumulator one sample after the other carriers").
 
 ### Channel accumulation and clamp
 
@@ -1363,7 +1371,7 @@ Added during the fidelity review (2026-09-28):
     partner (same channel), so a retrigger never occupies extra channels. Alternative: release
     the old partner and key the next free channel (the earlier behaviour: the partner walked up
     one channel per retrigger while the old ones were still releasing).
-41. Operator pipeline delay of S1 as a modulator (open, 2026-09-29). "Evaluation order quirk"
+41. Operator pipeline delay of S1 as a modulator (raised 2026-09-29, decided 2026-09-30). "Evaluation order quirk"
     derives the delayed paths from the S1, S3, S2, S4 order (jsgroth part 4 excerpt, Nemesis
     page 13): S2->S3, S1->S3 and S2->S4 use the previous sample, S1->S2, S1->S4 and S3->S4 the
     current one. The differential check against two independent reference emulators run as
@@ -1374,8 +1382,20 @@ Added during the fidelity review (2026-09-28):
     S1->S3 2, S1->S4 1; S2 and S3 paths unchanged) in a scratch build brings all eight
     algorithms within 0.16 dB of Nuked. Plausible mechanism: other operators read S1 from the
     same one-sample history register its feedback uses (`op1Out[n-1]`). No public text found
-    yet that states it. Recommended decision (pending the product owner and a public source):
-    adopt the +1 sample on S1 paths. Alternative: keep the documented derivation (current code).
+    yet that states it. Decision (2026-09-30): adopt the +1 sample on S1 paths, since two
+    independent references agree and the derivation from the evaluation order is our own
+    reading of an excerpt, not a quoted rule; implemented by `modulatorDelay()` in
+    `GenesisTables.h` and `Ym2612Core::computeChannel` (S1 read from `fb1` / `fb2`). The
+    rerun then showed the same one-sample delay on S1 as a carrier: against both references an
+    S1-alone tone (fm_fb0) sat 0.83 host samples (= 1.00 FM sample at 44.1 kHz) earlier than
+    an S4-alone tone (fm_sine_ref) relative to the reference, so S1 now also reaches the
+    accumulator from its history (`kS1CarrierDelay` = 1; only algorithm 7 has S1 as a
+    carrier). With it, the fractional-lag null against Nuked rose from 28.9 to 49.8 dB on
+    fm_fb3 and from 44.6 to 47.7 dB on fm_alg7 (fm_fb0: 55.0 dB). Rerun
+    of the differential check: largest harmonic difference against Nuked on fm_alg0..3 went
+    from 9.46 / 1.33 / 4.52 / 1.24 dB to the values in `refcheck-report.md` "F1". Alternative:
+    the documented derivation (S1->S2 0, S1->S3 1, S1->S4 0), to revisit if a die-level
+    description (Nemesis, Sauraen) states otherwise.
 
 ## Sources
 
@@ -1511,6 +1531,11 @@ excerpts of them were available.
     Maxim SN76489, https://github.com/vgmrips/vgmplay-legacy/releases/tag/0.40.9. Used for
     the differential check only (tools, settings and licences in `reference-emulators.md`,
     results in `refcheck-report.md`); evidence for Ambiguity 41.
+33. Preset sound-design references (2026-09-30): nesdoug's FM instrument basics, the Sega
+    manual's algorithm suggestions (Maxim's transcription, source list above), plutiedev,
+    the Furnace OPN editor page, Chowning 1973 and Sound On Sound "Synth Secrets 13". Used
+    for the seed patches only, not for chip behaviour; listed with what was taken in
+    `genesis-sound-design.md`.
 
 ## Generator script
 
@@ -1573,7 +1598,8 @@ specification. New ambiguities met while implementing are entries 31-40 above.
 * `Ym2612Core`: register-level YM2612. `write(bank, reg, value)` / `writePort(port, value)`
   (one address latch, one data port); `clockSample()` advances one FM sample: LFO step, SSG-EG
   logic (every sample), EG (every 3rd sample, 12-bit counter skipping 0), then the six channels
-  (operators in the order S1, S3, S2, S4 with the pipeline delays of "Evaluation order quirk",
+  (operators in the order S1, S3, S2, S4 with the pipeline delays of "Evaluation order quirk"
+  and the S1 history delay of Ambiguity 41,
   per-carrier `>> 5`, 9-bit clamp, DAC substitution on channel 6). The output stage
   (`channelOutputLeft/Right`, `outputLeft/Right`) applies `ladderOutput()`; `setLadderEffect()`
   is the `chip_revision` switch (0 = discrete YM2612 with ladder, 1 = YM3438/ASIC, linear).
@@ -1598,7 +1624,10 @@ specification. New ambiguities met while implementing are entries 31-40 above.
 * After each FM sample the summed L/R output (9-bit units) is compared with the previous one
   and the change goes to a `BandLimitedStepSynth` prepared for the FM rate; after each PSG tick
   the PSG sum goes to a synth prepared for the PSG tick rate. So the FM DAC hold at 53.27 kHz
-  and the PSG steps at 223.7 kHz are both band-limited exactly once. The synths are prepared
+  and the PSG steps at 223.7 kHz are both band-limited exactly once. The synths use the
+  `IntegratedStep` kernel (true band-limited steps, flat pass band; refcheck finding F2: the
+  earlier impulse-sum kernel boosted the top octave by (w/2)/sin(w/2), +0.94 dB at 11.2 kHz
+  at 44.1 kHz). The synths are prepared
   at `prepare()` for the clock selected then; a later NTSC/PAL switch only changes the time
   base (the kernel cutoff differs by 0.9 %, and cannot be rebuilt on the audio thread).
 * Level scale: 6 x 256 nine-bit units = 1.0 (`kOutputScale`); a single FM channel at full scale

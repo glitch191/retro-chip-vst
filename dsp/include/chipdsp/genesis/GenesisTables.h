@@ -221,7 +221,8 @@ constexpr AlgoDef kAlgorithm[8] = {
 // it, is seen with its previous-sample output. S1 is read by the other operators through
 // its feedback history registers, which adds one more sample to every S1 path (research
 // Ambiguity 41). Result, in samples: S1->S2 1, S1->S3 2, S1->S4 1, S2->S3 1, S2->S4 1,
-// S3->S4 0.
+// S3->S4 0. The same history register feeds S1 as a carrier (algorithm 7) to the channel
+// accumulator: kS1CarrierDelay samples after the other carriers.
 constexpr int kEvalOrder[4] = { 0, 2, 1, 3 };
 constexpr int kEvalPosition[4] = { 0, 2, 1, 3 };   // position of S1..S4 in kEvalOrder
 constexpr int modulatorDelay(int target, int modulator) noexcept
@@ -229,6 +230,7 @@ constexpr int modulatorDelay(int target, int modulator) noexcept
     const int pipeline = kEvalPosition[target] - kEvalPosition[modulator] < 2 ? 1 : 0;
     return modulator == 0 ? pipeline + 1 : pipeline;
 }
+constexpr int kS1CarrierDelay = 1;
 
 // Carrier output truncated to 9 bits and summed with clamping (research "Channel accumulation").
 constexpr int carrierTo9Bit(int out14) noexcept { return out14 >> 5; }

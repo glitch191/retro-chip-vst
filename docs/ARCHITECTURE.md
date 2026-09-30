@@ -57,9 +57,17 @@ Algorithm: band-limited step synthesis. Every chip output is piecewise constant 
 its clock (the 2A03 mixer changes at 1.79 MHz, the S-DSP DAC holds each 32 kHz sample,
 the YM2612 DAC holds each 53.267 kHz sample, the SN76489 changes at 223.7 kHz). A
 piecewise-constant signal is exactly a sum of steps, so resampling it is exactly a sum
-of band-limited steps. For each change the synth adds a windowed-sinc impulse
-(32 taps, Kaiser beta 7, 64 fractional phases) scaled by the change into an
-accumulation buffer; integrating that buffer yields the band-limited output.
+of band-limited steps. For each change the synth adds a 32-tap kernel (windowed sinc,
+Kaiser beta 7, 64 fractional phases) scaled by the change into an accumulation buffer;
+the running sum of that buffer yields the band-limited output. Two kernels exist:
+
+* `IntegratedStep` (Genesis, SNES): each tap is the first difference of the integrated
+  windowed sinc, so the running sum gives exact samples of a band-limited step and the
+  pass band is flat.
+* `ImpulseSum` (NES): taps are samples of the windowed sinc itself. The discrete running
+  sum then adds a gain of (w/2)/sin(w/2), w = 2 pi f / host rate (+0.94 dB at 11.2 kHz at
+  44.1 kHz). Kept for the NES only because its output must not change (product-owner
+  decision 2026-09-29; `docs/research/refcheck-report.md` finding F2).
 
 Why this and not a polyphase FIR over the native stream: the NES would need 1.79 M
 samples per second to be filtered per channel. The step approach costs one 32-tap
