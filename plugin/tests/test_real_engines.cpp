@@ -161,6 +161,64 @@ TEST_CASE ("Every factory preset applies with its samples and parameter values",
           << " engine parameter checks, smallest free SNES APU RAM " << minSnesFree << " bytes");
 }
 
+TEST_CASE ("Every factory preset keeps a single note at or below 0 dBFS with its preset_gain", "[presets][gain][real]")
+{
+    // The conditions of `chiptool features` (the render tools/presetgen derives preset_gain
+    // from): 48 kHz, 0.4 s after the preset is applied, C4 at velocity 100 held 1.4 s of 2 s.
+    // The generator aims the peak at -1 dBFS, which leaves 1 dB for the differences between
+    // that render and the plugin (voice allocation, arpeggiator presets playing their steps).
+    auto proc = rcvtest::makeProcessor();
+    if (rcvtest::usesStubEngines (*proc))
+        SKIP ("Stub engines: the factory presets are calibrated for the real engines");
+    auto& pm = proc->presetManager();
+    constexpr int kSweepBlock = 256;
+    rcvtest::Runner runner (*proc, kSampleRate, kSweepBlock);
+    auto blocks = [] (double seconds) { return static_cast<int> (std::ceil (seconds * kSampleRate / kSweepBlock)); };
+
+    int checked = 0, withGain = 0;
+    float loudest = 0.0f;
+    juce::String loudestName;
+    for (auto chip : kChips)
+    {
+        for (const auto* preset : pm.presets (chip))
+        {
+            INFO ("preset '" << preset->name << "' (" << chipdsp::chipKey (chip) << ")");
+            pm.apply (*preset);
+            runner.process();   // the audio thread takes the new values and gain
+            proc->reset();      // no tail of the previous preset
+            for (int b = 0; b < blocks (0.4); ++b)
+                runner.process();
+
+            float peak = 0.0f;
+            runner.noteOn (1, 60, 100);
+            for (int b = 0; b < blocks (2.0); ++b)
+            {
+                if (b == blocks (1.4))
+                    runner.noteOff (1, 60);
+                runner.process();
+                peak = std::max ({ peak, rcvtest::peak (runner.mainChannel (0), kSweepBlock),
+                                   rcvtest::peak (runner.mainChannel (1), kSweepBlock) });
+            }
+            runner.controller (1, 123, 0);   // All Notes Off (the arpeggiator's hold, if any)
+            runner.process();
+
+            if (peak > 1.0f)
+                FAIL_CHECK ("peak " << juce::Decibels::gainToDecibels (peak) << " dBFS");
+            if (peak > loudest)
+            {
+                loudest = peak;
+                loudestName = preset->name;
+            }
+            if (preset->globalValue (rcv::ParamIds::presetGain) != nullptr)
+                ++withGain;
+            ++checked;
+        }
+    }
+    CHECK (checked > 1000);
+    WARN (checked << " presets (" << withGain << " with preset_gain), loudest single note "
+                  << juce::Decibels::gainToDecibels (loudest) << " dBFS ('" << loudestName << "')");
+}
+
 TEST_CASE ("A user sample in a slot the preset writes is replaced and leaves the state", "[presets][real]")
 {
     auto proc = rcvtest::makeProcessor();

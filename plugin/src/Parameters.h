@@ -24,6 +24,7 @@ namespace ParamIds
     inline constexpr const char* voiceMode = "voice_mode";
     inline constexpr const char* polyChannels = "poly_channels";
     inline constexpr const char* masterGain = "master_gain";
+    inline constexpr const char* presetGain = "preset_gain";
     inline constexpr const char* arpEnabled = "arp_enabled";
     inline constexpr const char* arpPattern = "arp_pattern";
     inline constexpr const char* arpOctaves = "arp_octaves";
@@ -37,8 +38,8 @@ namespace ParamIds
     inline constexpr const char* uiScale = "ui_scale";
 
     // Every global id, in the order they appear in the parameter layout.
-    inline constexpr std::array<const char*, 16> all = {
-        chip, rawOutput, voiceMode, polyChannels, masterGain,
+    inline constexpr std::array<const char*, 17> all = {
+        chip, rawOutput, voiceMode, polyChannels, masterGain, presetGain,
         arpEnabled, arpPattern, arpOctaves, arpRateMode, arpSyncDivision, arpFreeRate, arpGate, arpHold,
         glideTime, glideMode, uiScale
     };

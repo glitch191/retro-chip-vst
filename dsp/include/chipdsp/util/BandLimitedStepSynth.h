@@ -22,11 +22,12 @@ namespace chipdsp
 // Kernel choice (docs/research/refcheck-report.md, finding F2):
 //  * IntegratedStep: each kernel tap is the first difference of the integrated windowed sinc,
 //    so the running sum in endBlock() gives exact samples of the band-limited step. Flat pass
-//    band. Used by the Genesis and SNES engines.
+//    band. The default, used by every engine (the NES switched to it on 2026-09-30,
+//    product-owner decision).
 //  * ImpulseSum: taps are samples of the windowed sinc itself; the discrete running sum then
 //    boosts the top octave by (w/2) / sin(w/2), w = 2 pi f / host rate (+0.94 dB at 11.2 kHz
-//    at 44.1 kHz). Kept as the default because the NES output must not change (product-owner
-//    decision 2026-09-29).
+//    at 44.1 kHz). Legacy kernel of the NES engine before 2026-09-30, kept only for
+//    `chiptool regs nes --kernel impulse` (the refcheck F2 measurement) and its regression test.
 //
 // Real-time safety: prepare() allocates; everything else is allocation-free.
 class BandLimitedStepSynth
@@ -48,7 +49,7 @@ public:
     // hostRateHz  : output sample rate.
     // maxBlock    : largest numSamples passed to endBlock().
     // kernel      : see the class comment.
-    void prepare(double nativeRateHz, double hostRateHz, int maxBlock, Kernel kernel = Kernel::ImpulseSum);
+    void prepare(double nativeRateHz, double hostRateHz, int maxBlock, Kernel kernel = Kernel::IntegratedStep);
 
     void reset() noexcept;
     void setRaw(bool raw) noexcept { rawMode = raw; }
@@ -78,7 +79,7 @@ private:
     double samplesPerClock = 1.0;
     double nativeRate = 1.0;
     double hostRate = 1.0;
-    Kernel kernelType = Kernel::ImpulseSum;
+    Kernel kernelType = Kernel::IntegratedStep;
     bool rawMode = false;
 
     std::vector<float> kernel;      // kPhases * kTaps, each phase sums to exactly 1

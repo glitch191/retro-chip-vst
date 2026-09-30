@@ -72,7 +72,8 @@ class MidiLearn;
 //      keep moving between MIDI events. The active engine renders the main pair and, when
 //      a channel bus is enabled or the editor's scopes are on, one pair per hardware
 //      channel; during a fade the outgoing engine renders too and both are mixed.
-//   5. Output: the master gain ramps linearly over the slice on the main and channel
+//   5. Output: the output gain (master_gain + preset_gain, in dB) ramps linearly over the
+//      slice on the main and channel
 //      signals, channel signals are copied to the enabled host buses (BusMap), and the
 //      main and channel signals are pushed into the VisualizerBuffers.
 //
@@ -193,6 +194,7 @@ private:
     bool anyGlideActive() const noexcept;
     void renderSubBlock (int offset, int len, float* outL, float* outR, bool wantChannels) noexcept;
     void applyMasterGain (float* outL, float* outR, int numSamples, bool wantChannels) noexcept;
+    float outputGainTarget() const noexcept;   // master_gain + preset_gain, linear
     void deliverBuses (const BusMap& buses, int numSamples, bool wantChannels) noexcept;
     void feedVisualizer (const float* outL, const float* outR, int numSamples, bool wantChannels) noexcept;
     float readRaw (const std::atomic<float>* p, float fallback) const noexcept;
@@ -206,6 +208,7 @@ private:
     std::atomic<float>* voiceModeParam = nullptr;
     std::atomic<float>* polyChannelsParam = nullptr;
     std::atomic<float>* masterGainParam = nullptr;
+    std::atomic<float>* presetGainParam = nullptr;
     std::atomic<float>* arpEnabledParam = nullptr;
     std::atomic<float>* arpPatternParam = nullptr;
     std::atomic<float>* arpOctavesParam = nullptr;

@@ -111,7 +111,7 @@ void BandLimitedStepSynth::buildKernel()
         return;
     }
 
-    // ImpulseSum (legacy, NES): sampled impulses, integrated by the running sum in endBlock().
+    // ImpulseSum (legacy, chiptool regs nes --kernel impulse only): sampled impulses, integrated by the running sum in endBlock().
     for (int p = 0; p < kPhases; ++p)
     {
         // Impulse located at fractional position frac = p / kPhases inside sample 0.

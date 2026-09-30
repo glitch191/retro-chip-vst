@@ -13,7 +13,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Clap Rate 11k Console Model1",
     "params": {
@@ -130,7 +131,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 16.5
     },
     "name": "Genesis DAC Clap Rate 11k Console Model2",
     "params": {
@@ -247,7 +249,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Clap Rate 22k Console Model1",
     "params": {
@@ -364,7 +367,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.0
     },
     "name": "Genesis DAC Clap Rate 22k Console Model2",
     "params": {
@@ -481,7 +485,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 18.0
     },
     "name": "Genesis DAC Closed Hat Rate 11k Console Model1",
     "params": {
@@ -598,7 +603,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 16.0
     },
     "name": "Genesis DAC Closed Hat Rate 11k Console Model2",
     "params": {
@@ -715,7 +721,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 19.5
     },
     "name": "Genesis DAC Closed Hat Rate 22k Console Model1",
     "params": {
@@ -832,7 +839,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Closed Hat Rate 22k Console Model2",
     "params": {
@@ -949,7 +957,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 14.5
     },
     "name": "Genesis DAC Cowbell Rate 11k",
     "params": {
@@ -1065,7 +1074,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 14.5
     },
     "name": "Genesis DAC Cowbell Rate 16k",
     "params": {
@@ -1181,7 +1191,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 14.5
     },
     "name": "Genesis DAC Cowbell Rate 22k",
     "params": {
@@ -1297,7 +1308,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 14.5
     },
     "name": "Genesis DAC Crash Rate 11k Console Model1",
     "params": {
@@ -1414,7 +1426,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.0
     },
     "name": "Genesis DAC Crash Rate 11k Console Model2",
     "params": {
@@ -1531,7 +1544,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 14.5
     },
     "name": "Genesis DAC Crash Rate 22k Console Model1",
     "params": {
@@ -1648,7 +1662,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.0
     },
     "name": "Genesis DAC Crash Rate 22k Console Model2",
     "params": {
@@ -1765,7 +1780,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 9.0
     },
     "name": "Genesis DAC Deep Kick Rate 11k",
     "params": {
@@ -1881,7 +1897,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 9.0
     },
     "name": "Genesis DAC Deep Kick Rate 16k",
     "params": {
@@ -1997,7 +2014,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 9.0
     },
     "name": "Genesis DAC Deep Kick Rate 8k",
     "params": {
@@ -2113,7 +2131,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 10.5
     },
     "name": "Genesis DAC Kick Rate 11k",
     "params": {
@@ -2229,7 +2248,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 10.5
     },
     "name": "Genesis DAC Kick Rate 16k",
     "params": {
@@ -2345,7 +2365,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 10.5
     },
     "name": "Genesis DAC Kick Rate 8k",
     "params": {
@@ -2461,7 +2482,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Noise Burst Rate 11k",
     "params": {
@@ -2579,7 +2601,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.0
     },
     "name": "Genesis DAC Noise Burst Rate 16k",
     "params": {
@@ -2697,7 +2720,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 16.5
     },
     "name": "Genesis DAC Noise Burst Rate 22k",
     "params": {
@@ -2815,7 +2839,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 16.5
     },
     "name": "Genesis DAC Open Hat Rate 11k Console Model1",
     "params": {
@@ -2932,7 +2957,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 14.0
     },
     "name": "Genesis DAC Open Hat Rate 11k Console Model2",
     "params": {
@@ -3049,7 +3075,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Open Hat Rate 22k Console Model1",
     "params": {
@@ -3166,7 +3193,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 15.0
     },
     "name": "Genesis DAC Open Hat Rate 22k Console Model2",
     "params": {
@@ -3283,7 +3311,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 11.0
     },
     "name": "Genesis DAC Orchestra Hit Rate 11k",
     "params": {
@@ -3400,7 +3429,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 11.0
     },
     "name": "Genesis DAC Orchestra Hit Rate 16k",
     "params": {
@@ -3517,7 +3547,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 11.0
     },
     "name": "Genesis DAC Orchestra Hit Rate 8k",
     "params": {
@@ -3634,7 +3665,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 16.0
     },
     "name": "Genesis DAC Rim Rate 11k",
     "params": {
@@ -3750,7 +3782,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Rim Rate 16k",
     "params": {
@@ -3866,7 +3899,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 16.5
     },
     "name": "Genesis DAC Rim Rate 22k",
     "params": {
@@ -3982,7 +4016,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 9.5
     },
     "name": "Genesis DAC Short Snare Rate 11k",
     "params": {
@@ -4098,7 +4133,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 10.0
     },
     "name": "Genesis DAC Short Snare Rate 16k",
     "params": {
@@ -4214,7 +4250,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 10.0
     },
     "name": "Genesis DAC Short Snare Rate 8k",
     "params": {
@@ -4330,7 +4367,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.0
     },
     "name": "Genesis DAC Snare Rate 11k",
     "params": {
@@ -4446,7 +4484,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.0
     },
     "name": "Genesis DAC Snare Rate 16k",
     "params": {
@@ -4562,7 +4601,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.0
     },
     "name": "Genesis DAC Snare Rate 8k",
     "params": {
@@ -4678,7 +4718,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.5
     },
     "name": "Genesis DAC Tom Rate 11k",
     "params": {
@@ -4795,7 +4836,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.5
     },
     "name": "Genesis DAC Tom Rate 16k",
     "params": {
@@ -4912,7 +4954,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 13.5
     },
     "name": "Genesis DAC Tom Rate 8k",
     "params": {
@@ -5029,7 +5072,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Voice Rate 11k",
     "params": {
@@ -5146,7 +5190,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Voice Rate 16k",
     "params": {
@@ -5263,7 +5308,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 32
+      "poly_channels": 32,
+      "preset_gain": 17.5
     },
     "name": "Genesis DAC Voice Rate 8k",
     "params": {
@@ -5380,7 +5426,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Bass Pick FB3 Decay Muted",
     "params": {
@@ -5495,7 +5542,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Bass Pick FB3 Decay Muted OctDown",
     "params": {
@@ -5611,7 +5659,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Bass Pick FB3 Decay Ringing",
     "params": {
@@ -5726,7 +5775,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.5
     },
     "name": "Genesis FM Bass Pick FB3 Decay Ringing OctDown",
     "params": {
@@ -5842,7 +5892,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Bass Pick FB6 Decay Muted",
     "params": {
@@ -5957,7 +6008,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Bass Pick FB6 Decay Muted OctDown",
     "params": {
@@ -6073,7 +6125,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Bass Pick FB6 Decay Ringing",
     "params": {
@@ -6188,7 +6241,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.5
     },
     "name": "Genesis FM Bass Pick FB6 Decay Ringing OctDown",
     "params": {
@@ -6304,7 +6358,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Bass Slap Pop Hard FB5",
     "params": {
@@ -6419,7 +6474,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Bass Slap Pop Hard FB5 OctDown",
     "params": {
@@ -6535,7 +6591,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Bass Slap Pop Hard FB7",
     "params": {
@@ -6650,7 +6707,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Bass Slap Pop Hard FB7 OctDown",
     "params": {
@@ -6766,7 +6824,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Bass Slap Pop Soft FB5",
     "params": {
@@ -6881,7 +6940,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Bass Slap Pop Soft FB5 OctDown",
     "params": {
@@ -6997,7 +7057,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Bass Slap Pop Soft FB7",
     "params": {
@@ -7112,7 +7173,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Bass Slap Pop Soft FB7 OctDown",
     "params": {
@@ -7228,7 +7290,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Bass Square FB0",
     "params": {
@@ -7342,7 +7405,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.0
     },
     "name": "Genesis FM Bass Square FB0 OctDown",
     "params": {
@@ -7457,7 +7521,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.0
     },
     "name": "Genesis FM Bass Square FB6",
     "params": {
@@ -7571,7 +7636,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.0
     },
     "name": "Genesis FM Bass Square FB6 OctDown",
     "params": {
@@ -7686,7 +7752,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.0
     },
     "name": "Genesis FM Bass Sub Decay Held",
     "params": {
@@ -7800,7 +7867,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Bass Sub Decay Held OctDown",
     "params": {
@@ -7915,7 +7983,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Bass Sub Decay Pluck",
     "params": {
@@ -8029,7 +8098,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Bass Sub Decay Pluck OctDown",
     "params": {
@@ -8144,7 +8214,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.0
     },
     "name": "Genesis FM Bass Synth Tone Bright Sweep Held Chip YM2612",
     "params": {
@@ -8260,7 +8331,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.0
     },
     "name": "Genesis FM Bass Synth Tone Bright Sweep Held Chip YM3438",
     "params": {
@@ -8376,7 +8448,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Bass Synth Tone Bright Sweep Pluck Chip YM2612",
     "params": {
@@ -8492,7 +8565,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Bass Synth Tone Bright Sweep Pluck Chip YM3438",
     "params": {
@@ -8608,7 +8682,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Bass Synth Tone Dark Sweep Held Chip YM2612",
     "params": {
@@ -8724,7 +8799,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Bass Synth Tone Dark Sweep Held Chip YM3438",
     "params": {
@@ -8840,7 +8916,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Bass Synth Tone Dark Sweep Pluck Chip YM2612",
     "params": {
@@ -8956,7 +9033,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Bass Synth Tone Dark Sweep Pluck Chip YM3438",
     "params": {
@@ -9072,7 +9150,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Bass Chorus Detune Light",
     "params": {
@@ -9186,7 +9265,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.0
     },
     "name": "Genesis FM Bass Chorus Detune Light OctDown",
     "params": {
@@ -9301,7 +9381,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Bass Chorus Detune Wide",
     "params": {
@@ -9415,7 +9496,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Bass Chorus Detune Wide OctDown",
     "params": {
@@ -9530,7 +9612,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 3.0
     },
     "name": "Genesis FM Bass Fat Detune Medium",
     "params": {
@@ -9644,7 +9727,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 2.5
     },
     "name": "Genesis FM Bass Fat Detune Medium OctDown",
     "params": {
@@ -9759,7 +9843,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 3.0
     },
     "name": "Genesis FM Bass Fat Detune Wide",
     "params": {
@@ -9873,7 +9958,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 2.5
     },
     "name": "Genesis FM Bass Fat Detune Wide OctDown",
     "params": {
@@ -9988,7 +10074,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Bass Octave Octave Loud",
     "params": {
@@ -10102,7 +10189,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Bass Octave Octave Loud OctDown",
     "params": {
@@ -10217,7 +10305,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.0
     },
     "name": "Genesis FM Bass Octave Octave Soft",
     "params": {
@@ -10331,7 +10420,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.5
     },
     "name": "Genesis FM Bass Octave Octave Soft OctDown",
     "params": {
@@ -10446,7 +10536,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Bass Dist Drive Heavy",
     "params": {
@@ -10560,7 +10651,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.0
     },
     "name": "Genesis FM Bass Dist Drive Heavy OctDown",
     "params": {
@@ -10675,7 +10767,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.0
     },
     "name": "Genesis FM Bass Dist Drive Medium",
     "params": {
@@ -10789,7 +10882,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.0
     },
     "name": "Genesis FM Bass Dist Drive Medium OctDown",
     "params": {
@@ -10904,7 +10998,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.5
     },
     "name": "Genesis FM Bass Growl FB4",
     "params": {
@@ -11018,7 +11113,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.0
     },
     "name": "Genesis FM Bass Growl FB4 OctDown",
     "params": {
@@ -11133,7 +11229,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Bass Growl FB6",
     "params": {
@@ -11247,7 +11344,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Bass Growl FB6 OctDown",
     "params": {
@@ -11362,7 +11460,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Bass Growl FB7",
     "params": {
@@ -11476,7 +11575,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Bass Growl FB7 OctDown",
     "params": {
@@ -11591,7 +11691,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Bass Wah Swell Fast FB2",
     "params": {
@@ -11706,7 +11807,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Bass Wah Swell Fast FB6",
     "params": {
@@ -11821,7 +11923,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Bass Wah Swell Slow FB2",
     "params": {
@@ -11936,7 +12039,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Bass Wah Swell Slow FB6",
     "params": {
@@ -12051,7 +12155,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Brass Clean Guitar Pick Hard",
     "params": {
@@ -12165,7 +12270,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Brass Clean Guitar Pick Hard OctDown",
     "params": {
@@ -12280,7 +12386,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Brass Clean Guitar Pick Soft",
     "params": {
@@ -12394,7 +12501,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Brass Clean Guitar Pick Soft OctDown",
     "params": {
@@ -12509,7 +12617,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 4.5
     },
     "name": "Genesis FM Brass Dist Guitar Drive Crunch",
     "params": {
@@ -12624,7 +12733,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 4.5
     },
     "name": "Genesis FM Brass Dist Guitar Drive Crunch Vibrato Delayed",
     "params": {
@@ -12740,7 +12850,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Brass Dist Guitar Drive Heavy",
     "params": {
@@ -12855,7 +12966,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Brass Dist Guitar Drive Heavy Vibrato Delayed",
     "params": {
@@ -12971,7 +13083,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Brass Horn Section Attack Fast",
     "params": {
@@ -13085,7 +13198,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Brass Horn Section Attack Fast Vibrato Delayed",
     "params": {
@@ -13200,7 +13314,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Brass Horn Section Attack Swell",
     "params": {
@@ -13314,7 +13429,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Brass Horn Section Attack Swell Vibrato Delayed",
     "params": {
@@ -13429,7 +13545,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Pulse Lead Vibrato Delayed",
     "params": {
@@ -13543,7 +13660,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Brass Pulse Lead Vibrato Delayed OctUp",
     "params": {
@@ -13658,7 +13776,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Pulse Lead Vibrato LFO",
     "params": {
@@ -13772,7 +13891,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Brass Pulse Lead Vibrato LFO OctUp",
     "params": {
@@ -13887,7 +14007,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Saw Lead Vibrato Delayed Detune Light",
     "params": {
@@ -14002,7 +14123,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Brass Saw Lead Vibrato Delayed Detune Wide",
     "params": {
@@ -14117,7 +14239,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Saw Lead Vibrato LFO Detune Light",
     "params": {
@@ -14232,7 +14355,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Brass Saw Lead Vibrato LFO Detune Wide",
     "params": {
@@ -14347,7 +14471,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Synth Detune Light Attack Fast",
     "params": {
@@ -14462,7 +14587,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Synth Detune Light Attack Slow",
     "params": {
@@ -14577,7 +14703,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Brass Synth Detune Wide Attack Fast",
     "params": {
@@ -14692,7 +14819,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Brass Synth Detune Wide Attack Slow",
     "params": {
@@ -14807,7 +14935,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Trumpet FB3",
     "params": {
@@ -14921,7 +15050,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Trumpet FB5",
     "params": {
@@ -15035,7 +15165,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Trumpet Vibrato Delayed FB3",
     "params": {
@@ -15150,7 +15281,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Trumpet Vibrato Delayed FB5",
     "params": {
@@ -15265,7 +15397,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Trumpet Vibrato LFO FB3",
     "params": {
@@ -15380,7 +15513,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Brass Trumpet Vibrato LFO FB5",
     "params": {
@@ -15495,7 +15629,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.0
     },
     "name": "Genesis FM Brass Tuba FB3",
     "params": {
@@ -15609,7 +15744,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Brass Tuba FB6",
     "params": {
@@ -15723,7 +15859,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Buzz Horn SSG Saw FB4",
     "params": {
@@ -15838,7 +15975,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Buzz Horn SSG Saw FB6",
     "params": {
@@ -15953,7 +16091,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Brass Buzz Horn SSG Triangle FB4",
     "params": {
@@ -16068,7 +16207,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Brass Buzz Horn SSG Triangle FB6",
     "params": {
@@ -16183,7 +16323,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Brass Growl Horn SSG InvSaw",
     "params": {
@@ -16298,7 +16439,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Brass Growl Horn SSG Saw",
     "params": {
@@ -16413,7 +16555,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Brass Growl Horn SSG Triangle",
     "params": {
@@ -16528,7 +16671,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Brass Swell Horn SSG Once",
     "params": {
@@ -16642,7 +16786,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.5
     },
     "name": "Genesis FM Brass Swell Horn SSG Swell",
     "params": {
@@ -16756,7 +16901,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Sync Horn Sweep Medium FB3",
     "params": {
@@ -16872,7 +17018,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Sync Horn Sweep Medium FB6",
     "params": {
@@ -16988,7 +17135,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Sync Horn Sweep Slow FB3",
     "params": {
@@ -17104,7 +17252,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Brass Sync Horn Sweep Slow FB6",
     "params": {
@@ -17220,7 +17369,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Brass Funk Stab FB3 Length Long",
     "params": {
@@ -17336,7 +17486,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Brass Funk Stab FB3 Length Short",
     "params": {
@@ -17452,7 +17603,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Brass Funk Stab FB6 Length Long",
     "params": {
@@ -17568,7 +17720,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.5
     },
     "name": "Genesis FM Brass Funk Stab FB6 Length Short",
     "params": {
@@ -17684,7 +17837,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Brass Orch Stab Alg4",
     "params": {
@@ -17799,7 +17953,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Brass Orch Stab Alg4 Unison Wide",
     "params": {
@@ -17915,7 +18070,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Brass Orch Stab Alg5",
     "params": {
@@ -18030,7 +18186,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Brass Orch Stab Alg5 Unison Wide",
     "params": {
@@ -18146,7 +18303,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 17.0
     },
     "name": "Genesis FM Brass Power Stab FB4",
     "params": {
@@ -18260,7 +18418,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 16.0
     },
     "name": "Genesis FM Brass Power Stab FB4 OctDown",
     "params": {
@@ -18375,7 +18534,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.5
     },
     "name": "Genesis FM Brass Power Stab FB6",
     "params": {
@@ -18489,7 +18649,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Brass Power Stab FB6 OctDown",
     "params": {
@@ -18604,7 +18765,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Brass Stab FB3",
     "params": {
@@ -18718,7 +18880,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Brass Stab FB5",
     "params": {
@@ -18832,7 +18995,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Brass Stab FB7",
     "params": {
@@ -18946,7 +19110,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 17.0
     },
     "name": "Genesis FM Keys Chime Strike Hard",
     "params": {
@@ -19060,7 +19225,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 20.0
     },
     "name": "Genesis FM Keys Chime Strike Hard OctUp",
     "params": {
@@ -19175,7 +19341,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Chime Strike Soft",
     "params": {
@@ -19289,7 +19456,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 16.0
     },
     "name": "Genesis FM Keys Chime Strike Soft OctUp",
     "params": {
@@ -19404,7 +19572,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Glock Decay Long",
     "params": {
@@ -19518,7 +19687,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 16.0
     },
     "name": "Genesis FM Keys Glock Decay Short",
     "params": {
@@ -19632,7 +19802,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 16.0
     },
     "name": "Genesis FM Keys Glock OctUp Decay Long",
     "params": {
@@ -19747,7 +19918,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 16.5
     },
     "name": "Genesis FM Keys Glock OctUp Decay Short",
     "params": {
@@ -19862,7 +20034,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.5
     },
     "name": "Genesis FM Keys Marimba Mallet Hard",
     "params": {
@@ -19977,7 +20150,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Marimba Mallet Soft",
     "params": {
@@ -20092,7 +20266,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.5
     },
     "name": "Genesis FM Keys Music Box OctUp Detune Light",
     "params": {
@@ -20207,7 +20382,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.5
     },
     "name": "Genesis FM Keys Music Box OctUp Detune Wide",
     "params": {
@@ -20322,7 +20498,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Music Box OctUp2 Detune Light",
     "params": {
@@ -20437,7 +20614,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Music Box OctUp2 Detune Wide",
     "params": {
@@ -20552,7 +20730,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.5
     },
     "name": "Genesis FM Keys Temple Bell FB1 Decay Long",
     "params": {
@@ -20667,7 +20846,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Keys Temple Bell FB1 Decay Medium",
     "params": {
@@ -20782,7 +20962,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.5
     },
     "name": "Genesis FM Keys Temple Bell FB5 Decay Long",
     "params": {
@@ -20897,7 +21078,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Keys Temple Bell FB5 Decay Medium",
     "params": {
@@ -21012,7 +21194,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.5
     },
     "name": "Genesis FM Keys Tubular Bell Alg5 Strike Hard",
     "params": {
@@ -21127,7 +21310,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Keys Tubular Bell Alg5 Strike Soft",
     "params": {
@@ -21242,7 +21426,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Keys Tubular Bell Alg6 Strike Hard",
     "params": {
@@ -21357,7 +21542,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.0
     },
     "name": "Genesis FM Keys Tubular Bell Alg6 Strike Soft",
     "params": {
@@ -21472,7 +21658,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Keys Vibraphone Motor Fast AMS1",
     "params": {
@@ -21588,7 +21775,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Vibraphone Motor Fast AMS2",
     "params": {
@@ -21704,7 +21892,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Keys Vibraphone Motor Slow AMS1",
     "params": {
@@ -21820,7 +22009,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Vibraphone Motor Slow AMS2",
     "params": {
@@ -21936,7 +22126,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 16.0
     },
     "name": "Genesis FM Keys Xylophone Mallet Hard",
     "params": {
@@ -22051,7 +22242,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Xylophone Mallet Soft",
     "params": {
@@ -22166,7 +22358,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Clav Bite Hard Damping Loose",
     "params": {
@@ -22281,7 +22474,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Clav Bite Hard Damping Tight",
     "params": {
@@ -22396,7 +22590,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Clav Bite Medium Damping Loose",
     "params": {
@@ -22511,7 +22706,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Clav Bite Medium Damping Tight",
     "params": {
@@ -22626,7 +22822,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Clav Bite Soft Damping Loose",
     "params": {
@@ -22741,7 +22938,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Clav Bite Soft Damping Tight",
     "params": {
@@ -22856,7 +23054,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Harpsichord FB1",
     "params": {
@@ -22970,7 +23169,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Harpsichord FB1 OctUp",
     "params": {
@@ -23085,7 +23285,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Harpsichord FB5",
     "params": {
@@ -23199,7 +23400,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Harpsichord FB5 OctUp",
     "params": {
@@ -23314,7 +23516,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Keys Piano Tone Bright Chip YM2612",
     "params": {
@@ -23429,7 +23632,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Keys Piano Tone Bright Chip YM3438",
     "params": {
@@ -23544,7 +23748,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Keys Piano Tone Mellow Chip YM2612",
     "params": {
@@ -23659,7 +23864,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Keys Piano Tone Mellow Chip YM3438",
     "params": {
@@ -23774,7 +23980,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Keys Soft EPiano Tone Bright",
     "params": {
@@ -23888,7 +24095,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Keys Soft EPiano Tone Soft",
     "params": {
@@ -24002,7 +24210,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Soft EPiano Tremolo Deep Tone Bright",
     "params": {
@@ -24117,7 +24326,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Soft EPiano Tremolo Deep Tone Soft",
     "params": {
@@ -24232,7 +24442,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.5
     },
     "name": "Genesis FM Keys Soft EPiano Tremolo Slow Tone Bright",
     "params": {
@@ -24347,7 +24558,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Keys Soft EPiano Tremolo Slow Tone Soft",
     "params": {
@@ -24462,7 +24674,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Tine EPiano Tine Bright Chip YM2612",
     "params": {
@@ -24577,7 +24790,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Tine EPiano Tine Bright Chip YM3438",
     "params": {
@@ -24692,7 +24906,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Tine EPiano Tine Medium Chip YM2612",
     "params": {
@@ -24807,7 +25022,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Tine EPiano Tine Medium Chip YM3438",
     "params": {
@@ -24922,7 +25138,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Tine EPiano Tine Soft Chip YM2612",
     "params": {
@@ -25037,7 +25254,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Tine EPiano Tine Soft Chip YM3438",
     "params": {
@@ -25152,7 +25370,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Keys Wurli Bark Hard",
     "params": {
@@ -25266,7 +25485,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Keys Wurli Bark Soft",
     "params": {
@@ -25380,7 +25600,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Keys Wurli Tremolo Slow Bark Hard",
     "params": {
@@ -25495,7 +25716,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.5
     },
     "name": "Genesis FM Keys Wurli Tremolo Slow Bark Soft",
     "params": {
@@ -25610,7 +25832,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Pad Clarinet Lead",
     "params": {
@@ -25724,7 +25947,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Pad Clarinet Lead OctDown",
     "params": {
@@ -25839,7 +26063,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Pad Clarinet Lead Vibrato LFO",
     "params": {
@@ -25954,7 +26179,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Pad Clarinet Lead Vibrato LFO OctDown",
     "params": {
@@ -26070,7 +26296,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Flute Lead Vibrato Delayed",
     "params": {
@@ -26185,7 +26412,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Flute Lead Vibrato Delayed OctUp",
     "params": {
@@ -26301,7 +26529,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Flute Lead Vibrato LFO",
     "params": {
@@ -26416,7 +26645,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Flute Lead Vibrato LFO OctUp",
     "params": {
@@ -26532,7 +26762,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Rotary Organ Rotor Fast AMS1",
     "params": {
@@ -26648,7 +26879,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.0
     },
     "name": "Genesis FM Pad Rotary Organ Rotor Fast AMS2",
     "params": {
@@ -26764,7 +26996,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Rotary Organ Rotor Slow AMS1",
     "params": {
@@ -26880,7 +27113,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.0
     },
     "name": "Genesis FM Pad Rotary Organ Rotor Slow AMS2",
     "params": {
@@ -26996,7 +27230,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Pad Sweep Tone Bright LFO0",
     "params": {
@@ -27112,7 +27347,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Sweep Tone Bright LFO4",
     "params": {
@@ -27228,7 +27464,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Sweep Tone Soft LFO0",
     "params": {
@@ -27344,7 +27581,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Sweep Tone Soft LFO4",
     "params": {
@@ -27460,7 +27698,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Tremolo AMS1 LFO0",
     "params": {
@@ -27576,7 +27815,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Tremolo AMS1 LFO4",
     "params": {
@@ -27692,7 +27932,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Pad Tremolo AMS3 LFO0",
     "params": {
@@ -27808,7 +28049,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.0
     },
     "name": "Genesis FM Pad Tremolo AMS3 LFO4",
     "params": {
@@ -27924,7 +28166,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Vibrato FMS2 LFO1",
     "params": {
@@ -28040,7 +28283,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Vibrato FMS2 LFO5",
     "params": {
@@ -28156,7 +28400,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Vibrato FMS5 LFO1",
     "params": {
@@ -28272,7 +28517,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Vibrato FMS5 LFO5",
     "params": {
@@ -28388,7 +28634,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Choir Alg6 Attack Slow",
     "params": {
@@ -28503,7 +28750,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Choir Alg6 Attack Slower",
     "params": {
@@ -28618,7 +28866,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.5
     },
     "name": "Genesis FM Pad Choir Alg7 Attack Slow",
     "params": {
@@ -28733,7 +28982,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Pad Choir Alg7 Attack Slower",
     "params": {
@@ -28848,7 +29098,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Pad Dark Tone Rough Attack Slow",
     "params": {
@@ -28963,7 +29214,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Dark Tone Rough Attack Slower",
     "params": {
@@ -29078,7 +29330,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 5.5
     },
     "name": "Genesis FM Pad Dark Tone Soft Attack Slow",
     "params": {
@@ -29193,7 +29446,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Dark Tone Soft Attack Slower",
     "params": {
@@ -29308,7 +29562,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Glass Attack Slow Release Long",
     "params": {
@@ -29423,7 +29678,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Glass Attack Slow Release Medium",
     "params": {
@@ -29538,7 +29794,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Pad Glass Attack Slower Release Long",
     "params": {
@@ -29653,7 +29910,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Pad Glass Attack Slower Release Medium",
     "params": {
@@ -29768,7 +30026,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Pipe Organ Stops Full",
     "params": {
@@ -29882,7 +30141,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Pipe Organ Stops Full OctDown",
     "params": {
@@ -29997,7 +30257,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Pad Pipe Organ Stops Principal",
     "params": {
@@ -30111,7 +30372,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Pad Pipe Organ Stops Principal OctDown",
     "params": {
@@ -30226,7 +30488,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Slow Strings Attack Medium",
     "params": {
@@ -30340,7 +30603,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Slow Strings Attack Medium Vibrato LFO",
     "params": {
@@ -30455,7 +30719,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Pad Slow Strings Attack Slow",
     "params": {
@@ -30569,7 +30834,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 12.0
     },
     "name": "Genesis FM Pad Slow Strings Attack Slow Vibrato LFO",
     "params": {
@@ -30684,7 +30950,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.5
     },
     "name": "Genesis FM Pad Warm Attack Slow Alg5",
     "params": {
@@ -30799,7 +31066,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Warm Attack Slow Alg6",
     "params": {
@@ -30914,7 +31182,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 13.5
     },
     "name": "Genesis FM Pad Warm Attack Slower Alg5",
     "params": {
@@ -31029,7 +31298,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 11.5
     },
     "name": "Genesis FM Pad Warm Attack Slower Alg6",
     "params": {
@@ -31144,7 +31414,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.0
     },
     "name": "Genesis FM Pad Chorus Detune Narrow",
     "params": {
@@ -31259,7 +31530,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.0
     },
     "name": "Genesis FM Pad Chorus Detune Narrow Vibrato Slow",
     "params": {
@@ -31375,7 +31647,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.5
     },
     "name": "Genesis FM Pad Chorus Detune Wide",
     "params": {
@@ -31490,7 +31763,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.5
     },
     "name": "Genesis FM Pad Chorus Detune Wide Vibrato Slow",
     "params": {
@@ -31606,7 +31880,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad Drawbar Organ Drawbars Bright",
     "params": {
@@ -31720,7 +31995,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 4.5
     },
     "name": "Genesis FM Pad Drawbar Organ Drawbars Bright Chorus On",
     "params": {
@@ -31835,7 +32111,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 9.0
     },
     "name": "Genesis FM Pad Drawbar Organ Drawbars Mellow",
     "params": {
@@ -31949,7 +32226,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 6.5
     },
     "name": "Genesis FM Pad Drawbar Organ Drawbars Mellow Chorus On",
     "params": {
@@ -32064,7 +32342,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Pad String Ensemble Detune Narrow Release Long",
     "params": {
@@ -32180,7 +32459,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Pad String Ensemble Detune Narrow Release Medium",
     "params": {
@@ -32296,7 +32576,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad String Ensemble Detune Wide Release Long",
     "params": {
@@ -32412,7 +32693,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.0
     },
     "name": "Genesis FM Pad String Ensemble Detune Wide Release Medium",
     "params": {
@@ -32528,7 +32810,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Pad Super Detune Narrow Attack Medium",
     "params": {
@@ -32644,7 +32927,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 10.0
     },
     "name": "Genesis FM Pad Super Detune Narrow Attack Slow",
     "params": {
@@ -32760,7 +33044,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 7.5
     },
     "name": "Genesis FM Pad Super Detune Wide Attack Medium",
     "params": {
@@ -32876,7 +33161,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 63
+      "poly_channels": 63,
+      "preset_gain": 8.5
     },
     "name": "Genesis FM Pad Super Detune Wide Attack Slow",
     "params": {
@@ -32992,7 +33278,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 33.0
     },
     "name": "Genesis PSG Bass Buzz Level Loud Release Long",
     "params": {
@@ -33108,7 +33395,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 33.0
     },
     "name": "Genesis PSG Bass Buzz Level Loud Release Short",
     "params": {
@@ -33224,7 +33512,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Buzz Level Soft Release Long",
     "params": {
@@ -33340,7 +33629,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Buzz Level Soft Release Short",
     "params": {
@@ -33456,7 +33746,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Detuned Unison3 Decay Accent",
     "params": {
@@ -33571,7 +33862,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Bass Detuned Unison3 Decay Pluck",
     "params": {
@@ -33686,7 +33978,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Detuned Unison5 Decay Accent",
     "params": {
@@ -33801,7 +34094,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.5
     },
     "name": "Genesis PSG Bass Detuned Unison5 Decay Pluck",
     "params": {
@@ -33916,7 +34210,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 120.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Bass Glide Release10",
     "params": {
@@ -34030,7 +34325,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 120.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Bass Glide Release2",
     "params": {
@@ -34144,7 +34440,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay14",
     "params": {
@@ -34259,7 +34556,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay14 OctUp",
     "params": {
@@ -34375,7 +34673,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay6",
     "params": {
@@ -34490,7 +34789,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay6 OctUp",
     "params": {
@@ -34606,7 +34906,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 32.5
     },
     "name": "Genesis PSG Bass Periodic Sub Level Loud",
     "params": {
@@ -34721,7 +35022,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Periodic Sub Level Soft",
     "params": {
@@ -34836,7 +35138,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 31.0
     },
     "name": "Genesis PSG Bass Pluck Decay16",
     "params": {
@@ -34950,7 +35253,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Bass Pluck Decay4",
     "params": {
@@ -35064,7 +35368,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Pluck Decay8",
     "params": {
@@ -35178,7 +35483,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Bass Soft",
     "params": {
@@ -35291,7 +35597,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Soft Range Up",
     "params": {
@@ -35405,7 +35712,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Square Level Loud",
     "params": {
@@ -35519,7 +35827,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Square Level Loud Range Up",
     "params": {
@@ -35634,7 +35943,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Square Level Soft",
     "params": {
@@ -35748,7 +36058,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Bass Square Level Soft Range Up",
     "params": {
@@ -35863,7 +36174,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 29.0
     },
     "name": "Genesis PSG Bass Staccato Decay2",
     "params": {
@@ -35977,7 +36289,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 29.0
     },
     "name": "Genesis PSG Bass Staccato Decay2 Range Up",
     "params": {
@@ -36092,7 +36405,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 31.0
     },
     "name": "Genesis PSG Bass Staccato Decay8",
     "params": {
@@ -36206,7 +36520,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 31.5
     },
     "name": "Genesis PSG Bass Staccato Decay8 Range Up",
     "params": {
@@ -36321,7 +36636,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Bass Wobble Vibrato Fast Level Loud",
     "params": {
@@ -36436,7 +36752,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 34.0
     },
     "name": "Genesis PSG Bass Wobble Vibrato Fast Level Soft",
     "params": {
@@ -36551,7 +36868,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Bass Wobble Vibrato Slow Level Loud",
     "params": {
@@ -36666,7 +36984,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 34.0
     },
     "name": "Genesis PSG Bass Wobble Vibrato Slow Level Soft",
     "params": {
@@ -36781,7 +37100,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Blip NoiseRate0 Level Loud",
     "params": {
@@ -36897,7 +37217,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Blip NoiseRate0 Level Soft",
     "params": {
@@ -37013,7 +37334,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Blip NoiseRate3 Level Loud",
     "params": {
@@ -37129,7 +37451,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Blip NoiseRate3 Level Soft",
     "params": {
@@ -37245,7 +37568,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Kick Decay12 NoiseRate1",
     "params": {
@@ -37361,7 +37685,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Kick Decay12 NoiseRate2",
     "params": {
@@ -37477,7 +37802,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Kick Decay6 NoiseRate1",
     "params": {
@@ -37593,7 +37919,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Kick Decay6 NoiseRate2",
     "params": {
@@ -37709,7 +38036,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Metal Hit Decay20 Level Loud",
     "params": {
@@ -37825,7 +38153,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Metal Hit Decay20 Level Soft",
     "params": {
@@ -37941,7 +38270,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Metal Hit Decay6 Level Loud",
     "params": {
@@ -38057,7 +38387,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Metal Hit Decay6 Level Soft",
     "params": {
@@ -38173,7 +38504,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Tom Decay16",
     "params": {
@@ -38288,7 +38620,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Tom Decay16 OctDown",
     "params": {
@@ -38404,7 +38737,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Tom Decay8",
     "params": {
@@ -38519,7 +38853,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Tom Decay8 OctDown",
     "params": {
@@ -38635,7 +38970,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 33.5
     },
     "name": "Genesis PSG Drums Closed Hat Decay2 Level Loud",
     "params": {
@@ -38751,7 +39087,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Closed Hat Decay2 Level Soft",
     "params": {
@@ -38867,7 +39204,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 34.5
     },
     "name": "Genesis PSG Drums Closed Hat Decay4 Level Loud",
     "params": {
@@ -38983,7 +39321,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Closed Hat Decay4 Level Soft",
     "params": {
@@ -39099,7 +39438,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 33.5
     },
     "name": "Genesis PSG Drums Crash Decay40 Level Loud",
     "params": {
@@ -39215,7 +39555,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Crash Decay40 Level Soft",
     "params": {
@@ -39331,7 +39672,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 34.0
     },
     "name": "Genesis PSG Drums Crash Decay60 Level Loud",
     "params": {
@@ -39447,7 +39789,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Crash Decay60 Level Soft",
     "params": {
@@ -39563,7 +39906,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 34.5
     },
     "name": "Genesis PSG Drums Noise Snare Decay12 NoiseRate1",
     "params": {
@@ -39679,7 +40023,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 35.5
     },
     "name": "Genesis PSG Drums Noise Snare Decay12 NoiseRate2",
     "params": {
@@ -39795,7 +40140,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 35.0
     },
     "name": "Genesis PSG Drums Noise Snare Decay6 NoiseRate1",
     "params": {
@@ -39911,7 +40257,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Noise Snare Decay6 NoiseRate2",
     "params": {
@@ -40027,7 +40374,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 34.5
     },
     "name": "Genesis PSG Drums Open Hat Decay10 Level Loud",
     "params": {
@@ -40143,7 +40491,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Open Hat Decay10 Level Soft",
     "params": {
@@ -40259,7 +40608,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 34.5
     },
     "name": "Genesis PSG Drums Open Hat Decay16 Level Loud",
     "params": {
@@ -40375,7 +40725,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Open Hat Decay16 Level Soft",
     "params": {
@@ -40491,7 +40842,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Pitched Noise Decay16 OctUp",
     "params": {
@@ -40608,7 +40960,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Pitched Noise Decay16 OctUp2",
     "params": {
@@ -40725,7 +41078,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Pitched Noise Decay8 OctUp",
     "params": {
@@ -40842,7 +41196,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 512
+      "poly_channels": 512,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Drums Pitched Noise Decay8 OctUp2",
     "params": {
@@ -40959,7 +41314,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.5
     },
     "name": "Genesis PSG Lead Chorus Unison1",
     "params": {
@@ -41074,7 +41430,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.5
     },
     "name": "Genesis PSG Lead Chorus Unison1 Vibrato Slow",
     "params": {
@@ -41190,7 +41547,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.0
     },
     "name": "Genesis PSG Lead Chorus Unison3",
     "params": {
@@ -41305,7 +41663,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.0
     },
     "name": "Genesis PSG Lead Chorus Unison3 Vibrato Slow",
     "params": {
@@ -41421,7 +41780,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.0
     },
     "name": "Genesis PSG Lead Detuned Pluck Unison1 Decay20",
     "params": {
@@ -41537,7 +41897,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Lead Detuned Pluck Unison1 Decay8",
     "params": {
@@ -41653,7 +42014,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.0
     },
     "name": "Genesis PSG Lead Detuned Pluck Unison3 Decay20",
     "params": {
@@ -41769,7 +42131,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Lead Detuned Pluck Unison3 Decay8",
     "params": {
@@ -41885,7 +42248,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 22.5
     },
     "name": "Genesis PSG Lead Fat Unison5 Level Loud",
     "params": {
@@ -42000,7 +42364,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 32.5
     },
     "name": "Genesis PSG Lead Fat Unison5 Level Soft",
     "params": {
@@ -42115,7 +42480,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 23.0
     },
     "name": "Genesis PSG Lead Fat Unison7 Level Loud",
     "params": {
@@ -42230,7 +42596,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 33.0
     },
     "name": "Genesis PSG Lead Fat Unison7 Level Soft",
     "params": {
@@ -42345,7 +42712,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.5
     },
     "name": "Genesis PSG Lead Swell Unison1 Attack10",
     "params": {
@@ -42461,7 +42829,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 27.0
     },
     "name": "Genesis PSG Lead Swell Unison1 Attack20",
     "params": {
@@ -42577,7 +42946,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.5
     },
     "name": "Genesis PSG Lead Swell Unison3 Attack10",
     "params": {
@@ -42693,7 +43063,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 25.5
     },
     "name": "Genesis PSG Lead Swell Unison3 Attack20",
     "params": {
@@ -42809,7 +43180,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 23.0
     },
     "name": "Genesis PSG Lead Twin Unison1",
     "params": {
@@ -42923,7 +43295,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 23.0
     },
     "name": "Genesis PSG Lead Twin Unison3",
     "params": {
@@ -43037,7 +43410,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 150.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Bend",
     "params": {
@@ -43150,7 +43524,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 150.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Bend Vibrato Deep",
     "params": {
@@ -43264,7 +43639,8 @@
       "arp_sync_division": 3,
       "glide_mode": 1,
       "glide_time": 150.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Bend Vibrato Slow",
     "params": {
@@ -43378,7 +43754,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 31.0
     },
     "name": "Genesis PSG Lead Pluck Decay12",
     "params": {
@@ -43492,7 +43869,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 31.0
     },
     "name": "Genesis PSG Lead Pluck Decay24",
     "params": {
@@ -43606,7 +43984,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Lead Pluck Decay6",
     "params": {
@@ -43720,7 +44099,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Lead Soft Attack Medium",
     "params": {
@@ -43834,7 +44214,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Lead Soft Attack Medium Vibrato Slow",
     "params": {
@@ -43949,7 +44330,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Lead Soft Attack Slow",
     "params": {
@@ -44063,7 +44445,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Lead Soft Attack Slow Vibrato Slow",
     "params": {
@@ -44178,7 +44561,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Square",
     "params": {
@@ -44291,7 +44675,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Square OctUp",
     "params": {
@@ -44405,7 +44790,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Square Vibrato Fast",
     "params": {
@@ -44519,7 +44905,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Square Vibrato Fast OctUp",
     "params": {
@@ -44634,7 +45021,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Square Vibrato Slow",
     "params": {
@@ -44748,7 +45136,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 26.0
     },
     "name": "Genesis PSG Lead Square Vibrato Slow OctUp",
     "params": {
@@ -44863,7 +45252,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Lead Staccato Level Loud",
     "params": {
@@ -44977,7 +45367,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 30.0
     },
     "name": "Genesis PSG Lead Staccato Level Loud OctUp",
     "params": {
@@ -45092,7 +45483,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Lead Staccato Level Soft",
     "params": {
@@ -45206,7 +45598,8 @@
       "arp_sync_division": 3,
       "glide_mode": 0,
       "glide_time": 0.0,
-      "poly_channels": 448
+      "poly_channels": 448,
+      "preset_gain": 36.0
     },
     "name": "Genesis PSG Lead Staccato Level Soft OctUp",
     "params": {

@@ -159,8 +159,8 @@ Versions, hashes, settings and the reference quirks measured:
 | 3 | FFmpeg 9.0.2 full_build-shared (gyan.dev) with its `libgme` demuxer (Game Music Emu SPC player) | https://www.gyan.dev/ffmpeg/builds/packages/ffmpeg-9.0.2-full_build-shared.7z | 2026-09-29 | FFmpeg build GPL v3; Game Music Emu LGPL-2.1 per its project page | SNES reference: 44 SPC stimuli at the native 32 kHz |
 
 What the comparison changed in the engines: findings F1 (YM2612 S1 pipeline delay,
-`docs/HARDWARE_NOTES.md` [genesis 41]) and F2 (resampler kernel, "Genesis and SNES:
-resampler kernel"). The emulators were never used to design presets or samples.
+`docs/HARDWARE_NOTES.md` [genesis 41]) and F2 (resampler kernel, "All chips: resampler
+kernel"; the NES engine followed on 2026-09-30). The emulators were never used to design presets or samples.
 
 ## Plugin layer
 

@@ -36,13 +36,15 @@ namespace
     // Table from docs/PLUGIN_SPECS.md ("Global parameters"). poly_channels defaults to 0,
     // which the engine host reads as "the chip's default mask" (ParamRegistry::defaultPolyMask),
     // so the default follows the chip on the audio thread without the plugin rewriting the
-    // parameter.
+    // parameter. preset_gain is the preset's playing-level correction (set by presets, no
+    // panel control), applied after the chip output together with master_gain.
     const GlobalDef kGlobals[] = {
         { ParamIds::chip,            "Chip",              "Global",      ParamKind::Choice, 0.0f,   2.0f,    0.0f,   "",   kChipLabels,        true,  true },
         { ParamIds::rawOutput,       "Raw output",        "Global",      ParamKind::Bool,   0.0f,   1.0f,    0.0f,   "",   nullptr,            true,  true },
         { ParamIds::voiceMode,       "Voice mode",        "Global",      ParamKind::Choice, 0.0f,   1.0f,    1.0f,   "",   kVoiceModeLabels,   true,  true },
         { ParamIds::polyChannels,    "Poly channels",     "Global",      ParamKind::Int,    0.0f,   1023.0f, 0.0f,   "",   nullptr,            true,  false },
         { ParamIds::masterGain,      "Master gain",       "Global",      ParamKind::Float,  -24.0f, 12.0f,   0.0f,   "dB", nullptr,            true,  true },
+        { ParamIds::presetGain,      "Preset gain",       "Global",      ParamKind::Float,  -24.0f, 36.0f,   0.0f,   "dB", nullptr,            true,  false },
         { ParamIds::arpEnabled,      "Arp enabled",       "Arpeggiator", ParamKind::Bool,   0.0f,   1.0f,    0.0f,   "",   nullptr,            true,  true },
         { ParamIds::arpPattern,      "Arp pattern",       "Arpeggiator", ParamKind::Choice, 0.0f,   4.0f,    0.0f,   "",   kArpPatternLabels,  true,  true },
         { ParamIds::arpOctaves,      "Arp octaves",       "Arpeggiator", ParamKind::Int,    1.0f,   4.0f,    1.0f,   "",   nullptr,            true,  true },

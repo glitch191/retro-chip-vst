@@ -2,7 +2,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Bass Finger",
     "params": {
       "adsr_enable": 1,
@@ -53,7 +55,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Bass Finger OctDown",
     "params": {
       "adsr_enable": 1,
@@ -105,7 +109,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Bass Finger Pluck",
     "params": {
       "adsr_enable": 1,
@@ -157,7 +163,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Bass Finger Pluck OctDown",
     "params": {
       "adsr_enable": 1,
@@ -210,7 +218,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Bass Saw",
     "params": {
       "adsr_enable": 1,
@@ -262,7 +272,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Bass Saw OctDown",
     "params": {
       "adsr_enable": 1,
@@ -315,7 +327,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Bass Saw OctDown Pluck",
     "params": {
       "adsr_enable": 1,
@@ -369,7 +383,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Bass Saw Pluck",
     "params": {
       "adsr_enable": 1,
@@ -422,7 +438,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -11.5
+    },
     "name": "SNES Bass Sine Sub",
     "params": {
       "adsr_enable": 1,
@@ -474,7 +492,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -11.5
+    },
     "name": "SNES Bass Sine Sub OctDown",
     "params": {
       "adsr_enable": 1,
@@ -527,7 +547,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -11.5
+    },
     "name": "SNES Bass Sine Sub OctDown Soft",
     "params": {
       "adsr_enable": 1,
@@ -581,7 +603,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -11.5
+    },
     "name": "SNES Bass Sine Sub Soft",
     "params": {
       "adsr_enable": 1,
@@ -634,7 +658,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Bass Slap",
     "params": {
       "adsr_enable": 1,
@@ -685,7 +711,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Bass Slap OctDown",
     "params": {
       "adsr_enable": 1,
@@ -737,7 +765,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.0
+    },
     "name": "SNES Bass Slap Pop",
     "params": {
       "adsr_enable": 1,
@@ -789,7 +819,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Bass Slap Pop OctDown",
     "params": {
       "adsr_enable": 1,
@@ -842,7 +874,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Bass Synth",
     "params": {
       "adsr_enable": 1,
@@ -893,7 +927,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Bass Synth OctDown",
     "params": {
       "adsr_enable": 1,
@@ -945,7 +981,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Bass Synth Pluck",
     "params": {
       "adsr_enable": 1,
@@ -997,7 +1035,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Bass Synth Pluck OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1050,7 +1090,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES Bass Triangle",
     "params": {
       "adsr_enable": 1,
@@ -1102,7 +1144,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES Bass Triangle OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1155,7 +1199,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES Bass Triangle OctDown Soft",
     "params": {
       "adsr_enable": 1,
@@ -1209,7 +1255,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES Bass Triangle Soft",
     "params": {
       "adsr_enable": 1,
@@ -1262,7 +1310,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Bass Upright",
     "params": {
       "adsr_enable": 1,
@@ -1314,7 +1364,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Bass Upright OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1367,7 +1419,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Bass Muted",
     "params": {
       "adsr_enable": 1,
@@ -1420,7 +1474,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Bass Short Finger",
     "params": {
       "adsr_enable": 1,
@@ -1472,7 +1528,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Bass Short Finger OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1525,7 +1583,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Bass Short Saw",
     "params": {
       "adsr_enable": 1,
@@ -1579,7 +1639,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Bass Short Saw OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1634,7 +1696,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Bass Short Slap",
     "params": {
       "adsr_enable": 1,
@@ -1687,7 +1751,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Bass Short Slap OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1741,7 +1807,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Bass Short Square",
     "params": {
       "adsr_enable": 1,
@@ -1795,7 +1863,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Bass Short Square OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1850,7 +1920,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Bass Short Synth",
     "params": {
       "adsr_enable": 1,
@@ -1903,7 +1975,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Bass Short Synth OctDown",
     "params": {
       "adsr_enable": 1,
@@ -1957,7 +2031,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Bass Short Triangle",
     "params": {
       "adsr_enable": 1,
@@ -2011,7 +2087,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Bass Short Triangle OctDown",
     "params": {
       "adsr_enable": 1,
@@ -2066,7 +2144,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.0
+    },
     "name": "SNES Bass Short Upright",
     "params": {
       "adsr_enable": 1,
@@ -2119,7 +2199,9 @@
   {
     "category": "Bass",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Bass Short Upright OctDown",
     "params": {
       "adsr_enable": 1,
@@ -2173,7 +2255,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Drums Clap",
     "params": {
       "adsr_enable": 1,
@@ -2224,7 +2308,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Clap Down5",
     "params": {
       "adsr_enable": 1,
@@ -2276,7 +2362,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Drums Clap Up4",
     "params": {
       "adsr_enable": 1,
@@ -2328,7 +2416,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Drums Closed Hat",
     "params": {
       "adsr_enable": 1,
@@ -2380,7 +2470,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Drums Closed Hat Down5",
     "params": {
       "adsr_enable": 1,
@@ -2433,7 +2525,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.0
+    },
     "name": "SNES Drums Closed Hat Up7",
     "params": {
       "adsr_enable": 1,
@@ -2486,7 +2580,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Conga",
     "params": {
       "adsr_enable": 1,
@@ -2538,7 +2634,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Conga Down5",
     "params": {
       "adsr_enable": 1,
@@ -2591,7 +2689,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Conga Up5",
     "params": {
       "adsr_enable": 1,
@@ -2644,7 +2744,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Cowbell",
     "params": {
       "adsr_enable": 1,
@@ -2696,7 +2798,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Cowbell Down7",
     "params": {
       "adsr_enable": 1,
@@ -2749,7 +2853,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.0
+    },
     "name": "SNES Drums Cowbell Down7 Short",
     "params": {
       "adsr_enable": 1,
@@ -2803,7 +2909,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.0
+    },
     "name": "SNES Drums Cowbell Short",
     "params": {
       "adsr_enable": 1,
@@ -2856,7 +2964,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Crash",
     "params": {
       "adsr_enable": 1,
@@ -2908,7 +3018,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Crash Choke",
     "params": {
       "adsr_enable": 1,
@@ -2961,7 +3073,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Crash Choke Down5",
     "params": {
       "adsr_enable": 1,
@@ -3015,7 +3129,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Crash Down5",
     "params": {
       "adsr_enable": 1,
@@ -3068,7 +3184,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Drums High Tom",
     "params": {
       "adsr_enable": 1,
@@ -3119,7 +3237,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Drums High Tom Down5",
     "params": {
       "adsr_enable": 1,
@@ -3171,7 +3291,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Drums High Tom Down5 Short",
     "params": {
       "adsr_enable": 1,
@@ -3224,7 +3346,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Drums High Tom Short",
     "params": {
       "adsr_enable": 1,
@@ -3276,7 +3400,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Drums Kick",
     "params": {
       "adsr_enable": 1,
@@ -3327,7 +3453,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Kick Down5",
     "params": {
       "adsr_enable": 1,
@@ -3379,7 +3507,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Drums Kick Down5 Short",
     "params": {
       "adsr_enable": 1,
@@ -3432,7 +3562,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Drums Kick Short",
     "params": {
       "adsr_enable": 1,
@@ -3484,7 +3616,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Kick Up5",
     "params": {
       "adsr_enable": 1,
@@ -3536,7 +3670,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Drums Kick Up5 Short",
     "params": {
       "adsr_enable": 1,
@@ -3589,7 +3725,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Low Tom",
     "params": {
       "adsr_enable": 1,
@@ -3640,7 +3778,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Low Tom Down5",
     "params": {
       "adsr_enable": 1,
@@ -3692,7 +3832,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.0
+    },
     "name": "SNES Drums Low Tom Down5 Short",
     "params": {
       "adsr_enable": 1,
@@ -3745,7 +3887,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Drums Low Tom Short",
     "params": {
       "adsr_enable": 1,
@@ -3797,7 +3941,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Drums Mid Tom",
     "params": {
       "adsr_enable": 1,
@@ -3848,7 +3994,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Drums Mid Tom Down5",
     "params": {
       "adsr_enable": 1,
@@ -3900,7 +4048,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Mid Tom Down5 Short",
     "params": {
       "adsr_enable": 1,
@@ -3953,7 +4103,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Drums Mid Tom Short",
     "params": {
       "adsr_enable": 1,
@@ -4005,7 +4157,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Drums Open Hat",
     "params": {
       "adsr_enable": 1,
@@ -4057,7 +4211,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Drums Open Hat Choke",
     "params": {
       "adsr_enable": 1,
@@ -4110,7 +4266,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Drums Open Hat Choke Down3",
     "params": {
       "adsr_enable": 1,
@@ -4164,7 +4322,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Drums Open Hat Down3",
     "params": {
       "adsr_enable": 1,
@@ -4217,7 +4377,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Ride",
     "params": {
       "adsr_enable": 1,
@@ -4269,7 +4431,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Ride Choke",
     "params": {
       "adsr_enable": 1,
@@ -4322,7 +4486,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Ride Choke Up3",
     "params": {
       "adsr_enable": 1,
@@ -4376,7 +4542,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Ride Up3",
     "params": {
       "adsr_enable": 1,
@@ -4429,7 +4597,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Rim",
     "params": {
       "adsr_enable": 1,
@@ -4481,7 +4651,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Drums Rim Down5",
     "params": {
       "adsr_enable": 1,
@@ -4534,7 +4706,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Rim Up7",
     "params": {
       "adsr_enable": 1,
@@ -4587,7 +4761,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 10.0
+    },
     "name": "SNES Drums Shaker",
     "params": {
       "adsr_enable": 1,
@@ -4639,7 +4815,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 9.5
+    },
     "name": "SNES Drums Shaker Down5",
     "params": {
       "adsr_enable": 1,
@@ -4692,7 +4870,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Drums Snare",
     "params": {
       "adsr_enable": 1,
@@ -4743,7 +4923,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Drums Snare Down4",
     "params": {
       "adsr_enable": 1,
@@ -4795,7 +4977,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Snare Down4 Short",
     "params": {
       "adsr_enable": 1,
@@ -4848,7 +5032,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Drums Snare Short",
     "params": {
       "adsr_enable": 1,
@@ -4900,7 +5086,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Drums Snare Up4",
     "params": {
       "adsr_enable": 1,
@@ -4952,7 +5140,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Drums Snare Up4 Short",
     "params": {
       "adsr_enable": 1,
@@ -5005,7 +5195,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.5
+    },
     "name": "SNES Drums Tambourine",
     "params": {
       "adsr_enable": 1,
@@ -5057,7 +5249,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 9.0
+    },
     "name": "SNES Drums Tambourine Short",
     "params": {
       "adsr_enable": 1,
@@ -5110,7 +5304,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.0
+    },
     "name": "SNES Drums Timpani",
     "params": {
       "adsr_enable": 1,
@@ -5163,7 +5359,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.0
+    },
     "name": "SNES Drums Timpani Down5",
     "params": {
       "adsr_enable": 1,
@@ -5217,7 +5415,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Drums Timpani Up5",
     "params": {
       "adsr_enable": 1,
@@ -5271,7 +5471,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Drums Dynamic Conga Accent Note",
     "params": {
       "adsr_enable": 1,
@@ -5325,7 +5527,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Drums Dynamic Conga Ghost Note",
     "params": {
       "adsr_enable": 1,
@@ -5379,7 +5583,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Drums Dynamic Hat Accent Note",
     "params": {
       "adsr_enable": 1,
@@ -5433,7 +5639,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 11.5
+    },
     "name": "SNES Drums Dynamic Hat Ghost Note",
     "params": {
       "adsr_enable": 1,
@@ -5487,7 +5695,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Drums Dynamic Kick Accent Note",
     "params": {
       "adsr_enable": 1,
@@ -5540,7 +5750,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Drums Dynamic Kick Ghost Note",
     "params": {
       "adsr_enable": 1,
@@ -5593,7 +5805,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Drums Dynamic Rim Accent Note",
     "params": {
       "adsr_enable": 1,
@@ -5647,7 +5861,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Drums Dynamic Rim Ghost Note",
     "params": {
       "adsr_enable": 1,
@@ -5701,7 +5917,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Drums Dynamic Snare Accent Note",
     "params": {
       "adsr_enable": 1,
@@ -5754,7 +5972,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Drums Dynamic Snare Ghost Note",
     "params": {
       "adsr_enable": 1,
@@ -5807,7 +6027,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Drums Dynamic Timpani Accent Note",
     "params": {
       "adsr_enable": 1,
@@ -5862,7 +6084,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Drums Dynamic Timpani Ghost Note",
     "params": {
       "adsr_enable": 1,
@@ -5917,7 +6141,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Drums Dynamic Tom Accent Note",
     "params": {
       "adsr_enable": 1,
@@ -5970,7 +6196,9 @@
   {
     "category": "Drums",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Drums Dynamic Tom Ghost Note",
     "params": {
       "adsr_enable": 1,
@@ -6023,7 +6251,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Instrument Brass Section",
     "params": {
       "adsr_enable": 1,
@@ -6074,7 +6304,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Instrument Brass Section Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -6126,7 +6358,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Instrument Brass Section Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -6178,7 +6412,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Instrument Brass Section Swell",
     "params": {
       "adsr_enable": 0,
@@ -6230,7 +6466,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Instrument Brass Section Swell Echo Deep",
     "params": {
       "adsr_enable": 0,
@@ -6283,7 +6521,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Instrument Brass Section Swell Echo Room",
     "params": {
       "adsr_enable": 0,
@@ -6336,7 +6576,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.5
+    },
     "name": "SNES Instrument Brass Stab",
     "params": {
       "adsr_enable": 1,
@@ -6388,7 +6630,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Instrument Brass Stab Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -6441,7 +6685,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Instrument Brass Stab Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -6494,7 +6740,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Instrument French Horn",
     "params": {
       "adsr_enable": 1,
@@ -6546,7 +6794,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument French Horn Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -6599,7 +6849,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Instrument French Horn Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -6652,7 +6904,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument French Horn Swell",
     "params": {
       "adsr_enable": 0,
@@ -6705,7 +6959,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument French Horn Swell Echo Deep",
     "params": {
       "adsr_enable": 0,
@@ -6759,7 +7015,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Instrument French Horn Swell Echo Room",
     "params": {
       "adsr_enable": 0,
@@ -6813,7 +7071,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Instrument Solo Trumpet",
     "params": {
       "adsr_enable": 1,
@@ -6865,7 +7125,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Instrument Solo Trumpet Attack Soft",
     "params": {
       "adsr_enable": 1,
@@ -6918,7 +7180,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Instrument Solo Trumpet Attack Soft Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -6972,7 +7236,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Instrument Solo Trumpet Attack Soft Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -7026,7 +7292,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Instrument Solo Trumpet Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7079,7 +7347,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Instrument Solo Trumpet Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -7132,7 +7402,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Instrument Trombone",
     "params": {
       "adsr_enable": 1,
@@ -7184,7 +7456,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Instrument Trombone Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7237,7 +7511,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 6.0
+    },
     "name": "SNES Instrument Trombone Stab",
     "params": {
       "adsr_enable": 1,
@@ -7290,7 +7566,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.5
+    },
     "name": "SNES Instrument Trombone Stab Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7344,7 +7622,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Muted Guitar",
     "params": {
       "adsr_enable": 1,
@@ -7396,7 +7676,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Muted Guitar Echo Std",
     "params": {
       "adsr_enable": 1,
@@ -7449,7 +7731,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Instrument Nylon Guitar",
     "params": {
       "adsr_enable": 1,
@@ -7500,7 +7784,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Instrument Nylon Guitar Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7552,7 +7838,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Instrument Nylon Guitar Pluck",
     "params": {
       "adsr_enable": 1,
@@ -7604,7 +7892,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Instrument Nylon Guitar Pluck Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7657,7 +7947,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Steel Guitar",
     "params": {
       "adsr_enable": 1,
@@ -7708,7 +8000,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Steel Guitar Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7760,7 +8054,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Steel Guitar Vib",
     "params": {
       "adsr_enable": 1,
@@ -7812,7 +8108,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Steel Guitar Vib Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7865,7 +8163,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -7.0
+    },
     "name": "SNES Instrument Chip Organ",
     "params": {
       "adsr_enable": 1,
@@ -7917,7 +8217,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -8.0
+    },
     "name": "SNES Instrument Chip Organ Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -7970,7 +8272,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -7.0
+    },
     "name": "SNES Instrument Chip Organ Vib",
     "params": {
       "adsr_enable": 1,
@@ -8023,7 +8327,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -8.0
+    },
     "name": "SNES Instrument Chip Organ Vib Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -8077,7 +8383,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Instrument Drawbar Organ",
     "params": {
       "adsr_enable": 1,
@@ -8128,7 +8436,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Instrument Drawbar Organ Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -8180,7 +8490,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Instrument Drawbar Organ Vib Rotary",
     "params": {
       "adsr_enable": 1,
@@ -8232,7 +8544,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Instrument Drawbar Organ Vib Rotary Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -8285,7 +8599,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Instrument Perc Organ",
     "params": {
       "adsr_enable": 1,
@@ -8337,7 +8653,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Instrument Perc Organ Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -8390,7 +8708,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Instrument Perc Organ Long",
     "params": {
       "adsr_enable": 1,
@@ -8443,7 +8763,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Instrument Perc Organ Long Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -8497,7 +8819,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Instrument Pipe Organ",
     "params": {
       "adsr_enable": 1,
@@ -8549,7 +8873,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Pipe Organ Echo Std",
     "params": {
       "adsr_enable": 1,
@@ -8602,7 +8928,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument Pipe Organ OctDown",
     "params": {
       "adsr_enable": 1,
@@ -8655,7 +8983,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Pipe Organ OctDown Echo Std",
     "params": {
       "adsr_enable": 1,
@@ -8709,7 +9039,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Instrument EPiano",
     "params": {
       "adsr_enable": 1,
@@ -8760,7 +9092,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Instrument EPiano Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -8812,7 +9146,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Instrument EPiano Vib",
     "params": {
       "adsr_enable": 1,
@@ -8864,7 +9200,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Instrument EPiano Vib Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -8917,7 +9255,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Grand Piano",
     "params": {
       "adsr_enable": 1,
@@ -8968,7 +9308,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Instrument Grand Piano Decay Long",
     "params": {
       "adsr_enable": 1,
@@ -9020,7 +9362,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Instrument Grand Piano Decay Long Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -9073,7 +9417,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Instrument Grand Piano Decay Long Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -9126,7 +9472,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Instrument Grand Piano Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -9178,7 +9526,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.5
+    },
     "name": "SNES Instrument Grand Piano Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -9230,7 +9580,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Instrument Upright Piano",
     "params": {
       "adsr_enable": 1,
@@ -9281,7 +9633,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Instrument Upright Piano Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -9333,7 +9687,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Upright Piano Tone Bell",
     "params": {
       "adsr_enable": 1,
@@ -9385,7 +9741,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Instrument Upright Piano Tone Bell Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -9438,7 +9796,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 2.5
+    },
     "name": "SNES Instrument Vibraphone",
     "params": {
       "adsr_enable": 1,
@@ -9490,7 +9850,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Instrument Vibraphone Echo Std",
     "params": {
       "adsr_enable": 1,
@@ -9543,7 +9905,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Instrument Cello Section",
     "params": {
       "adsr_enable": 1,
@@ -9596,7 +9960,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument Cello Section Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -9650,7 +10016,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Instrument Cello Section Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -9704,7 +10072,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Ensemble Strings",
     "params": {
       "adsr_enable": 1,
@@ -9755,7 +10125,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Ensemble Strings Bow Legato",
     "params": {
       "adsr_enable": 1,
@@ -9807,7 +10179,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Instrument Ensemble Strings Bow Legato Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -9860,7 +10234,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Ensemble Strings Bow Legato Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -9913,7 +10289,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Instrument Ensemble Strings Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -9965,7 +10343,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Ensemble Strings Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -10017,7 +10397,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.0
+    },
     "name": "SNES Instrument Harp",
     "params": {
       "adsr_enable": 1,
@@ -10069,7 +10451,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Instrument Harp Echo Std",
     "params": {
       "adsr_enable": 1,
@@ -10122,7 +10506,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Instrument Pizzicato",
     "params": {
       "adsr_enable": 1,
@@ -10174,7 +10560,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Instrument Pizzicato Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -10227,7 +10615,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Instrument Pizzicato Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -10280,7 +10670,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Instrument Pizzicato OctDown",
     "params": {
       "adsr_enable": 1,
@@ -10333,7 +10725,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Instrument Pizzicato OctDown Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -10387,7 +10781,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument Pizzicato OctDown Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -10441,7 +10837,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Instrument Clarinet",
     "params": {
       "adsr_enable": 1,
@@ -10493,7 +10891,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.0
+    },
     "name": "SNES Instrument Clarinet Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -10546,7 +10946,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Clarinet Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -10599,7 +11001,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.0
+    },
     "name": "SNES Instrument Clarinet Vib",
     "params": {
       "adsr_enable": 1,
@@ -10652,7 +11056,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES Instrument Clarinet Vib Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -10706,7 +11112,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Clarinet Vib Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -10760,7 +11168,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument Flute",
     "params": {
       "adsr_enable": 1,
@@ -10812,7 +11222,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Flute Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -10865,7 +11277,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Flute Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -10918,7 +11332,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Flute Soft",
     "params": {
       "adsr_enable": 1,
@@ -10971,7 +11387,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Instrument Flute Soft Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -11025,7 +11443,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Instrument Flute Soft Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -11079,7 +11499,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Low Clarinet",
     "params": {
       "adsr_enable": 1,
@@ -11131,7 +11553,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Instrument Low Clarinet Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -11184,7 +11608,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Oboe",
     "params": {
       "adsr_enable": 1,
@@ -11236,7 +11662,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Instrument Oboe Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -11289,7 +11717,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Oboe Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -11342,7 +11772,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Oboe Vib Fast",
     "params": {
       "adsr_enable": 1,
@@ -11395,7 +11827,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Oboe Vib Fast Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -11449,7 +11883,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Instrument Oboe Vib Fast Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -11503,7 +11939,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Instrument Piccolo",
     "params": {
       "adsr_enable": 1,
@@ -11555,7 +11993,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Instrument Piccolo Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -11608,7 +12048,9 @@
   {
     "category": "Instrument",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Instrument Piccolo Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -11661,7 +12103,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Pad Choir Ah",
     "params": {
       "adsr_enable": 1,
@@ -11713,7 +12157,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Pad Choir Ah Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -11766,7 +12212,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Pad Choir Ah Echo Band Vib",
     "params": {
       "adsr_enable": 1,
@@ -11820,7 +12268,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Pad Choir Ah Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -11873,7 +12323,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Pad Choir Ah Echo Deep Vib",
     "params": {
       "adsr_enable": 1,
@@ -11927,7 +12379,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Pad Choir Ah Vib",
     "params": {
       "adsr_enable": 1,
@@ -11980,7 +12434,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Pad Choir Oo",
     "params": {
       "adsr_enable": 1,
@@ -12032,7 +12488,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Pad Choir Oo Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -12085,7 +12543,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Choir Oo Echo Deep Vib",
     "params": {
       "adsr_enable": 1,
@@ -12139,7 +12599,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Pad Choir Oo Vib",
     "params": {
       "adsr_enable": 1,
@@ -12192,7 +12654,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Pad Dark Choir",
     "params": {
       "adsr_enable": 1,
@@ -12245,7 +12709,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Pad Dark Choir EON Split",
     "params": {
       "adsr_enable": 1,
@@ -12299,7 +12765,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Pad Dark Choir Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -12353,7 +12821,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Pad Dark Choir Echo Band EON Split",
     "params": {
       "adsr_enable": 1,
@@ -12408,7 +12878,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Pad Swell Choir",
     "params": {
       "adsr_enable": 0,
@@ -12461,7 +12933,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES Pad Swell Choir Echo Deep",
     "params": {
       "adsr_enable": 0,
@@ -12515,7 +12989,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Pad Swell Choir Echo Deep OctDown",
     "params": {
       "adsr_enable": 0,
@@ -12570,7 +13046,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Swell Choir OctDown",
     "params": {
       "adsr_enable": 0,
@@ -12624,7 +13102,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Brass",
     "params": {
       "adsr_enable": 0,
@@ -12676,7 +13156,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 4.0
+    },
     "name": "SNES Pad Brass Echo Deep",
     "params": {
       "adsr_enable": 0,
@@ -12729,7 +13211,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Pad Glass",
     "params": {
       "adsr_enable": 1,
@@ -12781,7 +13265,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Pad Glass Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -12834,7 +13320,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Glass Echo Band Vib",
     "params": {
       "adsr_enable": 1,
@@ -12888,7 +13376,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Pad Glass Vib",
     "params": {
       "adsr_enable": 1,
@@ -12941,7 +13431,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.0
+    },
     "name": "SNES Pad Saw",
     "params": {
       "adsr_enable": 1,
@@ -12993,7 +13485,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Saw Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -13046,7 +13540,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Pad Saw Echo Deep Swell",
     "params": {
       "adsr_enable": 0,
@@ -13100,7 +13596,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Pad Saw Swell",
     "params": {
       "adsr_enable": 0,
@@ -13153,7 +13651,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -9.0
+    },
     "name": "SNES Pad Sine",
     "params": {
       "adsr_enable": 1,
@@ -13205,7 +13705,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Pad Sine Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -13258,7 +13760,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Pad Sine Echo Band Swell",
     "params": {
       "adsr_enable": 0,
@@ -13312,7 +13816,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -8.5
+    },
     "name": "SNES Pad Sine Swell",
     "params": {
       "adsr_enable": 0,
@@ -13365,7 +13871,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -8.0
+    },
     "name": "SNES Pad Triangle",
     "params": {
       "adsr_enable": 1,
@@ -13417,7 +13925,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -8.0
+    },
     "name": "SNES Pad Triangle EON Split",
     "params": {
       "adsr_enable": 1,
@@ -13470,7 +13980,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Pad Triangle Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -13523,7 +14035,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Pad Triangle Echo Deep EON Split",
     "params": {
       "adsr_enable": 1,
@@ -13577,7 +14091,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES Pad Warm",
     "params": {
       "adsr_enable": 1,
@@ -13629,7 +14145,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Pad Warm Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -13682,7 +14200,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Pad Warm Echo Deep Swell",
     "params": {
       "adsr_enable": 0,
@@ -13736,7 +14256,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES Pad Warm Swell",
     "params": {
       "adsr_enable": 0,
@@ -13789,7 +14311,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Pad Low Strings",
     "params": {
       "adsr_enable": 1,
@@ -13843,7 +14367,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Pad Low Strings Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -13898,7 +14424,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Low Strings Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -13953,7 +14481,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES Pad Saw Strings",
     "params": {
       "adsr_enable": 1,
@@ -14005,7 +14535,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Pad Saw Strings Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -14058,7 +14590,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES Pad Saw Strings Echo Band OctDown",
     "params": {
       "adsr_enable": 1,
@@ -14112,7 +14646,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Pad Saw Strings Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -14165,7 +14701,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.5
+    },
     "name": "SNES Pad Saw Strings Echo Deep OctDown",
     "params": {
       "adsr_enable": 1,
@@ -14219,7 +14757,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Saw Strings OctDown",
     "params": {
       "adsr_enable": 1,
@@ -14272,7 +14812,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.5
+    },
     "name": "SNES Pad Slow Strings",
     "params": {
       "adsr_enable": 1,
@@ -14324,7 +14866,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES Pad Slow Strings Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -14377,7 +14921,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES Pad Slow Strings Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -14430,7 +14976,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES Pad Slow Strings Slower",
     "params": {
       "adsr_enable": 1,
@@ -14483,7 +15031,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Pad Slow Strings Slower Echo Band",
     "params": {
       "adsr_enable": 1,
@@ -14537,7 +15087,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES Pad Slow Strings Slower Echo Deep",
     "params": {
       "adsr_enable": 1,
@@ -14591,7 +15143,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES Pad Swell Strings",
     "params": {
       "adsr_enable": 0,
@@ -14643,7 +15197,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES Pad Swell Strings Echo Deep",
     "params": {
       "adsr_enable": 0,
@@ -14696,7 +15252,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 3.5
+    },
     "name": "SNES Pad Swell Strings Slow",
     "params": {
       "adsr_enable": 0,
@@ -14749,7 +15307,9 @@
   {
     "category": "Pad",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES Pad Swell Strings Slow Echo Deep",
     "params": {
       "adsr_enable": 0,
@@ -14803,7 +15363,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES SFX Explosion NoiseClock12",
     "params": {
       "adsr_enable": 1,
@@ -14856,7 +15418,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX Explosion NoiseClock12 Echo Hall",
     "params": {
       "adsr_enable": 1,
@@ -14910,7 +15474,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX Explosion NoiseClock16",
     "params": {
       "adsr_enable": 1,
@@ -14963,7 +15529,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES SFX Explosion NoiseClock16 Echo Hall",
     "params": {
       "adsr_enable": 1,
@@ -15017,7 +15585,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES SFX Explosion NoiseClock8",
     "params": {
       "adsr_enable": 1,
@@ -15070,7 +15640,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.0
+    },
     "name": "SNES SFX Explosion NoiseClock8 Echo Hall",
     "params": {
       "adsr_enable": 1,
@@ -15124,7 +15696,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES SFX Noise Burst NoiseClock16",
     "params": {
       "adsr_enable": 1,
@@ -15177,7 +15751,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES SFX Noise Burst NoiseClock16 Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -15231,7 +15807,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX Noise Burst NoiseClock24",
     "params": {
       "adsr_enable": 1,
@@ -15284,7 +15862,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX Noise Burst NoiseClock24 Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -15338,7 +15918,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX Noise Burst NoiseClock30",
     "params": {
       "adsr_enable": 1,
@@ -15391,7 +15973,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES SFX Noise Burst NoiseClock30 Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -15445,7 +16029,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.5
+    },
     "name": "SNES SFX Noise Hit NoiseClock20",
     "params": {
       "adsr_enable": 1,
@@ -15498,7 +16084,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.5
+    },
     "name": "SNES SFX Noise Hit NoiseClock20 Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -15552,7 +16140,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.0
+    },
     "name": "SNES SFX Noise Hit NoiseClock28",
     "params": {
       "adsr_enable": 1,
@@ -15605,7 +16195,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.0
+    },
     "name": "SNES SFX Noise Hit NoiseClock28 Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -15659,7 +16251,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES SFX Rain NoiseClock28 Echo Bright",
     "params": {
       "adsr_enable": 1,
@@ -15713,7 +16307,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES SFX Rain NoiseClock28 Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -15767,7 +16363,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES SFX Rain NoiseClock31 Echo Bright",
     "params": {
       "adsr_enable": 1,
@@ -15821,7 +16419,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES SFX Rain NoiseClock31 Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -15875,7 +16475,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -7.0
+    },
     "name": "SNES SFX Steam NoiseClock26",
     "params": {
       "adsr_enable": 0,
@@ -15928,7 +16530,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -7.0
+    },
     "name": "SNES SFX Steam NoiseClock26 Release Tail",
     "params": {
       "adsr_enable": 0,
@@ -15982,7 +16586,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.5
+    },
     "name": "SNES SFX Steam NoiseClock29",
     "params": {
       "adsr_enable": 0,
@@ -16035,7 +16641,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.5
+    },
     "name": "SNES SFX Steam NoiseClock29 Release Tail",
     "params": {
       "adsr_enable": 0,
@@ -16089,7 +16697,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES SFX Steam NoiseClock31",
     "params": {
       "adsr_enable": 0,
@@ -16142,7 +16752,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES SFX Steam NoiseClock31 Release Tail",
     "params": {
       "adsr_enable": 0,
@@ -16196,7 +16808,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES SFX Wind NoiseClock14",
     "params": {
       "adsr_enable": 1,
@@ -16249,7 +16863,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES SFX Wind NoiseClock14 Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -16303,7 +16919,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.5
+    },
     "name": "SNES SFX Wind NoiseClock18",
     "params": {
       "adsr_enable": 1,
@@ -16356,7 +16974,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES SFX Wind NoiseClock18 Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -16410,7 +17030,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.0
+    },
     "name": "SNES SFX Wind NoiseClock22",
     "params": {
       "adsr_enable": 1,
@@ -16463,7 +17085,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -2.5
+    },
     "name": "SNES SFX Wind NoiseClock22 Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -16517,7 +17141,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES SFX PMON Bell",
     "params": {
       "adsr_enable": 1,
@@ -16569,7 +17195,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES SFX PMON Bell Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -16622,7 +17250,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -0.5
+    },
     "name": "SNES SFX PMON Bell Echo Long OctDown",
     "params": {
       "adsr_enable": 1,
@@ -16676,7 +17306,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 1.0
+    },
     "name": "SNES SFX PMON Bell Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -16729,7 +17361,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES SFX PMON Bell Echo Short OctDown",
     "params": {
       "adsr_enable": 1,
@@ -16783,7 +17417,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 0.5
+    },
     "name": "SNES SFX PMON Bell OctDown",
     "params": {
       "adsr_enable": 1,
@@ -16836,7 +17472,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX PMON Glass Echo Hall",
     "params": {
       "adsr_enable": 1,
@@ -16890,7 +17528,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX PMON Glass Echo Hall OctUp",
     "params": {
       "adsr_enable": 1,
@@ -16945,7 +17585,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -1.0
+    },
     "name": "SNES SFX PMON Glass Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -16999,7 +17641,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.0
+    },
     "name": "SNES SFX PMON Glass Echo Long OctUp",
     "params": {
       "adsr_enable": 1,
@@ -17054,7 +17698,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES SFX PMON Growl OctDown",
     "params": {
       "adsr_enable": 1,
@@ -17107,7 +17753,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES SFX PMON Growl OctDown Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -17161,7 +17809,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -5.5
+    },
     "name": "SNES SFX PMON Growl OctDown2",
     "params": {
       "adsr_enable": 1,
@@ -17214,7 +17864,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.0
+    },
     "name": "SNES SFX PMON Growl OctDown2 Echo Short",
     "params": {
       "adsr_enable": 1,
@@ -17268,7 +17920,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES SFX PMON Metal",
     "params": {
       "adsr_enable": 1,
@@ -17320,7 +17974,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES SFX PMON Metal Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -17373,7 +18029,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES SFX PMON Metal Up7",
     "params": {
       "adsr_enable": 1,
@@ -17426,7 +18084,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": 5.0
+    },
     "name": "SNES SFX PMON Metal Up7 Echo Room",
     "params": {
       "adsr_enable": 1,
@@ -17480,7 +18140,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.5
+    },
     "name": "SNES SFX PMON Trill Vib7Hz",
     "params": {
       "adsr_enable": 1,
@@ -17534,7 +18196,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES SFX PMON Trill Vib7Hz Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -17589,7 +18253,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -6.5
+    },
     "name": "SNES SFX PMON Trill VibDeep",
     "params": {
       "adsr_enable": 1,
@@ -17643,7 +18309,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -4.5
+    },
     "name": "SNES SFX PMON Trill VibDeep Echo Long",
     "params": {
       "adsr_enable": 1,
@@ -17698,7 +18366,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -9.0
+    },
     "name": "SNES SFX PMON Wobble Depth Deep",
     "params": {
       "adsr_enable": 0,
@@ -17751,7 +18421,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -9.0
+    },
     "name": "SNES SFX PMON Wobble Depth Deep VibDeep",
     "params": {
       "adsr_enable": 0,
@@ -17805,7 +18477,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES SFX PMON Wobble Depth Light",
     "params": {
       "adsr_enable": 0,
@@ -17858,7 +18532,9 @@
   {
     "category": "SFX",
     "chip": "snes",
-    "global": {},
+    "global": {
+      "preset_gain": -3.0
+    },
     "name": "SNES SFX PMON Wobble Depth Light VibDeep",
     "params": {
       "adsr_enable": 0,

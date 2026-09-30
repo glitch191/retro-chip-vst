@@ -167,7 +167,7 @@ void GenesisEngine::prepare(double hostSampleRate, int maxBlockSize)
 
     const double fmRate = fmSampleRate(clockStd);
     const double psgRate = psgTickRate(clockStd);
-    // Flat band-limited steps (refcheck finding F2; the NES keeps the legacy kernel).
+    // Flat band-limited steps (refcheck finding F2; every engine uses this kernel).
     constexpr auto kKernel = BandLimitedStepSynth::Kernel::IntegratedStep;
     fmSynthL.prepare(fmRate, hostRate, maxBlock, kKernel);
     fmSynthR.prepare(fmRate, hostRate, maxBlock, kKernel);

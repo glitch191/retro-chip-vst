@@ -7,7 +7,8 @@
 Pipeline per chip: load tools/presetgen/params/<chip>.json, load the seeds from
 tools/presetgen/seeds/<chip>.py (get_seeds()), expand the Cartesian product of every
 seed's axes, assign unique names, de-duplicate (parameter rules, plus feature distance
-when --features is given), sort by category / subcategory / name and write the bank.
+when --features is given), write each preset's global.preset_gain from its rendered level
+(--features only, presetgen/level.py), sort by category / subcategory / name and write the bank.
 
 Output is deterministic: the same inputs produce byte-identical files. The exit code is
 non-zero when a bank is outside its target range (docs/PRESET_SPECS.md) unless
@@ -28,7 +29,7 @@ ROOT_DIR = TOOLS_DIR.parent
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from presetgen import qa  # noqa: E402
+from presetgen import level, qa  # noqa: E402
 from presetgen.model import CHIP_DISPLAY_NAMES, CHIPS, ParamTable, Preset, PresetError, Seed, expand_all  # noqa: E402
 
 DEFAULT_OUT_DIR = ROOT_DIR / "assets" / "presets"
@@ -69,9 +70,11 @@ def write_text(path: Path, text: str) -> None:
 
 def generate_bank(chip: str, seeds: Sequence[Seed], table: ParamTable, features: Mapping[str, Any] | None,
                   jobs: int | None) -> tuple[list[Preset], qa.QaResult]:
-    """Expand, de-duplicate and sort. Returns (sorted bank, QA result)."""
+    """Expand, de-duplicate, set preset_gain (with features) and sort. Returns (sorted bank, QA result)."""
     presets = expand_all(seeds, table)
     result = qa.deduplicate(presets, table, features, jobs, seeds=len(seeds))
+    if features is not None:
+        result.gain_summary = level.assign_preset_gains(result.kept, features).describe()
     bank = sorted(result.kept, key=Preset.sort_key)
     return bank, result
 
@@ -129,6 +132,8 @@ def main(argv: Sequence[str] | None = None) -> int:
               f"{len(bank)} presets (target {low}-{high}, {status}); "
               f"removed {result.removed_by_parameters} by parameters, {result.removed_by_features} by features; "
               f"wrote {out_path}")
+        if result.gain_summary:
+            print(f"  preset_gain: {result.gain_summary}")
         if not ok:
             out_of_target.append(chip)
 

@@ -36,6 +36,7 @@ namespace
         { "voice_mode",        ParamKind::Choice, 0.0f,   1.0f,    1.0f,  2 },   // default Poly
         { "poly_channels",     ParamKind::Int,    0.0f,   1023.0f, 0.0f,  0 },   // 0 = the chip's default mask
         { "master_gain",       ParamKind::Float,  -24.0f, 12.0f,   0.0f,  0 },
+        { "preset_gain",       ParamKind::Float,  -24.0f, 36.0f,   0.0f,  0 },   // set by presets, no panel control
         { "arp_enabled",       ParamKind::Bool,   0.0f,   1.0f,    0.0f,  0 },
         { "arp_pattern",       ParamKind::Choice, 0.0f,   4.0f,    0.0f,  5 },
         { "arp_octaves",       ParamKind::Int,    1.0f,   4.0f,    1.0f,  0 },
@@ -200,6 +201,12 @@ TEST_CASE ("ParamInfo ranges equal the engine ParamDesc and the host parameters 
     // ui_scale is saved with the state but is not automatable; everything else is.
     CHECK_FALSE (apvts.getParameter (rcv::ParamIds::uiScale)->isAutomatable());
     CHECK (apvts.getParameter (rcv::ParamIds::masterGain)->isAutomatable());
+    CHECK (apvts.getParameter (rcv::ParamIds::presetGain)->isAutomatable());
+
+    // Panel controls: master_gain has one; poly_channels and preset_gain are preset-managed only.
+    CHECK (registry.find (rcv::ParamIds::masterGain)->showOnPanel);
+    CHECK_FALSE (registry.find (rcv::ParamIds::polyChannels)->showOnPanel);
+    CHECK_FALSE (registry.find (rcv::ParamIds::presetGain)->showOnPanel);
 
     // Labels of the chip selector, in ChipId order.
     auto* chipParam = dynamic_cast<juce::AudioParameterChoice*> (apvts.getParameter (rcv::ParamIds::chip));

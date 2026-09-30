@@ -55,6 +55,9 @@ TEST_CASE ("Global parameters show formatted text to the host", "[parameters][te
         { rcv::ParamIds::glideTime,   0.0f,   "0 ms" },
         { rcv::ParamIds::masterGain,  -6.0f,  "-6.0 dB" },
         { rcv::ParamIds::masterGain,  3.5f,   "+3.5 dB" },
+        { rcv::ParamIds::presetGain,  12.0f,  "+12.0 dB" },
+        { rcv::ParamIds::presetGain,  -3.5f,  "-3.5 dB" },
+        { rcv::ParamIds::presetGain,  36.0f,  "+36.0 dB" },
         { rcv::ParamIds::arpGate,     50.0f,  "50 %" },
         { rcv::ParamIds::voiceMode,   0.0f,   "MIDI channel" },
         { rcv::ParamIds::arpSyncDivision, 2.0f, "1/8T" },
@@ -65,6 +68,8 @@ TEST_CASE ("Global parameters show formatted text to the host", "[parameters][te
     // Plain numbers and other spellings are accepted too.
     CHECK_THAT (hostValue (param (*proc, rcv::ParamIds::glideTime), "120"), WithinAbs (120.0, 0.01));
     CHECK_THAT (hostValue (param (*proc, rcv::ParamIds::masterGain), "+2 dB"), WithinAbs (2.0, 0.001));
+    CHECK_THAT (hostValue (param (*proc, rcv::ParamIds::presetGain), "+12 dB"), WithinAbs (12.0, 0.001));
+    CHECK_THAT (hostValue (param (*proc, rcv::ParamIds::presetGain), "-6.5"), WithinAbs (-6.5, 0.001));
     CHECK (hostValue (param (*proc, rcv::ParamIds::voiceMode), "poly") == 1.0f);
     CHECK (hostValue (param (*proc, rcv::ParamIds::arpEnabled), "off") == 0.0f);
 }
