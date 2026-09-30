@@ -128,13 +128,15 @@ std::span<const ParamDesc> SnesDspEngine::parameterDescriptors() const noexcept
 void SnesDspEngine::prepare(double hostSampleRate, int maxBlockSize)
 {
     maxBlock = std::max(1, maxBlockSize);
+    // Flat band-limited steps (refcheck finding F2; the NES keeps the legacy kernel).
+    constexpr auto kKernel = BandLimitedStepSynth::Kernel::IntegratedStep;
     for (int c = 0; c < 2; ++c)
     {
-        mainSynth[c].prepare(kSampleRate, hostSampleRate, maxBlock);
+        mainSynth[c].prepare(kSampleRate, hostSampleRate, maxBlock, kKernel);
         mainDc[c].prepare(5.0, hostSampleRate);
         for (int v = 0; v < kSnesChannels; ++v)
         {
-            voiceSynth[v][c].prepare(kSampleRate, hostSampleRate, maxBlock);
+            voiceSynth[v][c].prepare(kSampleRate, hostSampleRate, maxBlock, kKernel);
             voiceDc[v][c].prepare(5.0, hostSampleRate);
         }
     }

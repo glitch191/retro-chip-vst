@@ -307,13 +307,14 @@ TEST_CASE("Algorithm carriers", "[genesis][tables][algorithm]")
     const uint8_t expected[8] = { 0b1000, 0b1000, 0b1000, 0b1000, 0b1010, 0b1110, 0b1110, 0b1111 };
     for (int a = 0; a < 8; ++a)
         CHECK(kAlgorithm[a].carrierMask == expected[a]);
-    // Pipeline-delayed modulator paths (research "Evaluation order quirk")
-    CHECK(modulatorIsDelayed(2, 1));    // S2 -> S3
-    CHECK(modulatorIsDelayed(2, 0));    // S1 -> S3
-    CHECK(modulatorIsDelayed(3, 1));    // S2 -> S4
-    CHECK_FALSE(modulatorIsDelayed(1, 0));   // S1 -> S2
-    CHECK_FALSE(modulatorIsDelayed(3, 2));   // S3 -> S4
-    CHECK_FALSE(modulatorIsDelayed(3, 0));   // S1 -> S4
+    // Modulator delays in samples (research "Evaluation order quirk" and Ambiguity 41: every
+    // S1 path is read from S1's feedback history, one sample later than the order alone gives)
+    CHECK(modulatorDelay(1, 0) == 1);   // S1 -> S2
+    CHECK(modulatorDelay(2, 0) == 2);   // S1 -> S3
+    CHECK(modulatorDelay(3, 0) == 1);   // S1 -> S4
+    CHECK(modulatorDelay(2, 1) == 1);   // S2 -> S3
+    CHECK(modulatorDelay(3, 1) == 1);   // S2 -> S4
+    CHECK(modulatorDelay(3, 2) == 0);   // S3 -> S4
 }
 
 TEST_CASE("DAC value and ladder offsets", "[genesis][tables][dac]")

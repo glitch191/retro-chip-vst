@@ -19,10 +19,25 @@ namespace chipdsp
 // sample instant instead (nearest previous level), which preserves the aliasing a
 // real console output would show through a wide analog path.
 //
+// Kernel choice (docs/research/refcheck-report.md, finding F2):
+//  * IntegratedStep: each kernel tap is the first difference of the integrated windowed sinc,
+//    so the running sum in endBlock() gives exact samples of the band-limited step. Flat pass
+//    band. Used by the Genesis and SNES engines.
+//  * ImpulseSum: taps are samples of the windowed sinc itself; the discrete running sum then
+//    boosts the top octave by (w/2) / sin(w/2), w = 2 pi f / host rate (+0.94 dB at 11.2 kHz
+//    at 44.1 kHz). Kept as the default because the NES output must not change (product-owner
+//    decision 2026-09-29).
+//
 // Real-time safety: prepare() allocates; everything else is allocation-free.
 class BandLimitedStepSynth
 {
 public:
+    enum class Kernel
+    {
+        ImpulseSum,
+        IntegratedStep,
+    };
+
     static constexpr int kPhases = 64;     // fractional-time resolution (1/64 host sample)
     static constexpr int kTaps = 32;       // kernel length in host samples
     static constexpr int kHalfTaps = kTaps / 2;
@@ -32,7 +47,8 @@ public:
     // nativeRateHz: chip clock at which level changes can occur.
     // hostRateHz  : output sample rate.
     // maxBlock    : largest numSamples passed to endBlock().
-    void prepare(double nativeRateHz, double hostRateHz, int maxBlock);
+    // kernel      : see the class comment.
+    void prepare(double nativeRateHz, double hostRateHz, int maxBlock, Kernel kernel = Kernel::ImpulseSum);
 
     void reset() noexcept;
     void setRaw(bool raw) noexcept { rawMode = raw; }
@@ -62,9 +78,10 @@ private:
     double samplesPerClock = 1.0;
     double nativeRate = 1.0;
     double hostRate = 1.0;
+    Kernel kernelType = Kernel::ImpulseSum;
     bool rawMode = false;
 
-    std::vector<float> kernel;      // kPhases * kTaps, each phase normalised to unit sum
+    std::vector<float> kernel;      // kPhases * kTaps, each phase sums to exactly 1
     std::vector<float> buffer;      // maxBlock + kTaps + 1 accumulation samples
     int bufferLen = 0;
     double integrator = 0.0;        // running sum = band-limited level

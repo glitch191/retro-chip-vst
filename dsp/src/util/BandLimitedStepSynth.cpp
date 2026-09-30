@@ -43,10 +43,11 @@ namespace
     }
 } // namespace
 
-void BandLimitedStepSynth::prepare(double nativeRateHz, double hostRateHz, int maxBlock)
+void BandLimitedStepSynth::prepare(double nativeRateHz, double hostRateHz, int maxBlock, Kernel kernelChoice)
 {
     nativeRate = nativeRateHz;
     hostRate = hostRateHz;
+    kernelType = kernelChoice;
     samplesPerClock = hostRateHz / nativeRateHz;
     bufferLen = maxBlock + kTaps + 2;
     buffer.assign(static_cast<size_t>(bufferLen), 0.0f);
@@ -66,6 +67,51 @@ void BandLimitedStepSynth::buildKernel()
     const double cutoff = ratio >= 1.0 ? 0.45 : 0.5 * ratio;
     constexpr double beta = 7.0; // ~ -70 dB side lobes
 
+    auto impulse = [&](double x) {
+        return 2.0 * cutoff * sinc(2.0 * cutoff * x) * kaiserWindow(x, static_cast<double>(kHalfTaps), beta);
+    };
+
+    if (kernelType == Kernel::IntegratedStep)
+    {
+        // Band-limited step S(x) = integral of the windowed sinc from -kHalfTaps to x, on a grid
+        // of 1/kPhases host samples (Simpson's rule, 8 sub-intervals per cell), normalised so
+        // that it rises from exactly 0 to exactly 1 across the window.
+        constexpr int kGrid = kTaps * kPhases;
+        constexpr int kSub = 8;
+        std::vector<double> step(static_cast<size_t>(kGrid + 1), 0.0);
+        const double cell = 1.0 / static_cast<double>(kPhases);
+        const double h = cell / kSub;
+        for (int g = 0; g < kGrid; ++g)
+        {
+            const double x0 = -static_cast<double>(kHalfTaps) + g * cell;
+            double area = impulse(x0) + impulse(x0 + cell);
+            for (int j = 1; j < kSub; ++j)
+                area += (j & 1 ? 4.0 : 2.0) * impulse(x0 + j * h);
+            step[static_cast<size_t>(g + 1)] = step[static_cast<size_t>(g)] + area * h / 3.0;
+        }
+        const double total = step[static_cast<size_t>(kGrid)];
+        auto stepAt = [&](int g) { return g <= 0 ? 0.0 : step[static_cast<size_t>(std::min(g, kGrid))] / total; };
+
+        for (int p = 0; p < kPhases; ++p)
+        {
+            // Event at fractional position frac = p / kPhases inside sample 0: output sample
+            // m = k - kHalfTaps + 1 must read S(m - frac), so tap k is S(m - frac) - S(m - 1 - frac).
+            // Grid index of x = m - frac is (m + kHalfTaps) * kPhases - p = (k + 1) * kPhases - p.
+            double sum = 0.0;
+            for (int k = 0; k < kTaps; ++k)
+            {
+                const double tap = stepAt((k + 1) * kPhases - p) - stepAt(k * kPhases - p);
+                kernel[static_cast<size_t>(p * kTaps + k)] = static_cast<float>(tap);
+                sum += tap;
+            }
+            // The part of the step beyond the last tap (phases p > 0) goes into the last tap, so
+            // that a step of 'delta' integrates to exactly 'delta'.
+            kernel[static_cast<size_t>(p * kTaps + kTaps - 1)] += static_cast<float>(1.0 - sum);
+        }
+        return;
+    }
+
+    // ImpulseSum (legacy, NES): sampled impulses, integrated by the running sum in endBlock().
     for (int p = 0; p < kPhases; ++p)
     {
         // Impulse located at fractional position frac = p / kPhases inside sample 0.
@@ -76,7 +122,7 @@ void BandLimitedStepSynth::buildKernel()
         {
             const int m = k - kHalfTaps + 1;
             const double x = static_cast<double>(m) - frac;
-            const double h = 2.0 * cutoff * sinc(2.0 * cutoff * x) * kaiserWindow(x, static_cast<double>(kHalfTaps), beta);
+            const double h = impulse(x);
             kernel[static_cast<size_t>(p * kTaps + k)] = static_cast<float>(h);
             sum += h;
         }

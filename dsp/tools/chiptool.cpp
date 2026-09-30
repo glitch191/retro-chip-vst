@@ -1058,9 +1058,10 @@ int cmdRegsGenesis(int argc, char** argv)
     Sn76489Core psg;
     ym.setLadderEffect(ladder);
     chipdsp::BandLimitedStepSynth fmL, fmR, psgSynth;
-    fmL.prepare(fmSampleRate(clockStd), rate, kBlockSize);
-    fmR.prepare(fmSampleRate(clockStd), rate, kBlockSize);
-    psgSynth.prepare(psgTickRate(clockStd), rate, kBlockSize);
+    constexpr auto kKernel = chipdsp::BandLimitedStepSynth::Kernel::IntegratedStep;   // as GenesisEngine
+    fmL.prepare(fmSampleRate(clockStd), rate, kBlockSize, kKernel);
+    fmR.prepare(fmSampleRate(clockStd), rate, kBlockSize, kKernel);
+    psgSynth.prepare(psgTickRate(clockStd), rate, kBlockSize, kKernel);
     GenesisOutputFilter filterL, filterR;
     filterL.prepare(rate);
     filterR.prepare(rate);
