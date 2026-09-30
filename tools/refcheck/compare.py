@@ -81,8 +81,8 @@ TH_ENV_PCT = 3.0
 TH_LEVEL_DB = 0.5
 TH_ENV_MIN_MS = 0.5        # envelope timing differences below this are under the measurement resolution
 HARM_FLOOR_DB = -60.0
-CALIBRATION = {"ym2612": "fm_sine_ref", "sn76489": "psg_tone_ref", "sdsp": "snes_sine_ref"}
-GENESIS_REFS = ("nuked", "mame")
+CALIBRATION = {"ym2612": "fm_sine_ref", "sn76489": "psg_tone_ref", "sdsp": "snes_sine_ref", "2a03": "nes_pulse_ref"}
+TH_NES_EVENT_MS = 1.0      # NES frame-sequencer events (length, linear counter, envelope steps): absolute
 # Chips whose renders share one lag per comparison (measured on the calibration stimulus):
 # both sides apply the same writes at the same times, while slow attacks make a per-stimulus
 # correlation ambiguous by whole periods. The PSG's initial tone phase differs between cores
@@ -94,14 +94,33 @@ DIAG_END = "<!-- END DIAGNOSIS -->"
 
 # ----- rendering ------------------------------------------------------------------------------
 
+VGMPLAY_BASE = {
+    ("[General]", "SampleRate"): "44100", ("[General]", "LogSound"): "1", ("[General]", "FadeTime"): "0",
+    ("[General]", "ResamplingMode"): "0", ("[General]", "Volume"): "1.0",
+}
 VGMPLAY_CONFIGS = {
-    # name: (YM2612 EmulatorType, NukedType, SN76496 EmulatorType, ChipSmplMode, ChipSmplRate)
+    # ini overrides per configuration (section, key) -> value.
     # The Nuked OPN2 core runs fast by about 90000 / ChipSmplRate cents in VGMPlay (measured,
     # see reference-emulators.md), so it runs at the highest accepted chip rate (384 kHz:
     # +0.23 cents, then corrected by the measured time-base factor).
-    "nuked": (1, 3, 0, 2, 384000),
-    "mame": (0, 3, 1, 0, 0),
+    "nuked": {("[General]", "ChipSmplMode"): "2", ("[General]", "ChipSmplRate"): "384000",
+              ("[YM2612]", "EmulatorType"): "0x01", ("[YM2612]", "NukedType"): "0x03",
+              ("[YM2612]", "PseudoStereo"): "False", ("[SN76496]", "EmulatorType"): "0x00"},
+    "mame": {("[General]", "ChipSmplMode"): "0", ("[General]", "ChipSmplRate"): "0",
+             ("[YM2612]", "EmulatorType"): "0x00", ("[YM2612]", "NukedType"): "0x03",
+             ("[YM2612]", "PseudoStereo"): "False", ("[SN76496]", "EmulatorType"): "0x01"},
+    # NES APU: NSFPlay-derived core with the hardware-like option set (non-linear mixer, $4003
+    # phase reset, $4011 and periodic noise enabled; no power-on unmute, no duty swap, no DPCM
+    # anti-click, no noise randomisation, no triangle mute/null hacks), and the MAME core.
+    # Native chip rate for both (ChipSmplMode 0); see reference-emulators.md.
+    "nsfplay": {("[General]", "ChipSmplMode"): "0", ("[General]", "ChipSmplRate"): "0",
+                ("[NES APU]", "EmulatorType"): "0x00", ("[NES APU]", "SharedOpts"): "0x02",
+                ("[NES APU]", "APUOpts"): "0x01", ("[NES APU]", "DMCOpts"): "0x03"},
+    "nesmame": {("[General]", "ChipSmplMode"): "0", ("[General]", "ChipSmplRate"): "0",
+                ("[NES APU]", "EmulatorType"): "0x01"},
 }
+GENESIS_REFS = ("nuked", "mame")
+NES_REFS = ("nsfplay", "nesmame")
 
 
 def find_ffmpeg() -> str:
@@ -122,27 +141,24 @@ def vgmplay_dir(config: str) -> str:
     os.makedirs(dst, exist_ok=True)
     for f in ("VGMPlay.exe", "zlib1.dll"):
         shutil.copy2(os.path.join(src, f), dst)
-    ym_type, nuked_type, sn_type, smpl_mode, smpl_rate = VGMPLAY_CONFIGS[config]
+    values = dict(VGMPLAY_BASE)
+    values.update(VGMPLAY_CONFIGS[config])
     lines = open(os.path.join(src, "VGMPlay.ini"), encoding="latin-1").read().split("\n")
     section = ""
     out = []
+    seen = set()
     for line in lines:
         s = line.strip()
         if s.startswith("["):
             section = s
         key = s.split("=")[0].strip() if "=" in s and not s.startswith(";") else ""
-        values = {
-            ("[General]", "SampleRate"): "44100", ("[General]", "LogSound"): "1",
-            ("[General]", "ChipSmplMode"): str(smpl_mode), ("[General]", "ChipSmplRate"): str(smpl_rate),
-            ("[General]", "FadeTime"): "0",
-            ("[General]", "ResamplingMode"): "0", ("[General]", "Volume"): "1.0",
-            ("[YM2612]", "EmulatorType"): f"0x{ym_type:02X}", ("[YM2612]", "NukedType"): f"0x{nuked_type:02X}",
-            ("[YM2612]", "PseudoStereo"): "False",
-            ("[SN76496]", "EmulatorType"): f"0x{sn_type:02X}",
-        }
         if (section, key) in values:
+            seen.add((section, key))
             line = f"{key} = {values[(section, key)]}"
         out.append(line)
+    missing = set(values) - seen
+    if missing:
+        raise SystemExit(f"VGMPlay.ini has no key {sorted(missing)}")
     with open(os.path.join(dst, "VGMPlay.ini"), "w", encoding="latin-1", newline="\r\n") as f:
         f.write("\n".join(out))
     return dst
