@@ -5,7 +5,7 @@ and **run** to compare audio output; its source code is never read, copied or im
 Everything below was used as a black box: our own stimuli in, WAV out. Binaries live in
 `third_party/refemu/` (git-ignored) and are never redistributed.
 
-The harness: `tools/refcheck/make_stimuli.py` (stimuli), `chiptool regs` (our side),
+The harness: `tools/refcheck/make_stimuli.py` (stimuli), `chiptool regs genesis|snes|nes` (our side),
 `tools/refcheck/compare.py` (renders both sides and analyses them). Results:
 `docs/research/refcheck-report.md` (generated) and `docs/research/refcheck-diagnosis.md`.
 
@@ -94,10 +94,58 @@ Known behaviour of the reference (measured):
   state load; our side has no SPC700 and replays the event list the generator emits, which
   gives a constant 9-sample offset (the program's start-up and KON poll); alignment removes it.
 
+## NES: VGMPlay 0.40.9 (two NES APU cores) and Game Music Emu (NSF)
+
+Run of 2026-09-30, same black-box rule: our own register writes in, WAV out, no source read.
+
+| Item | Value |
+|---|---|
+| Tool 1 | VGMPlay 0.40.9 (same binary and licence notes as the Genesis section), `[NES APU]` section of `VGMPlay.ini` |
+| Input 1 | VGM 1.61: header 0x84 = NES APU clock (1789773 Hz NTSC, 1662607 Hz PAL, bit 31 = FDS clear), command `0xB4 aa dd` (write dd to $4000 + aa), DMC bytes in a data block `0x67 0x66 0xC2` ("NES APU RAM write", 16-bit start address $C000). Format from the VGM specification text v1.71 (vgmrips; the wiki page https://vgmrips.net/wiki/VGM_Specification refused the fetch on 2026-09-30, the same text was read from https://raw.githubusercontent.com/vgmrips/vgmplay-legacy/master/VGMPlay/vgmspec171.txt, a format document, not program source) |
+| Configuration `nsfplay` (primary) | `EmulatorType = 0x00` (NSFPlay-derived core, per the ini comment "ported from rainwarrior's NSFPlay" in `VGMPlay.txt`), `SharedOpts = 0x02` (non-linear mixer; power-on "unmute" off), `APUOpts = 0x01` (phase refresh on $4003, no duty swap), `DMCOpts = 0x03` ($4011 and periodic noise enabled; DPCM anti-click, noise randomisation, triangle mute and triangle null all off), `ChipSmplMode = 0` (native) |
+| Configuration `nesmame` (second opinion) | `EmulatorType = 0x01` (MAME core), `ChipSmplMode = 0` |
+| Settings (both) | as Genesis: `SampleRate = 44100`, `ResamplingMode = 0`, `FadeTime = 0`, `Volume = 1.0`, `LogSound = 1` |
+| Tool 2 (third opinion, subset) | FFmpeg 9.0.2 `libgme` demuxer (Game Music Emu NSF player, same build and licence notes as the SNES section): `ffmpeg -f libgme -sample_rate 44100 -i <stim>.nsf -t <seconds> -c:a pcm_s16le <out>.wav` |
+| Input 2 | NSF (NESdev wiki "NSF", https://www.nesdev.org/wiki/NSF, consulted 2026-09-30: header layout, play rate in microseconds, player initialisation of $4000-$4017 before INIT). Our own 6502 program (`NesVgm.nsf` in `make_stimuli.py`, 57 bytes) replays the VGM writes once per video frame from a table, so only the static tones and mixer stimuli (23, `NSF_SET`) are rendered this way |
+
+Why these: VGMPlay is already in use and ships two independent NES cores; NES VGM is the only
+register-log format both it and our tool read. Game Music Emu is already present (FFmpeg) and
+reads NSF, which needs a 6502 program: added for the mixer question below. No other headless
+NES renderer was found among the binaries already downloaded.
+
+Known behaviour of the references (measured; details and numbers in refcheck-report.md, NES
+section):
+
+* Output: mono (L = R), not DC-blocked (the unipolar DAC level is present); compare.py gives the
+  renders the same 5 Hz coupling capacitor our console_filter = 0 path has, and the 60 Hz /
+  15 kHz analysis filters of the Genesis comparison. No console filter on either side. The
+  NSFPlay core puts the triangle / noise / DMC group in opposite polarity to the pulses
+  (harmless for levels; alignment measures the polarity per stimulus).
+* Levels: NSFPlay's pulse path equals our mixer output within 0.05 dB (global gain -0.045 dB);
+  MAME +3.9 dB; GME +6.4 dB.
+* NSFPlay core: non-linear pulse mixer identical to the documented formula (level ratios and
+  intermodulation within 0.05 dB), but no cross-channel compression in the triangle / noise /
+  DMC group (the DMC level does not change the triangle or noise level), and the triangle
+  2.47 dB below the formula's level relative to the pulses. Resets the pulse timer divider on a
+  $4003 write (notes start one sequencer step later than documented). No immediate quarter /
+  half frame clock on a $4017 write with bit 7 set (5-step events one quarter or half frame
+  late). With a PAL clock it uses the PAL noise and DMC tables but the NTSC frame-sequencer
+  lengths (PAL envelopes and length counters 0.897 x the documented time). Mutes on a sweep
+  target above $7FF only at the next sweep clock. Envelope decay counter not 0 at power-up (the
+  first note plays before the first quarter frame). Ultrasonic triangle (t < 2) is stepped and
+  aliases into the audio band (-40 dBFS). Top-octave droop of the player's resampler as for the
+  Genesis (+1.1 dB at 12.4 kHz on our side after the kernel correction).
+* MAME core: linear mixer (no intermodulation), pitch -0.09 cents (NTSC) / -0.13 cents (PAL),
+  no t < 8 or sweep-overflow mute, triangle 6.6 dB and envelopes / sweeps with other timings
+  than documented, NTSC noise and DMC tables in PAL. Used only where it agrees with NSFPlay.
+* Game Music Emu (NSF): linear triangle / noise / DMC group (no compression, triangle harmonics
+  without the non-linear H2), pitch +0.21 cents; skips about 30 ms of leading silence (alignment
+  removes it).
+
 ## What was not used
 
-* No game, ROM, soundtrack, VGM/SPC rip or FM patch collection: every stimulus is generated
-  by `tools/refcheck/make_stimuli.py` from our own register writes, BRR data and SPC700
-  program.
+* No game, ROM, soundtrack, VGM/SPC/NSF rip or FM patch collection: every stimulus is
+  generated by `tools/refcheck/make_stimuli.py` from our own register writes, BRR data, DMC
+  bytes, SPC700 program and 6502 program.
 * No reference source code was opened, and no reference output is committed (renders go to
   `build-reports/refcheck/`, git-ignored).

@@ -1448,6 +1448,28 @@ timer reset, the mode change and the immediate quarter/half clock of bit 7 are d
 cycles (A12). Alternative: delay the inhibit too (a frame IRQ could then still be set during the
 3 cycles). Not audible: the driver runs with IRQ inhibited.
 
+A27. **Envelope decay counter at power-up.** Added 2026-09-30 (differential check,
+`docs/research/refcheck-report.md`, NES section). NESdev "CPU power up state" lists the APU
+registers, the frame counter and the noise LFSR but not the envelope's decay level or divider;
+"APU Envelope" only says that the start flag is processed at the next quarter frame. The
+decay level therefore decides what a decay-envelope note written right after power-up plays
+until that quarter frame. Decision (implemented): 0, like every other counter at power-up
+(consistent with A20), so such a note is silent for up to one quarter frame (4.2 ms NTSC).
+Measured references: the NSFPlay core of VGMPlay 0.40.9 behaves as if the decay level started
+at 15 and counted down from power-up (level 5 about 50 ms after power-up, then the documented
+restart at the quarter frame; a restart after a finished decay waits for the quarter frame
+like ours); the MAME core restarts the envelope at the $4003 write itself, which contradicts
+the documented quarter-frame start. Alternative: 15 at power-up (the NSFPlay behaviour). Only
+the first decay-envelope note of each pulse / noise channel after a power-up or engine reset
+differs (at most one quarter frame of silence instead of a partly decayed level). No change
+without a hardware source.
+
+Differential check note on A20 (2026-09-30): our DMC triangle-pattern harmonics match the exact
+mixer with the triangle held at 15 (H2 -31.5 dB, H4 -43.3 dB re H1; formula -31.6 / -43.3),
+the NSFPlay core's match it with the triangle at 0 (-30.4 / -42.1; formula -30.4 / -42.1).
+That core has no triangle / noise / DMC cross-compression at all, so this is not independent
+evidence for A20's alternative; decision unchanged.
+
 ---
 
 ## Sources
@@ -1517,6 +1539,17 @@ All consulted on 2026-09-28. No emulator source code was opened.
 
 Generator script: `gen_nes.py` (scratchpad, quoted in the relevant sections); its
 output was pasted verbatim into this file.
+
+Added 2026-09-30 for the differential check (`tools/refcheck`, reference-emulators.md):
+
+23. VGM specification v1.71 (vgmrips) - https://vgmrips.net/wiki/VGM_Specification (fetch
+    refused on 2026-09-30; same text read from
+    https://raw.githubusercontent.com/vgmrips/vgmplay-legacy/master/VGMPlay/vgmspec171.txt) -
+    header offset 0x84 (NES APU clock, bit 31 FDS), command 0xB4 register mapping, data block
+    0x67 type 0xC2 (NES APU RAM write, 16-bit start address). Format only, no program source.
+24. NESdev wiki, "NSF" - https://www.nesdev.org/wiki/NSF - consulted 2026-09-30: header
+    fields, play rate unit, the player's APU initialisation before INIT, INIT / PLAY call
+    conventions (for the NSF stimuli played by Game Music Emu).
 
 Adversarial verification pass, 2026-09-28: every source above was refetched (rendered page
 and, for the wiki, the raw wikitext), plus NESdev wiki "Talk:APU Frame Counter" (the
