@@ -14,7 +14,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 17.5
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Clap Rate 11k Console Model1",
     "params": {
@@ -132,7 +132,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 16.5
+      "preset_gain": 14.5
     },
     "name": "Genesis DAC Clap Rate 11k Console Model2",
     "params": {
@@ -250,7 +250,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 17.5
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Clap Rate 22k Console Model1",
     "params": {
@@ -368,7 +368,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 17.0
+      "preset_gain": 14.5
     },
     "name": "Genesis DAC Clap Rate 22k Console Model2",
     "params": {
@@ -486,7 +486,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 18.0
+      "preset_gain": 16.0
     },
     "name": "Genesis DAC Closed Hat Rate 11k Console Model1",
     "params": {
@@ -604,7 +604,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 16.0
+      "preset_gain": 14.0
     },
     "name": "Genesis DAC Closed Hat Rate 11k Console Model2",
     "params": {
@@ -2721,7 +2721,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 16.5
+      "preset_gain": 16.0
     },
     "name": "Genesis DAC Noise Burst Rate 22k",
     "params": {
@@ -3666,7 +3666,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 16.0
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Rim Rate 11k",
     "params": {
@@ -3900,7 +3900,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 16.5
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Rim Rate 22k",
     "params": {
@@ -5073,7 +5073,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 17.5
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Voice Rate 11k",
     "params": {
@@ -5191,7 +5191,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 17.5
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Voice Rate 16k",
     "params": {
@@ -5309,7 +5309,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 32,
-      "preset_gain": 17.5
+      "preset_gain": 15.5
     },
     "name": "Genesis DAC Voice Rate 8k",
     "params": {
@@ -9497,7 +9497,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 8.5
+      "preset_gain": 8.0
     },
     "name": "Genesis FM Bass Chorus Detune Wide OctDown",
     "params": {
@@ -18304,7 +18304,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 17.0
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Brass Power Stab FB4",
     "params": {
@@ -18419,7 +18419,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 16.0
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Brass Power Stab FB4 OctDown",
     "params": {
@@ -18535,7 +18535,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.5
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Brass Power Stab FB6",
     "params": {
@@ -18650,7 +18650,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 14.5
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Brass Power Stab FB6 OctDown",
     "params": {
@@ -19111,7 +19111,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 17.0
+      "preset_gain": 15.0
     },
     "name": "Genesis FM Keys Chime Strike Hard",
     "params": {
@@ -19226,7 +19226,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 20.0
+      "preset_gain": 16.5
     },
     "name": "Genesis FM Keys Chime Strike Hard OctUp",
     "params": {
@@ -19342,7 +19342,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.0
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Chime Strike Soft",
     "params": {
@@ -19457,7 +19457,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 16.0
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Chime Strike Soft OctUp",
     "params": {
@@ -19919,7 +19919,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 16.5
+      "preset_gain": 16.0
     },
     "name": "Genesis FM Keys Glock OctUp Decay Short",
     "params": {
@@ -20035,7 +20035,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.5
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Marimba Mallet Hard",
     "params": {
@@ -24211,7 +24211,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.0
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Soft EPiano Tremolo Deep Tone Bright",
     "params": {
@@ -24327,7 +24327,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 14.5
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Soft EPiano Tremolo Deep Tone Soft",
     "params": {
@@ -24675,7 +24675,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.0
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Tine EPiano Tine Bright Chip YM2612",
     "params": {
@@ -24791,7 +24791,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.0
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Tine EPiano Tine Bright Chip YM3438",
     "params": {
@@ -24907,7 +24907,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 14.5
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Tine EPiano Tine Medium Chip YM2612",
     "params": {
@@ -25023,7 +25023,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.0
+      "preset_gain": 14.0
     },
     "name": "Genesis FM Keys Tine EPiano Tine Medium Chip YM3438",
     "params": {
@@ -25255,7 +25255,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 63,
-      "preset_gain": 15.0
+      "preset_gain": 14.5
     },
     "name": "Genesis FM Keys Tine EPiano Tine Soft Chip YM3438",
     "params": {
@@ -33279,7 +33279,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 33.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Buzz Level Loud Release Long",
     "params": {
@@ -33396,7 +33396,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 33.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Buzz Level Loud Release Short",
     "params": {
@@ -33747,7 +33747,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 30.5
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Bass Detuned Unison3 Decay Accent",
     "params": {
@@ -33863,7 +33863,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 26.0
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Bass Detuned Unison3 Decay Pluck",
     "params": {
@@ -33979,7 +33979,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 30.5
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Bass Detuned Unison5 Decay Accent",
     "params": {
@@ -34095,7 +34095,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 26.5
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Bass Detuned Unison5 Decay Pluck",
     "params": {
@@ -34441,7 +34441,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay14",
     "params": {
@@ -34557,7 +34557,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay14 OctUp",
     "params": {
@@ -34674,7 +34674,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay6",
     "params": {
@@ -34790,7 +34790,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Periodic Pluck Decay6 OctUp",
     "params": {
@@ -34907,7 +34907,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 32.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Periodic Sub Level Loud",
     "params": {
@@ -35139,7 +35139,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 31.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Pluck Decay16",
     "params": {
@@ -35713,7 +35713,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Square Level Loud",
     "params": {
@@ -35828,7 +35828,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Square Level Loud Range Up",
     "params": {
@@ -36406,7 +36406,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 31.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Staccato Decay8",
     "params": {
@@ -36521,7 +36521,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 31.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Bass Staccato Decay8 Range Up",
     "params": {
@@ -37101,7 +37101,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 31.0
     },
     "name": "Genesis PSG Drums Blip NoiseRate0 Level Loud",
     "params": {
@@ -37335,7 +37335,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Blip NoiseRate3 Level Loud",
     "params": {
@@ -37569,7 +37569,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Kick Decay12 NoiseRate1",
     "params": {
@@ -37686,7 +37686,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Kick Decay12 NoiseRate2",
     "params": {
@@ -37803,7 +37803,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Kick Decay6 NoiseRate1",
     "params": {
@@ -37920,7 +37920,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Kick Decay6 NoiseRate2",
     "params": {
@@ -38037,7 +38037,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 31.0
     },
     "name": "Genesis PSG Drums Metal Hit Decay20 Level Loud",
     "params": {
@@ -38271,7 +38271,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 31.0
     },
     "name": "Genesis PSG Drums Metal Hit Decay6 Level Loud",
     "params": {
@@ -38505,7 +38505,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Tom Decay16",
     "params": {
@@ -38621,7 +38621,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Tom Decay16 OctDown",
     "params": {
@@ -38738,7 +38738,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Tom Decay8",
     "params": {
@@ -38854,7 +38854,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Tom Decay8 OctDown",
     "params": {
@@ -38971,7 +38971,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 33.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Closed Hat Decay2 Level Loud",
     "params": {
@@ -39205,7 +39205,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 34.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Closed Hat Decay4 Level Loud",
     "params": {
@@ -39439,7 +39439,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 33.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Crash Decay40 Level Loud",
     "params": {
@@ -39673,7 +39673,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 34.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Crash Decay60 Level Loud",
     "params": {
@@ -39907,7 +39907,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 34.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Noise Snare Decay12 NoiseRate1",
     "params": {
@@ -40024,7 +40024,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 35.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Noise Snare Decay12 NoiseRate2",
     "params": {
@@ -40141,7 +40141,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 35.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Noise Snare Decay6 NoiseRate1",
     "params": {
@@ -40258,7 +40258,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Noise Snare Decay6 NoiseRate2",
     "params": {
@@ -40375,7 +40375,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 34.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Open Hat Decay10 Level Loud",
     "params": {
@@ -40609,7 +40609,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 34.5
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Open Hat Decay16 Level Loud",
     "params": {
@@ -40843,7 +40843,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 32.5
     },
     "name": "Genesis PSG Drums Pitched Noise Decay16 OctUp",
     "params": {
@@ -40961,7 +40961,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Pitched Noise Decay16 OctUp2",
     "params": {
@@ -41079,7 +41079,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 34.5
     },
     "name": "Genesis PSG Drums Pitched Noise Decay8 OctUp",
     "params": {
@@ -41197,7 +41197,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 512,
-      "preset_gain": 36.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Drums Pitched Noise Decay8 OctUp2",
     "params": {
@@ -41781,7 +41781,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 25.0
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Lead Detuned Pluck Unison1 Decay20",
     "params": {
@@ -42015,7 +42015,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 25.0
+      "preset_gain": 24.5
     },
     "name": "Genesis PSG Lead Detuned Pluck Unison3 Decay20",
     "params": {
@@ -43755,7 +43755,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 31.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Lead Pluck Decay12",
     "params": {
@@ -43870,7 +43870,7 @@
       "glide_mode": 0,
       "glide_time": 0.0,
       "poly_channels": 448,
-      "preset_gain": 31.0
+      "preset_gain": 30.5
     },
     "name": "Genesis PSG Lead Pluck Decay24",
     "params": {

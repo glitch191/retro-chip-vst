@@ -102,6 +102,7 @@ into docs/HARDWARE_NOTES.md.
   chip output in the existing gain ramp, on the main and channel buses, so channel ratios
   and the NES non-linear mixer are unchanged. The generator's measure is the stereo RMS of
   the 10 ms windows of the held C4 within 20 dB of the loudest one, targeted at -18 dBFS,
-  with the sample peak kept at or below -1 dBFS (docs/PRESET_SPECS.md, "Playing level").
+  with the sample peak kept at or below -1 dBFS at velocity 100 and at velocity 127
+  (docs/PRESET_SPECS.md, "Playing level").
 * Alternative: RMS over the whole hold (percussive sounds would all end at the peak
   ceiling), a loudness model (ITU-R BS.1770 K-weighting), or a per-chip gain.

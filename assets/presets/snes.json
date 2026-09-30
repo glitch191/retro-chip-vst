@@ -3,7 +3,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 1.5
     },
     "name": "SNES Bass Finger",
     "params": {
@@ -56,7 +56,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 1.5
     },
     "name": "SNES Bass Finger OctDown",
     "params": {
@@ -110,7 +110,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 2.0
     },
     "name": "SNES Bass Finger Pluck",
     "params": {
@@ -164,7 +164,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 2.5
     },
     "name": "SNES Bass Finger Pluck OctDown",
     "params": {
@@ -328,7 +328,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.5
     },
     "name": "SNES Bass Saw OctDown Pluck",
     "params": {
@@ -384,7 +384,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.5
     },
     "name": "SNES Bass Saw Pluck",
     "params": {
@@ -820,7 +820,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 2.0
     },
     "name": "SNES Bass Slap Pop OctDown",
     "params": {
@@ -1036,7 +1036,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 2.0
     },
     "name": "SNES Bass Synth Pluck OctDown",
     "params": {
@@ -1420,7 +1420,7 @@
     "category": "Bass",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 2.5
     },
     "name": "SNES Bass Muted",
     "params": {
@@ -2256,7 +2256,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.5
+      "preset_gain": 2.0
     },
     "name": "SNES Drums Clap",
     "params": {
@@ -2309,7 +2309,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 2.0
     },
     "name": "SNES Drums Clap Down5",
     "params": {
@@ -2363,7 +2363,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.5
+      "preset_gain": 2.0
     },
     "name": "SNES Drums Clap Up4",
     "params": {
@@ -2526,7 +2526,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.0
+      "preset_gain": 5.0
     },
     "name": "SNES Drums Closed Hat Up7",
     "params": {
@@ -2745,7 +2745,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 1.5
     },
     "name": "SNES Drums Cowbell",
     "params": {
@@ -2799,7 +2799,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 1.5
     },
     "name": "SNES Drums Cowbell Down7",
     "params": {
@@ -2965,7 +2965,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Crash",
     "params": {
@@ -3019,7 +3019,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Crash Choke",
     "params": {
@@ -3074,7 +3074,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Crash Choke Down5",
     "params": {
@@ -3130,7 +3130,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Crash Down5",
     "params": {
@@ -3185,7 +3185,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.5
+      "preset_gain": 1.5
     },
     "name": "SNES Drums High Tom",
     "params": {
@@ -3238,7 +3238,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.5
+      "preset_gain": 1.5
     },
     "name": "SNES Drums High Tom Down5",
     "params": {
@@ -3726,7 +3726,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 1.0
     },
     "name": "SNES Drums Low Tom",
     "params": {
@@ -3779,7 +3779,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 1.0
     },
     "name": "SNES Drums Low Tom Down5",
     "params": {
@@ -3888,7 +3888,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 2.0
     },
     "name": "SNES Drums Low Tom Short",
     "params": {
@@ -4158,7 +4158,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 4.0
     },
     "name": "SNES Drums Open Hat",
     "params": {
@@ -4212,7 +4212,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 4.0
     },
     "name": "SNES Drums Open Hat Choke",
     "params": {
@@ -4267,7 +4267,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 4.0
     },
     "name": "SNES Drums Open Hat Choke Down3",
     "params": {
@@ -4323,7 +4323,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 4.0
     },
     "name": "SNES Drums Open Hat Down3",
     "params": {
@@ -4378,7 +4378,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Ride",
     "params": {
@@ -4432,7 +4432,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Ride Choke",
     "params": {
@@ -4487,7 +4487,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Ride Choke Up3",
     "params": {
@@ -4543,7 +4543,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Ride Up3",
     "params": {
@@ -4598,7 +4598,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 1.5
     },
     "name": "SNES Drums Rim",
     "params": {
@@ -4652,7 +4652,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 1.5
     },
     "name": "SNES Drums Rim Down5",
     "params": {
@@ -4707,7 +4707,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.0
+      "preset_gain": 1.5
     },
     "name": "SNES Drums Rim Up7",
     "params": {
@@ -4762,7 +4762,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 10.0
+      "preset_gain": 8.0
     },
     "name": "SNES Drums Shaker",
     "params": {
@@ -4816,7 +4816,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 9.5
+      "preset_gain": 8.5
     },
     "name": "SNES Drums Shaker Down5",
     "params": {
@@ -5196,7 +5196,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.5
+      "preset_gain": 4.5
     },
     "name": "SNES Drums Tambourine",
     "params": {
@@ -5250,7 +5250,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 9.0
+      "preset_gain": 7.0
     },
     "name": "SNES Drums Tambourine Short",
     "params": {
@@ -5305,7 +5305,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.0
+      "preset_gain": 1.0
     },
     "name": "SNES Drums Timpani",
     "params": {
@@ -5360,7 +5360,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.0
+      "preset_gain": 1.0
     },
     "name": "SNES Drums Timpani Down5",
     "params": {
@@ -5416,7 +5416,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 1.0
     },
     "name": "SNES Drums Timpani Up5",
     "params": {
@@ -5640,7 +5640,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 11.5
+      "preset_gain": 9.5
     },
     "name": "SNES Drums Dynamic Hat Ghost Note",
     "params": {
@@ -5806,7 +5806,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 1.5
+      "preset_gain": 0.0
     },
     "name": "SNES Drums Dynamic Rim Accent Note",
     "params": {
@@ -6028,7 +6028,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 1.0
+      "preset_gain": 0.0
     },
     "name": "SNES Drums Dynamic Timpani Accent Note",
     "params": {
@@ -6142,7 +6142,7 @@
     "category": "Drums",
     "chip": "snes",
     "global": {
-      "preset_gain": 0.5
+      "preset_gain": 0.0
     },
     "name": "SNES Drums Dynamic Tom Accent Note",
     "params": {
@@ -6577,7 +6577,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.5
+      "preset_gain": 5.0
     },
     "name": "SNES Instrument Brass Stab",
     "params": {
@@ -6631,7 +6631,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 3.5
     },
     "name": "SNES Instrument Brass Stab Echo Deep",
     "params": {
@@ -7512,7 +7512,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 6.0
+      "preset_gain": 5.0
     },
     "name": "SNES Instrument Trombone Stab",
     "params": {
@@ -7567,7 +7567,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.5
+      "preset_gain": 5.0
     },
     "name": "SNES Instrument Trombone Stab Echo Deep",
     "params": {
@@ -7623,7 +7623,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Muted Guitar",
     "params": {
@@ -7677,7 +7677,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Muted Guitar Echo Std",
     "params": {
@@ -7732,7 +7732,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument Nylon Guitar",
     "params": {
@@ -7785,7 +7785,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument Nylon Guitar Echo Deep",
     "params": {
@@ -7839,7 +7839,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 2.5
     },
     "name": "SNES Instrument Nylon Guitar Pluck",
     "params": {
@@ -7893,7 +7893,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 2.5
     },
     "name": "SNES Instrument Nylon Guitar Pluck Echo Deep",
     "params": {
@@ -7948,7 +7948,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Steel Guitar",
     "params": {
@@ -8001,7 +8001,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Steel Guitar Echo Deep",
     "params": {
@@ -8055,7 +8055,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Steel Guitar Vib",
     "params": {
@@ -8109,7 +8109,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Steel Guitar Vib Echo Deep",
     "params": {
@@ -9040,7 +9040,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument EPiano",
     "params": {
@@ -9147,7 +9147,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument EPiano Vib",
     "params": {
@@ -9256,7 +9256,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.5
     },
     "name": "SNES Instrument Grand Piano",
     "params": {
@@ -9309,7 +9309,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument Grand Piano Decay Long",
     "params": {
@@ -9418,7 +9418,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.5
+      "preset_gain": 1.5
     },
     "name": "SNES Instrument Grand Piano Decay Long Echo Room",
     "params": {
@@ -9527,7 +9527,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.5
+      "preset_gain": 2.5
     },
     "name": "SNES Instrument Grand Piano Echo Room",
     "params": {
@@ -9581,7 +9581,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument Upright Piano",
     "params": {
@@ -9634,7 +9634,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 4.0
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument Upright Piano Echo Deep",
     "params": {
@@ -9688,7 +9688,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Upright Piano Tone Bell",
     "params": {
@@ -9742,7 +9742,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES Instrument Upright Piano Tone Bell Echo Deep",
     "params": {
@@ -9797,7 +9797,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 2.5
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument Vibraphone",
     "params": {
@@ -9851,7 +9851,7 @@
     "category": "Instrument",
     "chip": "snes",
     "global": {
-      "preset_gain": 3.5
+      "preset_gain": 2.0
     },
     "name": "SNES Instrument Vibraphone Echo Std",
     "params": {
@@ -17921,7 +17921,7 @@
     "category": "SFX",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.5
     },
     "name": "SNES SFX PMON Metal",
     "params": {
@@ -17975,7 +17975,7 @@
     "category": "SFX",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.5
     },
     "name": "SNES SFX PMON Metal Echo Room",
     "params": {
@@ -18030,7 +18030,7 @@
     "category": "SFX",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES SFX PMON Metal Up7",
     "params": {
@@ -18085,7 +18085,7 @@
     "category": "SFX",
     "chip": "snes",
     "global": {
-      "preset_gain": 5.0
+      "preset_gain": 3.0
     },
     "name": "SNES SFX PMON Metal Up7 Echo Room",
     "params": {

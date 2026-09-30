@@ -800,17 +800,18 @@ Sources: product-owner decision 2026-09-30; docs/PRESET_SPECS.md ("Playing level
 Decision: a preset-managed global `preset_gain` (-24..+36 dB, default 0, no panel control)
 multiplies the main and channel outputs after the chip, in the same ramp as `master_gain`,
 so channel ratios and the NES mixer curve are untouched. The generator sets it from the
-`chiptool features` long pass (C4, velocity 100, held 1.4 s): stereo RMS over the 10 ms
-windows of the hold within 20 dB of the loudest window (the part where the note sounds) to
--18 dBFS, peak of either channel over both passes at or below -1 dBFS, rounded to 0.5 dB.
-Results on 2026-09-30: NES +7.0..+27.0 dB (median +15.0), SNES -11.5..+11.5 (median -0.5),
-Genesis +2.5..+36.0 (median +12.5); 40 Genesis PSG presets stop at the +36 dB bound
-(still below the target), 118 presets are limited by the peak ceiling. Level variants
-("Level Soft", ghost notes) now play at the common level unless the peak or the bound
-limits them. The measure is taken at velocity 100: at velocity 127 the peak rises by a
-median 1.6 / 2.1 / 3.0 dB (NES / SNES / Genesis, max 2.6 / 2.8 / 6.0 dB on every fourth
-preset), and 30 of those 262 presets reach 0 dBFS on a single C4 (open: a velocity-127 peak
-pass would lower the peak-limited presets by that amount).
+`chiptool features` renders: stereo RMS of the long pass at velocity 100 (C4, held 1.4 s)
+over the 10 ms windows of the hold within 20 dB of the loudest window (the part where the
+note sounds) to -18 dBFS; peak of either channel over the long and short passes at
+velocity 100 and at velocity 127 at or below -1 dBFS (the ceiling promised to the product
+owner holds at full velocity); rounded to 0.5 dB. Results on 2026-09-30: NES +7.0..+27.0 dB
+(median +15.0), SNES -11.5..+9.5 (median -0.5), Genesis +2.5..+36.0 (median +12.5);
+260 presets are limited by the peak ceiling (NES 90, SNES 78, Genesis 92), 17 Genesis PSG
+presets stop at the +36 dB bound (3.3 to 10.8 dB below the target). The velocity-127 peak
+is a median 1.6 / 2.1 / 3.6 dB above the velocity-100 one (NES / SNES / Genesis, max 2.3 /
+3.3 / 6.0 dB), so peak-limited presets play their velocity-100 note that much below
+-1 dBFS. Level variants ("Level Soft", ghost notes) now play at the common level unless the
+peak or the bound limits them.
 Alternative: RMS over the whole hold (percussive presets would all sit at the peak
 ceiling), or loudness weighting (ITU-R BS.1770) instead of plain RMS.
 

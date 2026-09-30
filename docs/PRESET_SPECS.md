@@ -91,23 +91,27 @@ chip output without `preset_gain`.
 
 The chip output is hardware-relative, so each preset carries `global.preset_gain` (dB,
 -24..+36), which the plugin applies after the chip together with `master_gain`. The
-generator derives it from the long pass of `chiptool features` (C4, velocity 100, 48 kHz,
-held 1.4 s of 2 s, after the 0.4 s pre-roll), which is rendered without `preset_gain`:
+generator derives it from `chiptool features` (48 kHz, after the 0.4 s pre-roll), which
+renders without `preset_gain`: the loudness from the long pass at velocity 100 (C4, held
+1.4 s of 2 s), the peak ceiling from both passes at velocity 100 and at velocity 127, so
+that it holds at every velocity:
 
 * `held_rms_db`: stereo RMS (mean of the left and right squares) over the 10 ms windows
   between note-on and note-off whose RMS is within 20 dB of the loudest window, i.e. the
   part of the hold where the note sounds; dBFS with 1.0 = 0 dBFS (a full-scale sine is
   -3 dBFS);
 * `peak_db`, `peak_short_db`: largest absolute sample of either channel over the long pass
-  and over the short pass (C3, 80 ms).
+  and over the short pass (C3, 80 ms) at velocity 100; `peak_v127_db`,
+  `peak_short_v127_db`: the same two renders at velocity 127.
 
-Rule: `gain = min(-18 - held_rms_db, -1 - max(peak_db, peak_short_db))`, rounded to the
+Rule: `gain = min(-18 - held_rms_db, -1 - max(the four peaks))`, rounded to the
 nearest 0.5 dB, lowered by 0.5 dB when the rounding would put the peak above -1 dBFS, and
 clamped to -24..+36 dB. The held note then plays at about -18 dBFS RMS unless its peak
 reaches -1 dBFS first (percussive and decaying sounds) or the +36 dB bound stops it (the
 softest PSG variants). Arpeggiator presets are measured as the single note the features
 render plays, like the others. A silent render keeps 0 dB; a preset without features gets
-no `preset_gain` (the plugin then uses 0 dB). Only `gen_presets.py --features` writes it;
+no `preset_gain` (the plugin then uses 0 dB), and so does an entry without the four peaks
+(a features file from before 2026-09-30). Only `gen_presets.py --features` writes it;
 the candidate banks of step 3 in the README have none. The report lists the distribution
 per chip.
 

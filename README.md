@@ -160,8 +160,8 @@ The chip output is relative to the hardware and is not normalised: one NES pulse
 volume 12 is about -33 dBFS RMS, one Genesis FM channel about -26 dBFS RMS, one PSG tone
 about -45 dBFS. Each factory preset sets `preset_gain` (-24..+36 dB, no panel control),
 which the plugin applies after the chip together with `master_gain`, so a held note plays
-at about -18 dBFS RMS with its peak at or below -1 dBFS (measured at C4, velocity 100;
-higher velocities can go up to 6 dB louder). The ratios between channels and the NES
+at about -18 dBFS RMS (C4, velocity 100) with its peak at or below -1 dBFS at every
+velocity up to 127. The ratios between channels and the NES
 mixer curve are unchanged. Presets that do not set it (user presets saved before it
 existed) play at the chip level. `master_gain` (-24..+12 dB) stays the user's control.
 
@@ -437,10 +437,11 @@ separate tool downloaded for validation and is not linked.
 * The scope of the MIDI Channel Mode messages (CC 120/121/123 per channel) follows
   general knowledge of the MIDI 1.0 specification; the document was not re-read.
 * Levels are hardware-relative at the chip output; the factory presets' `preset_gain`
-  evens them out. 40 Genesis PSG presets (soft level variants) stop at the +36 dB bound,
-  up to 11 dB below the -18 dBFS target, and level variants ("Level Soft", ghost notes) now play
-  near the common level. The gain is measured at velocity 100: velocity 127 can put a
-  single note above 0 dBFS (30 of 262 sampled presets).
+  evens them out. 17 Genesis PSG presets (soft level variants) stop at the +36 dB bound,
+  3-11 dB below the -18 dBFS target; presets whose velocity-127 peak reaches the -1 dBFS
+  ceiling (260 of 1042) play their velocity-100 note below the target; and level variants
+  ("Level Soft", ghost notes) now play near the common level. The ceiling is checked for a
+  single note: chords and the arpeggiator's overlapping notes can exceed it.
 * The DC blocker (5 Hz) and the output coupling behaviour at reset are modelling
   choices, not measured hardware values.
 * `poly_channels` has no editor control.
