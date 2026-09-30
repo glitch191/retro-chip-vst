@@ -37,6 +37,11 @@ Diagnostics overlay (detected refresh rate, frame cost, repaints per second).
 
 ![Diagnostics overlay](docs/images/editor-nes-diagnostics.png)
 
+Preset search over the three chips ("warm"): results grouped by chip with a chip tag,
+the name and the category / subcategory; the header line counts the results per chip.
+
+![Preset search](docs/images/editor-search.png)
+
 Screenshots are taken by the standalone build's capture hook (`RCV_SCREENSHOT`, see
 `plugin/src/PluginEditor.h`) with a held chord so the scopes show real waveforms.
 
@@ -259,12 +264,32 @@ slots, `clock`, `chip_revision`, `console_filter`, `model1_lowpass`, `main_volum
 
 ### Presets and samples
 
-The preset browser has a two-level menu (category, then subcategory), a search box
-(name and tags; Up/Down select, Return loads, Escape clears) and previous/next buttons.
-Banks: NES 311, SNES 338, Genesis 393 presets. The preset menu also has "Export current
-settings..." (JSON) and "Import sample into slot N..." (a WAV into the slot the chip's
-sample parameter points to; root note 60, one-shot). Imported samples are saved in the
-plugin state. Loading a preset clears the chip's other factory samples, so any sequence
+The preset browser has a two-level menu (category, then subcategory) for the current
+chip, a search field over all three chips, and previous/next buttons. Banks: NES 311,
+SNES 338, Genesis 393 presets.
+
+Search: type one or more words; a preset is listed when every word matches (any case) a
+part of its name, category, subcategory or tags, or names its chip (`nes`, `snes`,
+`genesis` or `gen`, which select that chip only). Examples: `bass` (every bass category,
+name and tag on the three chips), `genesis bass`, `pad echo`, `nes lead vibrato`. Results
+are grouped by chip (NES, SNES, Genesis, then category, subcategory and name); each row
+shows a chip tag (NES / SNES / GEN), the name and "Category / Subcategory", and the list
+header gives the count per chip, or "No preset matches". Click a result, or use Up/Down
+and Return, to load it: a result of another chip switches the chip and its panel, and the
+search stays. Previous/Next then walk through the results, across chips. Escape clears
+the search.
+
+Keyboard: while the search field has the focus it takes every key, so typing a search
+does not also play the host's computer-keyboard notes (Renoise and others); Ctrl and Alt
+shortcuts the field does not use still reach the host. Escape, Return on a result or a
+click anywhere else in the editor hands the keyboard back to the host. Limit: this relies
+on JUCE's Windows key handling (the plugin reports each key as handled); a host that reads
+the keyboard by other means may still see the keys. It is covered by the plugin tests up
+to JUCE's key handling; the behaviour inside Renoise can only be checked by hand.
+
+The preset menu also has "Export current settings..." (JSON) and "Import sample into
+slot N..." (a WAV into the slot the chip's sample parameter points to; root note 60,
+one-shot). Imported samples are saved in the plugin state. Loading a preset clears the chip's other factory samples, so any sequence
 of presets fits the SNES APU RAM. Failed loads are shown under the sidebar forms.
 
 ### Sample provenance
@@ -409,6 +434,23 @@ a monophonic phrase on the preset's hardware channel.
   pluginval's exit code. Strictness 5 passed on 2026-09-30 (strictness 10 last passed on
   2026-09-29); the VST3 validator step is skipped because no validator path is set.
 
+## Continuous integration
+
+`.github/workflows/build.yml` runs on GitHub Actions (Windows runner) for every push to
+`main`, every pull request and on demand:
+
+1. `.\build.ps1 -Preset windows-x64-release` (configure, build, ctest);
+2. `.\tools\run_pluginval.ps1 -Strictness 5`;
+3. the `.vst3` bundle, zipped as `RetroChip-VST3-win64.zip`, is kept as a run artefact
+   (Actions tab, run page, "Artifacts"), with the pluginval reports.
+
+Pushing a tag that starts with `v` (for example `git tag v0.1.0` then
+`git push origin v0.1.0`) also creates a GitHub Release of that tag with the zip
+attached. Unzip it and copy the `Retro Chip.vst3` folder into
+`C:\Program Files\Common Files\VST3`. The plugin version comes from `project(VERSION)` in
+`CMakeLists.txt`, not from the tag, so keep the two in step. Publishing a binary is
+subject to the JUCE licence (see "Licence").
+
 ## Performance
 
 Measured with `build\windows-x64-release\dsp\bench\chipdsp_bench.exe --seconds 5` on an
@@ -450,8 +492,9 @@ separate tool downloaded for validation and is not linked.
   documented tables and formulas, the tests and the reference-emulator check; the presets
   were checked by rendered features and objective measurements. The A/B listening set
   (`tools/render_listening.py`) is ready but nobody has listened to it yet.
-* Renoise was not tested by the developer (multi-out routing, automation, state recall).
-  The product owner validates it by hand.
+* Renoise was not tested by the developer (multi-out routing, automation, state recall,
+  typing in the preset search without playing the computer-keyboard notes). The product
+  owner validates it by hand.
 * The editor was not measured on a 360 Hz display.
 * The pluginval VST3 validator step was skipped (no validator path set).
 * Only Windows x64 and VST3 are built. The Standalone target

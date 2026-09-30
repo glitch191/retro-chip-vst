@@ -147,13 +147,32 @@ above; with no current preset, removing a user sample from that slot brings the 
 sample back. The SNES panel lists the loaded slots and the free APU RAM ("Samples" box).
 
 API: `loadBanks()`, `categories(chip)`, `subcategories(chip, category)`,
-`presets(chip, category, subcategory)`, `search(chip, text)` (case-insensitive
-substring over name and tags), `apply(const Preset&)` (sets parameters through the
-APVTS on the message thread, then loads samples), `current()`, `exportCurrent(File)`,
-`importFile(File)`, and `next()/previous()` inside the current filtered list. `apply` writes
-the engine parameters, the preset-managed globals (`arp_*`, `glide_*`, `poly_channels`,
-`preset_gain`; a missing key takes the default) and the samples first and the `chip`
-last, each write in its own change gesture.
+`presets(chip, category, subcategory)`, `search(chip, text)` (one chip, bank order),
+`searchAll(text)` (every chip, used by the editor), `apply(const Preset&)` (sets
+parameters through the APVTS on the message thread, then loads samples), `current()`,
+`exportCurrent(File)`, `importFile(File)`, and `next()/previous()` inside the current
+filtered list (the last `presets`, `search` or `searchAll` result, so after a cross-chip
+search Previous/Next may change the chip). `apply` writes the engine parameters, the
+preset-managed globals (`arp_*`, `glide_*`, `poly_channels`, `preset_gain`; a missing key
+takes the default) and the samples first and the `chip` last, each write in its own change
+gesture; `isApplying()` is true meanwhile, so the editor can tell a preset's chip change
+from the chip selector.
+
+Search rule (`Preset::matches`, shared by `search` and `searchAll`):
+
+* The text is split into words at white space; every word must match (AND), each one on
+  any field. Matching ignores case. Empty text matches every preset.
+* A word that names a chip (`nes`, `snes`, `genesis`, or `gen`, the chip label of the
+  results list) matches the presets of that chip and nothing else, so "genesis bass" and
+  "nes lead" work. Chip words are exact words, not substrings: every factory SNES name
+  starts with "SNES", which contains "nes", so a substring rule would make "nes" return
+  the SNES bank too.
+* Any other word matches when it is a substring of the name, the category, the
+  subcategory or one of the tags ("bass" finds the Bass and FM Bass categories and every
+  name or tag containing "bass"; "pad echo" finds SNES Pad / Echo).
+* `searchAll` sorts the results by chip (NES, SNES, Genesis), then category, subcategory
+  and name (natural order, ignoring case). About 1042 presets are scanned per call, on the
+  message thread, when the search text changes.
 
 ## Randomizer (`Randomizer.h/.cpp`)
 
@@ -201,9 +220,22 @@ write indices, read by the UI. No locks.
   from `ParamInfo` groups in the order listed in ENGINE_SPECS.md; only the active chip's
   panel is visible. No effects section for NES and Genesis.
 * `CommonStrip`: chip selector, preset browser (two-level menu: category then
-  subcategory, plus a search box filtering by name), previous/next, randomize amount +
-  button, arpeggiator knobs, glide knobs, raw output toggle, voice mode, master gain,
-  UI scale.
+  subcategory, plus a search field over all three chips), previous/next, randomize
+  amount + button, arpeggiator knobs, glide knobs, raw output toggle, voice mode, master
+  gain, UI scale.
+* Preset search: the field ("Search all presets") runs `searchAll` at each text change and
+  shows the results in a list under it (640 px wide, right-aligned to the field, up to 16
+  rows of 24 px before it scrolls). The list's header line gives the total and the count
+  per chip ("193 presets match: NES 61, SNES 41, Genesis 91") or "No preset matches". Rows
+  are grouped under a bold chip header ("SNES (41)", not selectable); each result row shows
+  a fixed-width chip tag ("NES", "SNES", "GEN": surface fill, 1 px border, 4 px radius, body
+  text), the preset name, and "Category / Subcategory" in the dim text colour; a row cut
+  with an ellipsis has a tooltip with the full text. Choosing a result (click, or Up/Down
+  then Return; Return alone takes the first result) applies it: a result of another chip
+  switches `chip`, the panel follows, and the search text stays; the results become the
+  Previous/Next list. Escape clears the search. Changing the chip with the chip selector
+  clears the search. No timer is involved; the list repaints only when the text or the
+  selection changes.
 * `ChannelScope`: one small waveform per hardware channel of the active chip plus main,
   reading `VisualizerBuffers`; repaints only when new samples arrived.
 * `DiagnosticsOverlay`: toggled from the strip (button "Diagnostics"): detected refresh
@@ -216,9 +248,25 @@ write indices, read by the UI. No locks.
   (verify with the diagnostics repaint counter at rest = 0). The text caret does not
   blink, so a focused search field is at rest too. Scopes read their rings at most at
   about 60 Hz and skip rings that only received silence.
-* Keyboard: only the preset search field takes keyboard focus (Up/Down choose a match,
-  Return loads it, Escape clears); a click elsewhere never moves focus to another control,
-  so the host keeps Space and the arrow keys.
+* Keyboard: only the preset search field takes keyboard focus (Up/Down choose a result,
+  Return loads it, Escape clears). While it has the focus it consumes every key it gets
+  (characters, Space, Backspace, Delete, arrows, Home/End, Tab, function keys, Return,
+  Escape): `keyPressed` and `keyStateChanged` return true, so JUCE reports each key as
+  handled and the host does not also use it (computer-keyboard note input in Renoise and
+  others). Combinations with Ctrl or Alt that the text editor does not use (host shortcuts
+  such as Ctrl+S, Alt+F4) pass to the host. Escape, Return on a result and a mouse press
+  anywhere else in the editor give the keyboard back: no component keeps the focus and, in
+  a host window on Windows, the native focus returns to the host's parent window
+  (`ui/KeyboardFocus.h`). Other controls never keep the focus, so the host keeps Space and
+  the arrow keys. `EDITOR_WANTS_KEYBOARD_FOCUS` is TRUE; in JUCE 9 it only changes the macOS
+  wrappers and VST2 (`effKeysRequired`): on Windows the VST3 wrapper does not implement
+  `IPlugView::onKeyDown`, and keys reach the editor as window messages through JUCE's
+  thread message hook, which swallows a key when the focused component reports it handled
+  (with a text field focused, a key that produces a character is swallowed as soon as
+  TranslateMessage produces it; the others when the field reports them handled). Limit: a
+  host that reads the keyboard another way (raw input, a low-level hook, or keys sent only
+  through `onKeyDown`) can still see the keys; this is checked by the plugin tests up to
+  JUCE's key handling, and in Renoise by hand.
 * Text that can be cut with an ellipsis (preset name, search results, scope names, group
   titles, cluster captions, combo values in the operator grid) has a tooltip with the
   full text.
