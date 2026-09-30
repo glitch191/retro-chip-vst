@@ -129,8 +129,11 @@ inline constexpr int kPopupItemHeight = 24;      // popup menu, list and tooltip
 
 // ----- header widgets -------------------------------------------------------------------------
 inline constexpr int kSearchWidth = 160;         // preset search field
-inline constexpr int kResultsWidth = 320;        // search results list under the field
-inline constexpr int kResultsMaxRows = 12;       // rows shown before the list scrolls
+inline constexpr int kResultsWidth = 640;        // search results list under the field (right-aligned to it)
+inline constexpr int kResultsMaxRows = 16;       // rows shown before the list scrolls (24 px each)
+inline constexpr int kChipTagWidth = 44;         // "NES" / "SNES" / "GEN" label of a result row
+inline constexpr int kChipTagHeight = 20;        // inside the 24 px row: 2 px above and below
+inline constexpr int kResultsCategoryWidth = 160;  // "Category / Subcategory" column of a result row
 inline constexpr int kScaleBoxWidth = 84;        // UI scale combo box
 
 // ----- diagnostics overlay --------------------------------------------------------------------

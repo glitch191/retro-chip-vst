@@ -31,7 +31,15 @@ struct Preset
 
     const float* param (const juce::String& key) const noexcept;
     const float* globalValue (const juce::String& id) const noexcept;
-    bool matches (const juce::String& text) const;               // case-insensitive substring over name and tags
+    // Search rule (docs/PLUGIN_SPECS.md "Presets"): the text is split into words at white
+    // space; every word must match (AND), each on its own field. A word that names a chip
+    // ("nes", "snes", "genesis" or "gen", any case) matches the presets of that chip only;
+    // any other word matches when it is a case-insensitive substring of the name, the
+    // category, the subcategory or one of the tags. Empty text matches everything.
+    bool matches (const juce::String& text) const;
+    bool matchesWords (const juce::StringArray& words) const;
+    static juce::StringArray searchWords (const juce::String& text);
+    static std::optional<chipdsp::ChipId> chipForSearchWord (const juce::String& word);
 
     juce::var toVar() const;
     static bool fromVar (const juce::var& document, Preset& out);
@@ -73,7 +81,7 @@ struct UserSample
 // holding user-imported samples are kept unless the preset writes that slot. A load that
 // fails is logged and reported through sampleStatus().
 //
-// Navigation: presets() and search() also become the "current filtered list" used by
+// Navigation: presets(), search() and searchAll() also become the "current filtered list" used by
 // next()/previous(); filtered() returns it. Pointers returned by the queries stay valid
 // until the next loadBanks()/importFile().
 //
@@ -110,7 +118,13 @@ public:
     juce::StringArray categories (chipdsp::ChipId chip) const;
     juce::StringArray subcategories (chipdsp::ChipId chip, const juce::String& category) const;
     std::vector<const Preset*> presets (chipdsp::ChipId chip, const juce::String& category = {}, const juce::String& subcategory = {});
+    // One chip, bank order (factory, then user presets); Preset::matches() rule.
     std::vector<const Preset*> search (chipdsp::ChipId chip, const juce::String& text);
+    // Every chip at once (the editor's search field), Preset::matches() rule, sorted by
+    // chip (NES, SNES, Genesis), then category, subcategory and name (natural order,
+    // case-insensitive). Empty text returns every preset. Like search(), the result also
+    // becomes the Previous/Next list, so next()/previous() may cross chips.
+    std::vector<const Preset*> searchAll (const juce::String& text);
     const std::vector<const Preset*>& filtered() const noexcept { return filteredList; }
     const Preset* findByName (chipdsp::ChipId chip, const juce::String& name) const noexcept;
 
@@ -173,6 +187,11 @@ public:
     // Incremented by every apply(); lets the processor tell a preset's chip change apart
     // from a chip change made through the parameter alone.
     int applyCount() const noexcept { return applies; }
+
+    // True while apply() runs. Parameter listeners called synchronously from it (the
+    // editor's chip attachment) use it to tell a chip change made by a preset apart from
+    // one the user made with the chip selector.
+    bool isApplying() const noexcept { return applying; }
 
     // ----- helpers shared with the UI ----------------------------------------------------
     static bool decodeWav (const void* data, size_t numBytes, juce::AudioBuffer<float>& out, double& sampleRate);
@@ -245,6 +264,7 @@ private:
     Preset currentPreset;
     bool hasCurrent = false;
     int applies = 0;
+    bool applying = false;
     std::vector<UserSample> samples;
 
     juce::CriticalSection snapshotLock;   // message thread vs. the host's state thread; never the audio thread
