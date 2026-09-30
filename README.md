@@ -14,6 +14,32 @@ composers used sample CDs; the NES DMC set, the chip waveforms, noises, pads, gu
 choirs and synth basses are procedural. All behaviour was implemented from public
 documentation only (`docs/SOURCES.md`). No emulator source code was read or used.
 
+## Screenshots
+
+The editor at 100 % scale (1280 x 720), one panel per chip. The strip at the bottom shows
+one scope per hardware channel plus the main output.
+
+NES: two pulses, triangle, noise and DMC, with the arpeggiator, glide and output sidebar.
+
+![NES panel](docs/images/editor-nes.png)
+
+SNES: instrument (sample, ADSR/GAIN, vibrato, noise, pitch modulation), echo with FIR
+presets and per-voice echo, and the loaded samples with the free APU RAM.
+
+![SNES panel](docs/images/editor-snes.png)
+
+Genesis: FM patch, the four-operator grid, DAC, PSG and the global chip settings (clock,
+chip revision, Model 1 low-pass, LFO).
+
+![Genesis panel](docs/images/editor-genesis.png)
+
+Diagnostics overlay (detected refresh rate, frame cost, repaints per second).
+
+![Diagnostics overlay](docs/images/editor-nes-diagnostics.png)
+
+Screenshots are taken by the standalone build's capture hook (`RCV_SCREENSHOT`, see
+`plugin/src/PluginEditor.h`) with a held chord so the scopes show real waveforms.
+
 ## Prerequisites
 
 * Windows 10 or 11, x64.
@@ -275,8 +301,9 @@ The `Diagnostics` button in the strip shows an overlay (off by default, no cost 
 * Repaints: editor paints per second. It must read 0 at rest (the editor repaints only
   when something changed; the text caret does not blink).
 
-The editor is driven by the display's vblank. Behaviour on a 360 Hz display was not
-measured by the developer.
+The editor is driven by the display's vblank. On the development machine (3440 x 1440 at
+360 Hz) the overlay reads 360.1 Hz, a mean frame cost of 0.04 ms and a worst 1 % of 0.33 ms
+while a chord plays (screenshot above), and 0 repaints per second at rest.
 
 ## Regenerating samples and presets
 
