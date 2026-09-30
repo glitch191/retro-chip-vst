@@ -443,15 +443,16 @@ TEST_CASE("DAC plays a loaded sample on channel 6", "[genesis][engine][dac]")
     CHECK_FALSE(e.clearSample(16));
     e.noteOn(5, 60.0f, 1.0f);
     const Render cleared = render(e, 4800, true);
-    // No tone: at most the DAC's DC level step at key-on, far below the sample-to-sample
-    // steps of the 500 Hz tone played from the slot before.
+    // No tone: once the DAC's DC level step at key-on has settled (one resampler kernel,
+    // 32 samples), the output moves far less than the sample-to-sample steps of the 500 Hz
+    // tone played from the slot before.
     auto maxStep = [](const std::vector<float>& x, size_t from, size_t to) {
         double m = 0.0;
         for (size_t i = from + 1; i < to; ++i)
             m = std::max(m, static_cast<double>(std::abs(x[i] - x[i - 1])));
         return m;
     };
-    CHECK(maxStep(cleared.chL[5], 0, 4800) < 0.2 * maxStep(out.chL[5], 4800, 12000));
+    CHECK(maxStep(cleared.chL[5], 32, 4800) < 0.2 * maxStep(out.chL[5], 4800, 12000));
     e.noteOff(5);
     e.setParameter(E::DacSample, 4);   // the other slot survived the bank flip
     e.noteOn(5, 60.0f, 1.0f);
