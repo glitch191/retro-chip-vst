@@ -17,6 +17,11 @@ Writes, with our own register writes only (no game data):
   ``snes/<name>.events``: the same DSP writes as ``sample register value`` lines at the
   32 kHz sample index at which the program performs them. chiptool reads the SPC's RAM
   image and DSP snapshot plus this list, because it has no SPC700 CPU.
+* ``nes/<name>.vgm``: VGM 1.61 files for the NES APU (header 0x84 = CPU clock 1789773 Hz NTSC
+  or 1662607 Hz PAL; command 0xB4 = APU register write; DMC sample bytes in a data block of
+  type 0xC2, "NES APU RAM write", at $C000). Every file writes the power-up register state
+  explicitly, and each note start is preceded by a $4017 write so that the frame sequencer
+  phase relative to the note is the same on every renderer.
 * ``manifest.json``: one entry per stimulus with the analysis windows used by compare.py.
 
 Everything is deterministic (fixed seeds) and standard-library Python.
@@ -637,12 +642,459 @@ def snes_stimuli() -> list[tuple[dict, bytes, str]]:
     return out
 
 
+# ----- NES (2A03 / 2A07 APU) ------------------------------------------------------------------
+# VGM 1.61 (header 0x84 = NES APU clock; command 0xB4 aa dd writes dd to $4000 + aa; data block
+# 0x67 0x66 0xC2 = NES APU RAM write: 16-bit start address, then the bytes). Register semantics
+# and every expected value below: docs/research/nes.md.
+
+NES_NTSC = 1789773          # engine clocks (research A1); the VGM header holds the same integers
+NES_PAL = 1662607
+NES_LENGTH = (10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14,
+              12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30)
+NES_NOISE = {False: (4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068),
+             True: (4, 8, 14, 30, 60, 88, 118, 148, 188, 236, 354, 472, 708, 944, 1890, 3778)}
+NES_DMC = {False: (428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54),
+           True: (398, 354, 316, 298, 276, 236, 210, 198, 176, 148, 132, 118, 98, 78, 66, 50)}
+# Frame sequencer, CPU cycles after the $4017 reset (research "Frame counter"): quarter-frame
+# rate 4-step NTSC 240 Hz (7457 / 7456 / 7458 / 7458 cycles), 5-step 192 Hz; PAL 200 / 160 Hz.
+NES_TRI = [15 - i for i in range(16)] + list(range(16))
+
+
+NES_FRAME = {  # (five_step, pal): ([(cycle, quarter, half), ...], sequence length)
+    (False, False): ([(7457, 1, 0), (14913, 1, 1), (22371, 1, 0), (29829, 1, 1)], 29830),
+    (False, True): ([(8313, 1, 0), (16627, 1, 1), (24939, 1, 0), (33253, 1, 1)], 33254),
+    (True, False): ([(7457, 1, 0), (14913, 1, 1), (22371, 1, 0), (37281, 1, 1)], 37282),
+    (True, True): ([(8313, 1, 0), (16627, 1, 1), (24939, 1, 0), (41565, 1, 1)], 41566),
+}
+NES_4017_DELAY = 2   # CPU cycles from the write to the sequencer reset clock (3rd clock incl. the write's)
+
+
+def frame_events(five: bool, pal: bool, which: str, count: int) -> list[int]:
+    """CPU cycles after a $4017 write of the first 'count' quarter ('q') or half ('h') frame
+    clocks (research "Frame counter": 4-step / 5-step tables; 5-step also clocks both at once)."""
+    table, length = NES_FRAME[(five, pal)]
+    out = [NES_4017_DELAY] if five else []
+    k = 0
+    while len(out) < count:
+        for cyc, q, h in table:
+            if (q if which == "q" else h):
+                out.append(NES_4017_DELAY + k * length + cyc)
+        k += 1
+    return out[:count]
+
+
+def sweep_trajectory(start: int, shift: int, negate: bool, ones: bool, p: int, five: bool, pal: bool,
+                     t_on: float, until: float) -> tuple[list[list[float]], float | None]:
+    """Documented sweep (research "Sweep unit", A14) from the $4001/$4003/$4017 writes at t_on:
+    [[time, period], ...] of every period change and the time the channel mutes (or None)."""
+    hz = NES_PAL if pal else NES_NTSC
+    period, divider, reload = start, 0, True
+
+    def target() -> int:
+        change = period >> shift
+        if negate:
+            change = -change - 1 if ones else -change
+        return max(0, period + change)
+
+    def muted() -> bool:
+        return period < 8 or target() > 0x7FF
+
+    steps = [[t_on, period]]
+    mute_at = t_on if muted() else None
+    for cyc in frame_events(five, pal, "h", 2000):
+        t = t_on + cyc / hz
+        if t > until:
+            break
+        if divider == 0 and shift != 0 and not muted():
+            period = target()
+            steps.append([t, period])
+        if divider == 0 or reload:
+            divider, reload = p, False
+        else:
+            divider -= 1
+        if mute_at is None and muted():
+            mute_at = t
+    return steps, mute_at
+
+
+def nes_mix_pulse(n: float) -> float:
+    return 0.0 if n == 0 else 95.88 / (8128.0 / n + 100.0)
+
+
+def nes_mix_tnd(t: float, n: float, d: float) -> float:
+    x = t / 8227.0 + n / 12241.0 + d / 22638.0
+    return 0.0 if x == 0 else 159.79 / (1.0 / x + 100.0)
+
+
+def ac_rms(states: list[tuple[float, float]]) -> float:
+    """RMS of the AC part of a signal that spends probability p in level x: [(p, x), ...]."""
+    mean = sum(p * x for p, x in states)
+    return math.sqrt(max(sum(p * x * x for p, x in states) - mean * mean, 0.0))
+
+
+class NesVgm(Vgm):
+    def __init__(self, pal: bool = False) -> None:
+        super().__init__()
+        self.pal = pal
+
+    def w(self, address: int, value: int) -> None:
+        self.data += bytes((0xB4, address - 0x4000, value & 0xFF))
+
+    def ram(self, address: int, payload: bytes) -> None:
+        self.data += bytes((0x67, 0x66, 0xC2)) + struct.pack("<IH", len(payload) + 2, address) + payload
+
+    def build(self) -> bytes:
+        body = bytes(self.data) + b"\x66"
+        header = bytearray(0x100)
+        header[0:4] = b"Vgm "
+        struct.pack_into("<I", header, 0x08, 0x161)
+        struct.pack_into("<I", header, 0x18, self.samples)
+        struct.pack_into("<I", header, 0x34, 0x100 - 0x34)
+        struct.pack_into("<I", header, 0x84, NES_PAL if self.pal else NES_NTSC)
+        struct.pack_into("<I", header, 0x04, len(header) + len(body) - 4)
+        return bytes(header) + body
+
+
+def nes_init(v: NesVgm, enable: int) -> None:
+    """Power-up register state written explicitly, sweeps set to negate/shift 0 (no target
+    mute, research A22), IRQ inhibited, then the channel enables."""
+    v.w(0x4015, 0x00)
+    for a in range(0x4000, 0x4014):
+        v.w(a, 0x08 if a in (0x4001, 0x4005) else 0x00)
+    v.w(0x4017, 0x40)
+    v.w(0x4015, enable)
+
+
+def dmc_pattern(half: int, repeats: int) -> bytes:
+    """'half' one bits then 'half' zero bits, repeated, packed LSB first (the DMC reads bit 0
+    first): a triangle of 2 * half levels and period 2 * half bits."""
+    bits = ([1] * half + [0] * half) * repeats
+    assert len(bits) % 8 == 0
+    return bytes(sum(bits[i + k] << k for k in range(8)) for i in range(0, len(bits), 8))
+
+
+N_ON = 0.05
+
+
+def nes_stimuli() -> list[tuple[dict, bytes]]:
+    out: list[tuple[dict, bytes]] = []
+
+    def add(name: str, v: NesVgm, end: float, meta: dict) -> None:
+        v.wait_until(end)
+        m = dict(name=name, chip="nes", unit="2a03", file=f"nes/{name}.vgm", end=end, pal=v.pal)
+        m.update(meta)
+        out.append((m, v.build()))
+
+    def cpu(pal: bool) -> int:
+        return NES_PAL if pal else NES_NTSC
+
+    def pulse_regs(v: NesVgm, ch: int, ctrl: int, sweep: int, period: int, length_index: int = 0x1F,
+                   frame: int = 0x40) -> None:
+        base = 0x4000 + 4 * ch
+        v.w(base, ctrl)
+        v.w(base + 1, sweep)
+        v.w(base + 2, period & 0xFF)
+        v.w(0x4017, frame)                   # sequencer phase fixed relative to the note start
+        v.w(base + 3, (length_index << 3) | ((period >> 8) & 7))
+
+    def pulse_tone(name: str, period: int, duty: int = 2, vol: int = 15, ch: int = 0, sweep: int = 0x08,
+                   off: float = 0.55, end: float = 0.6, pal: bool = False, kind: str = "tone", desc: str = "") -> None:
+        v = NesVgm(pal)
+        nes_init(v, 0x01 << ch)
+        v.wait_until(N_ON)
+        pulse_regs(v, ch, (duty << 6) | 0x30 | vol, sweep, period)
+        v.wait_until(off)
+        v.w(0x4015, 0x00)
+        f0 = cpu(pal) / (16.0 * (period + 1))
+        add(name, v, end, dict(kind=kind, f0=f0 if kind == "tone" else 0.0, on=N_ON, off=off,
+                               desc=desc or f"pulse {ch + 1}, duty {duty}, constant volume {vol}, t = {period} ({f0:.2f} Hz)"))
+
+    # ---- pulses: calibration, duties, periods, mutes, volume steps
+    pulse_tone("nes_pulse_ref", 253, off=0.85, end=1.0, desc="pulse 1, duty 2 (50 %), constant volume 15, t = 253 (440.40 Hz)")
+    for duty in (0, 1, 3):
+        pulse_tone(f"nes_pulse_duty{duty}", 253, duty=duty)
+    pulse_tone("nes_pulse2_ref", 253, ch=1)
+    for period in (8, 12, 20, 50, 120, 400, 0x3FF, 0x400, 0x7FF):
+        pulse_tone(f"nes_pulse_t{period:04d}", period)
+    pulse_tone("nes_pulse_t0007_mute", 7, kind="mute", desc="pulse 1, t = 7: muted (t < 8)")
+    pulse_tone("nes_pulse_sweepmute", 0x400, sweep=0x00, kind="mute",
+               desc="pulse 1, t = $400, $4001 = $00: sweep target 2t > $7FF mutes (sweep disabled)")
+    # Constant volume 15..0, 60 ms each, written to $4000 without restarting the phase.
+    v = NesVgm()
+    nes_init(v, 0x01)
+    v.wait_until(N_ON)
+    pulse_regs(v, 0, 0xB0 | 15, 0x08, 253)
+    segs = []
+    for k, vol in enumerate(range(15, -1, -1)):
+        t0 = N_ON + 0.06 * k
+        v.wait_until(t0)
+        v.w(0x4000, 0xB0 | vol)
+        segs.append(dict(t0=t0 + 0.012, t1=t0 + 0.058, label=f"volume {vol}", pred=ac_rms([(0.5, 0.0), (0.5, nes_mix_pulse(vol))])))
+    v.wait_until(N_ON + 0.96)
+    v.w(0x4015, 0)
+    add("nes_pulse_vol", v, N_ON + 1.0, dict(kind="segments", f0=0.0, on=N_ON, off=N_ON + 0.96, segments=segs,
+                                             desc="pulse 1, duty 2, t = 253, constant volume 15 down to 0 (60 ms each)"))
+
+    # ---- envelope decay (loop off / on), 4-step and 5-step, PAL
+    def env(name: str, vol: int, loop: bool, frame: int = 0x40, pal: bool = False, off: float = 1.25, end: float = 1.3) -> None:
+        v = NesVgm(pal)
+        nes_init(v, 0x01)
+        v.wait_until(N_ON)
+        ctrl = 0x80 | (0x20 if loop else 0x00) | vol
+        pulse_regs(v, 0, ctrl, 0x08, 253, length_index=0x01, frame=frame)   # length 254 half frames
+        v.wait_until(off)
+        v.w(0x4015, 0)
+        qf = {(False, 0x40): 240.0, (False, 0x80): 192.0, (True, 0x40): 200.0, (True, 0x80): 160.0}[(pal, frame)]
+        meta = dict(kind="ssg" if loop else "env", f0=cpu(pal) / 16.0 / 254, on=N_ON, off=off,
+                    desc=f"pulse 1, decay envelope V = {vol}, loop {'on' if loop else 'off'}, "
+                         f"{'5' if frame & 0x80 else '4'}-step{' PAL' if pal else ''} (step every {vol + 1} quarter frames at {qf:g} Hz)")
+        meta["qf_hz"] = qf
+        add(name, v, end, meta)
+
+    for vol in (0, 3, 7, 15):
+        env(f"nes_env_v{vol:02d}", vol, False)
+    for vol in (1, 3):
+        env(f"nes_env_loop_v{vol:02d}", vol, True, off=1.0, end=1.05)
+    env("nes_env5_v03", 3, False, frame=0x80)
+    env("nes_env5_v07", 7, False, frame=0x80)
+
+    # ---- sweep: up (both pulses behave alike) and down (pulse 1 ones' complement, pulse 2 two's)
+    sweep_p = {1: 7, 2: 5, 3: 3, 4: 2, 5: 1, 6: 0, 7: 0}
+
+    def sweep(name: str, ch: int, negate: bool, shift: int, start: int, frame: int = 0x40, pal: bool = False) -> None:
+        v = NesVgm(pal)
+        nes_init(v, 0x01 << ch)
+        v.wait_until(N_ON)
+        reg = 0x80 | (sweep_p[shift] << 4) | (0x08 if negate else 0x00) | shift
+        pulse_regs(v, ch, 0xB0 | 15, reg, start, frame=frame)
+        v.wait_until(1.0)
+        v.w(0x4015, 0)
+        add(name, v, 1.05, dict(kind="sweep", f0=cpu(pal) / (16.0 * (start + 1)), on=N_ON, off=1.0,
+                                desc=f"pulse {ch + 1}, sweep {'down' if negate else 'up'}, shift {shift}, "
+                                     f"period P = {sweep_p[shift]}, from t = {start}"
+                                     f"{', 5-step' if frame & 0x80 else ''}{', PAL' if pal else ''}"))
+
+    for shift in range(1, 8):
+        sweep(f"nes_sweep_up_s{shift}", 0, False, shift, 128)
+    for shift in range(1, 8):
+        for ch in (0, 1):
+            sweep(f"nes_sweep_down_s{shift}_p{ch + 1}", ch, True, shift, 1024)
+    sweep("nes_sweep5_down_s2_p1", 0, True, 2, 1024, frame=0x80)
+
+    # ---- length counter (halt off / on), 4-step, 5-step, PAL
+    def length(name: str, index: int, halt: bool, frame: int = 0x40, pal: bool = False, off: float = 0.75, end: float = 0.8) -> None:
+        v = NesVgm(pal)
+        nes_init(v, 0x01)
+        v.wait_until(N_ON)
+        pulse_regs(v, 0, 0x90 | (0x20 if halt else 0) | 15, 0x08, 253, length_index=index, frame=frame)
+        v.wait_until(off)
+        v.w(0x4015, 0)
+        hf = {(False, 0x40): 120.0, (False, 0x80): 96.0, (True, 0x40): 100.0, (True, 0x80): 80.0}[(pal, frame)]
+        # Half-frame clocks after the reset (4-step NTSC: 14913, 29829, then every 29830 / 2).
+        expected = None if halt else N_ON + NES_LENGTH[index] / hf
+        add(name, v, end, dict(kind="gate", f0=cpu(pal) / 16.0 / 254, on=N_ON, off=off, gate_expected=expected,
+                               desc=f"pulse 1, length index {index} ({NES_LENGTH[index]} half frames at {hf:g} Hz), "
+                                    f"halt {'on' if halt else 'off'}{', 5-step' if frame & 0x80 else ''}{', PAL' if pal else ''}"))
+
+    length("nes_len_i00", 0, False)
+    length("nes_len_i04", 4, False)
+    length("nes_len_i10", 10, False)
+    length("nes_len_i00_halt", 0, True)
+    length("nes_len5_i04", 4, False, frame=0x80)
+
+    # ---- triangle: periods, ultrasonic, linear counter, length
+    def tri(name: str, period: int, ctrl: int = 0xFF, index: int = 0x1F, off: float = 0.55, end: float = 0.6,
+            pal: bool = False, kind: str = "tone", frame: int = 0x40, extra=None, desc: str = "", meta_extra=None) -> None:
+        v = NesVgm(pal)
+        nes_init(v, 0x04)
+        v.wait_until(N_ON)
+        v.w(0x4008, ctrl)
+        v.w(0x400A, period & 0xFF)
+        v.w(0x4017, frame)
+        v.w(0x400B, (index << 3) | ((period >> 8) & 7))
+        if extra:
+            extra(v)
+        v.wait_until(off)
+        v.w(0x4015, 0)
+        f0 = cpu(pal) / (32.0 * (period + 1))
+        meta = dict(kind=kind, f0=f0 if kind in ("tone", "gate") else 0.0, on=N_ON, off=off,
+                    desc=desc or f"triangle, t = {period} ({f0:.2f} Hz){', PAL' if pal else ''}")
+        meta.update(meta_extra or {})
+        add(name, v, end, meta)
+
+    for period in (2, 8, 32, 126, 383, 767):
+        tri(f"nes_tri_t{period:04d}", period)
+    for period in (0, 1):
+        def switch(v: NesVgm, p=period) -> None:
+            v.wait_until(0.30)
+            v.w(0x400A, p)
+        segs = [dict(t0=0.10, t1=0.29, label="t = 126 (440 Hz)", pred=ac_rms([(1 / 32, nes_mix_tnd(x, 0, 0)) for x in NES_TRI])),
+                dict(t0=0.35, t1=0.54, label=f"t = {period} (ultrasonic)", pred=0.0),
+                dict(t0=0.30, t1=0.33, label="switch pop (peak)", mode="peak", pred=None)]
+        tri(f"nes_tri_ultra_t{period}", 126, kind="segments", extra=switch, off=0.55, end=0.6,
+            desc=f"triangle t = 126, then $400A = {period} at 0.30 s (ultrasonic: A2)", meta_extra=dict(segments=segs))
+    for lin in (16, 64, 127):
+        tri(f"nes_tri_lin{lin:03d}", 126, ctrl=lin, off=0.75, end=0.8, kind="gate",
+            desc=f"triangle t = 126, control 0, linear counter {lin} quarter frames (240 Hz)",
+            meta_extra=dict(gate_expected=N_ON + (lin + 1) / 240.0))
+    tri("nes_tri_len_i00", 126, ctrl=0x7F, index=0, off=0.55, end=0.6, kind="gate",
+        desc="triangle t = 126, control 0, linear 127, length index 0 (10 half frames)",
+        meta_extra=dict(gate_expected=N_ON + 10 / 120.0))
+    tri("nes_tri5_lin064", 126, ctrl=64, off=0.75, end=0.8, kind="gate", frame=0x80,
+        desc="triangle t = 126, control 0, linear counter 64 quarter frames, 5-step (192 Hz)",
+        meta_extra=dict(gate_expected=N_ON + 64 / 192.0))
+
+    # ---- noise: long and short mode, all 16 periods
+    def noise(name: str, index: int, short: bool, pal: bool = False) -> None:
+        v = NesVgm(pal)
+        nes_init(v, 0x08)
+        v.wait_until(N_ON)
+        v.w(0x400C, 0x30 | 15)
+        v.w(0x400E, (0x80 if short else 0) | index)
+        v.w(0x4017, 0x40)
+        v.w(0x400F, 0x1F << 3)
+        v.wait_until(0.55)
+        v.w(0x4015, 0)
+        period = NES_NOISE[pal][index]
+        f0 = cpu(pal) / period / 93.0 if short else 0.0
+        tone = short and f0 >= 90.0
+        add(name, v, 0.6, dict(kind="tone" if tone else "noise", f0=f0 if tone else 0.0, on=N_ON, off=0.55,
+                               desc=f"noise {'short (93-step)' if short else 'long'} mode, period index {index} "
+                                    f"({period} CPU cycles){f', f0 {f0:.2f} Hz' if short else ''}{', PAL' if pal else ''}"))
+
+    for short in (False, True):
+        for index in range(16):
+            noise(f"nes_noise_{'s' if short else 'l'}{index:02d}", index, short)
+
+    # ---- DMC: looped triangle pattern at several rates, one-shot, $4011 direct load
+    tri_bytes = dmc_pattern(17, 4)          # 17 bytes = 136 bits = 4 periods of 34 bits
+    one_shot = (tri_bytes * 61)[:1025]      # $4013 = $40: 1025 bytes
+
+    def dmc(name: str, rate: int, loop: bool, pal: bool = False) -> None:
+        v = NesVgm(pal)
+        v.ram(0xC000, one_shot)
+        nes_init(v, 0x00)
+        v.wait_until(N_ON)
+        v.w(0x4010, (0x40 if loop else 0) | rate)
+        v.w(0x4011, 40)
+        v.w(0x4012, 0x00)
+        v.w(0x4013, 0x01 if loop else 0x40)
+        v.w(0x4015, 0x10)
+        v.wait_until(0.55)
+        v.w(0x4015, 0x00)
+        bit_hz = cpu(pal) / NES_DMC[pal][rate]
+        f0 = bit_hz / 34.0
+        meta = dict(kind="tone" if loop else "gate", f0=f0, on=N_ON, off=0.55,
+                    desc=f"DMC rate {rate} ({bit_hz:.1f} Hz), {'17-byte loop' if loop else '1025 bytes one-shot'} of a "
+                         f"34-bit triangle pattern, $4011 = 40{', PAL' if pal else ''}")
+        if not loop:
+            meta["gate_expected"] = N_ON + 1025 * 8 / bit_hz
+        add(name, v, 0.6, meta)
+
+    for rate in (0, 4, 8, 12, 15):
+        dmc(f"nes_dmc_r{rate:02d}_loop", rate, True)
+    dmc("nes_dmc_r15_oneshot", 15, False)
+    v = NesVgm()
+    nes_init(v, 0x00)
+    v.wait_until(N_ON)
+    k = 0
+    while v.samples < int(0.55 * VGM_RATE):
+        v.w(0x4011, 0x70 if k % 2 == 0 else 0x10)
+        v.wait(50)
+        k += 1
+    v.w(0x4011, 0x00)
+    add("nes_dmc_direct", v, 0.6, dict(kind="tone", f0=VGM_RATE / 100.0, on=N_ON, off=0.55,
+                                       desc="$4011 direct load, 0x70 / 0x10 alternating every 50 VGM samples (441 Hz square)"))
+
+    # ---- mixer non-linearity (segments; 'pred' = AC RMS from the exact mixer formula)
+    def mix_stim(name: str, desc: str, enable: int, setup, steps: list[tuple[float, list[tuple[int, int]], str, float]],
+                 end: float) -> None:
+        v = NesVgm()
+        for addr, data in (setup or []):
+            v.ram(addr, data)
+        nes_init(v, enable)
+        segs = []
+        for i, (t0, writes, label, pred) in enumerate(steps):
+            v.wait_until(t0)
+            for a, d in writes:
+                v.w(a, d)
+            t1 = steps[i + 1][0] if i + 1 < len(steps) else end - 0.05
+            if label:
+                segs.append(dict(t0=t0 + 0.05, t1=t1 - 0.005, label=label, pred=pred))
+        v.wait_until(end - 0.05)
+        v.w(0x4015, 0)
+        add(name, v, end, dict(kind="segments", f0=0.0, on=steps[0][0], off=end - 0.05, segments=segs, desc=desc))
+
+    sq = lambda a, b: ac_rms([(0.25, nes_mix_pulse(0)), (0.25, nes_mix_pulse(a)), (0.25, nes_mix_pulse(b)), (0.25, nes_mix_pulse(a + b))])
+    p1 = lambda vol: [(0x4000, 0xB0 | vol)]
+    p2 = lambda vol: [(0x4004, 0xB0 | vol)]
+    start_pulses = [(0x4000, 0xB0 | 15), (0x4001, 0x08), (0x4002, 253), (0x4004, 0xB0), (0x4005, 0x08), (0x4006, 200),
+                    (0x4017, 0x40), (0x4003, 0xF8), (0x4007, 0xF8)]
+    mix_stim("nes_mix_pulse", "pulse 1 (t = 253, 440.4 Hz) and pulse 2 (t = 200, 556.6 Hz), duty 2, volume combinations",
+             0x03, None, [
+                 (N_ON, start_pulses, "p1 15", sq(15, 0)),
+                 (0.25, p1(0) + p2(15), "p2 15", sq(0, 15)),
+                 (0.45, p1(15), "p1 15 + p2 15", sq(15, 15)),
+                 (0.65, p1(8) + p2(8), "p1 8 + p2 8", sq(8, 8)),
+                 (0.85, p1(4) + p2(4), "p1 4 + p2 4", sq(4, 4)),
+                 (1.05, p1(15) + p2(4), "p1 15 + p2 4", sq(15, 4)),
+             ], 1.3)
+    tri_states = lambda d, noise_vol=0: [(1 / 64, nes_mix_tnd(x, nz, d)) for x in NES_TRI for nz in (0, noise_vol)]
+    tri_start = [(0x4008, 0xFF), (0x400A, 126), (0x4017, 0x40), (0x400B, 0xF8)]
+    mix_stim("nes_mix_tri_dmc", "triangle t = 126 (440.4 Hz) with the DMC output held at 0 / 32 / 64 / 96 / 127 ($4011)",
+             0x04, None, [(N_ON, tri_start + [(0x4011, 0)], "tri, dmc 0", ac_rms(tri_states(0)))] +
+             [(0.05 + 0.2 * (i + 1), [(0x4011, d)], f"tri, dmc {d}", ac_rms(tri_states(d))) for i, d in enumerate((32, 64, 96, 127))],
+             1.3)
+    # Noise (period index 8: 8.86 kHz LFSR clock, its power is almost all below 22 kHz) is a
+    # random two-level signal: p(output = volume) = 16384 / 32767 in long mode.
+    pn = 16384 / 32767
+    nz_states = lambda vol, d, tri_levels=(0,): [(pn / len(tri_levels), nes_mix_tnd(t, vol, d)) for t in tri_levels] + \
+        [((1 - pn) / len(tri_levels), nes_mix_tnd(t, 0, d)) for t in tri_levels]
+    noise_start = [(0x400C, 0x30 | 15), (0x400E, 8), (0x4017, 0x40), (0x400F, 0xF8)]
+    mix_stim("nes_mix_noise_dmc", "noise long mode, index 8, volume 15, with the DMC output held at 0 / 64 / 127", 0x08, None, [
+        (N_ON, noise_start + [(0x4011, 0)], "noise, dmc 0", ac_rms(nz_states(15, 0))),
+        (0.25, [(0x4011, 64)], "noise, dmc 64", ac_rms(nz_states(15, 64))),
+        (0.45, [(0x4011, 127)], "noise, dmc 127", ac_rms(nz_states(15, 127))),
+    ], 0.7)
+    both = lambda d: ac_rms([(pn / 32, nes_mix_tnd(x, 15, d)) for x in NES_TRI] + [((1 - pn) / 32, nes_mix_tnd(x, 0, d)) for x in NES_TRI])
+    tri_only = lambda d: ac_rms([(1 / 32, nes_mix_tnd(x, 0, d)) for x in NES_TRI])
+    # Triangle alone (noise enabled at volume 0), then + noise, then + DMC 64. A "noise alone"
+    # segment would need the triangle halted, which holds an arbitrary step (A3) and changes the
+    # noise level through tnd_out; nes_mix_noise_dmc covers noise with the triangle at rest.
+    mix_stim("nes_mix_tri_noise", "triangle t = 126 alone, + noise index 8 volume 15, + DMC 64", 0x0C, None, [
+        (N_ON, tri_start + [(0x400C, 0x30), (0x400E, 8), (0x400F, 0xF8), (0x4011, 0)], "tri alone", tri_only(0)),
+        (0.25, [(0x400C, 0x30 | 15)], "tri + noise", both(0)),
+        (0.45, [(0x4011, 64)], "tri + noise, dmc 64", both(64)),
+    ], 0.7)
+    mix_stim("nes_mix_pulse_tri", "pulse 1 (t = 253, volume 15) alone, triangle (t = 126) alone, both (separate mixer groups)",
+             0x05, None, [
+                 (N_ON, [(0x4000, 0xB0 | 15), (0x4001, 0x08), (0x4002, 253), (0x4017, 0x40), (0x4003, 0xF8)],
+                  "p1 alone", sq(15, 0)),
+                 (0.25, [(0x4000, 0xB0), (0x4008, 0xFF), (0x400A, 126), (0x400B, 0xF8)], "tri alone", tri_only(0)),
+                 (0.45, [(0x4000, 0xB0 | 15)], "p1 + tri", math.hypot(sq(15, 0), tri_only(0))),
+             ], 0.7)
+
+    # ---- PAL variants: pitch (clock), frame counter rates, PAL noise and DMC tables
+    pulse_tone("nes_pal_pulse_ref", 253, pal=True, desc="PAL: pulse 1, duty 2, volume 15, t = 253 (409.13 Hz)")
+    tri("nes_pal_tri_t0126", 126, pal=True)
+    env("nes_pal_env_v03", 3, False, pal=True)
+    length("nes_pal_len_i04", 4, False, pal=True)
+    sweep("nes_pal_sweep_down_s2_p1", 0, True, 2, 1024, pal=True)
+    for index in (2, 5, 8, 11):
+        noise(f"nes_pal_noise_s{index:02d}", index, True, pal=True)
+    noise("nes_pal_noise_l08", 8, False, pal=True)
+    for rate in (4, 15):
+        dmc(f"nes_pal_dmc_r{rate:02d}_loop", rate, True, pal=True)
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", default=os.path.join("build-reports", "refcheck", "stimuli"))
     args = ap.parse_args()
     os.makedirs(os.path.join(args.out, "genesis"), exist_ok=True)
     os.makedirs(os.path.join(args.out, "snes"), exist_ok=True)
+    os.makedirs(os.path.join(args.out, "nes"), exist_ok=True)
     manifest = []
     for meta, data in genesis_stimuli():
         with open(os.path.join(args.out, meta["file"]), "wb") as f:
@@ -653,6 +1105,10 @@ def main() -> None:
             f.write(spc)
         with open(os.path.join(args.out, meta["events"]), "w", newline="\n") as f:
             f.write(events)
+        manifest.append(meta)
+    for meta, data in nes_stimuli():
+        with open(os.path.join(args.out, meta["file"]), "wb") as f:
+            f.write(data)
         manifest.append(meta)
     with open(os.path.join(args.out, "manifest.json"), "w", newline="\n") as f:
         json.dump(manifest, f, indent=1, sort_keys=True)

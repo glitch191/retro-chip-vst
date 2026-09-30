@@ -25,6 +25,7 @@
 //
 //   chiptool regs genesis <stimulus.vgm> <out.wav> [--rate 44100] [--lowpass] [--asic]
 //   chiptool regs snes <stimulus.spc> <stimulus.events> <out.wav> [--seconds S]
+//   chiptool regs nes <stimulus.vgm> <out.wav> [--rate 44100] [--kernel impulse|integrated]
 //       Register-level render for the differential check against a reference emulator
 //       (tools/refcheck). Genesis: plays the YM2612 (0x52/0x53) and SN76489 (0x50) writes and
 //       waits of a VGM file straight into Ym2612Core / Sn76489Core at their VGM sample times
@@ -36,6 +37,13 @@
 //       snapshot into SnesDsp, applies the "sample register value" writes of the events file
 //       (no SPC700 CPU here: the stimulus generator lists what its SPC700 program writes and
 //       when) and writes the native 32 kHz main output unchanged (16-bit, no resampling).
+//       NES: plays the NES APU writes (0xB4) of a VGM 1.61 file straight into NesApu at the CPU
+//       cycle of their VGM sample time, with the DMC sample memory from its "NES APU RAM write"
+//       data blocks (0x67, type 0xC2) mapped at $C000, and renders through the output path of
+//       Nes2A03Engine::renderChunk (one CPU cycle per step, NesMixer, BandLimitedStepSynth with
+//       the engine's ImpulseSum kernel unless --kernel integrated, NesOutputStage with
+//       console_filter = 0, i.e. only the 5 Hz DC blocker). No driver: nothing but the file's
+//       writes reaches the chip. NTSC or PAL from the header clock.
 //
 //   Samples: a preset's "samples" object maps a slot parameter key to a sample name
 //   ({"dmc_sample": "kick_short"}). The sample is looked up in <DIR>/index.json
@@ -52,6 +60,7 @@
 #include "chipdsp/genesis/GenesisTables.h"
 #include "chipdsp/genesis/Sn76489Core.h"
 #include "chipdsp/genesis/Ym2612Core.h"
+#include "chipdsp/nes/NesApu.h"
 #include "chipdsp/snes/SnesDsp.h"
 #include "chipdsp/util/BandLimitedStepSynth.h"
 #include "chipdsp/util/Filters.h"
@@ -795,7 +804,8 @@ int usage()
                  "                  [--notes 60,62,64 [--step 0.4] [--gate 0.8]]\n"
                  "  chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]\n"
                  "  chiptool regs genesis <stimulus.vgm> <out.wav> [--rate 44100] [--lowpass] [--asic]\n"
-                 "  chiptool regs snes <stimulus.spc> <stimulus.events> <out.wav> [--seconds S]\n");
+                 "  chiptool regs snes <stimulus.spc> <stimulus.events> <out.wav> [--seconds S]\n"
+                 "  chiptool regs nes <stimulus.vgm> <out.wav> [--rate 44100] [--kernel impulse|integrated]\n");
     return 1;
 }
 
@@ -1241,6 +1251,192 @@ int cmdRegsSnes(int argc, char** argv)
     return 0;
 }
 
+// NES VGM (VGM specification 1.61+: header 0x84 = NES APU clock, command 0xB4 aa dd = write dd
+// to $4000 + aa for aa = 0x00..0x1F, data block 0x67 0x66 0xC2 = NES APU RAM write with a 16-bit
+// start address). FDS registers, other chips and other data block types are errors.
+struct NesVgm
+{
+    uint32_t clock = 0;
+    uint32_t totalSamples = 0;
+    std::vector<VgmEvent> writes;           // kind unused, reg = offset from $4000
+    std::vector<uint8_t> memory = std::vector<uint8_t>(0x10000, 0);
+};
+
+NesVgm parseVgmNes(const std::string& data)
+{
+    auto u8 = [&](size_t o) {
+        if (o >= data.size())
+            throw std::runtime_error("VGM: truncated");
+        return static_cast<uint8_t>(data[o]);
+    };
+    auto u32 = [&](size_t o) {
+        return static_cast<uint32_t>(u8(o)) | (static_cast<uint32_t>(u8(o + 1)) << 8) |
+               (static_cast<uint32_t>(u8(o + 2)) << 16) | (static_cast<uint32_t>(u8(o + 3)) << 24);
+    };
+    if (data.size() < 0x40 || data.compare(0, 4, "Vgm ") != 0)
+        throw std::runtime_error("not a VGM file");
+    NesVgm out;
+    const uint32_t version = u32(0x08);
+    const size_t start = (version >= 0x150 && u32(0x34) != 0) ? 0x34 + u32(0x34) : 0x40;
+    if (version < 0x161 || start <= 0x84)
+        throw std::runtime_error("VGM: NES APU needs version 1.61+ with a header covering 0x84");
+    out.clock = u32(0x84);
+    if (out.clock == 0 || (out.clock & 0x80000000u) != 0)
+        throw std::runtime_error("VGM: no NES APU clock, or FDS requested (not supported)");
+    out.totalSamples = u32(0x18);
+    size_t pos = start;
+    uint32_t now = 0;
+    for (;;)
+    {
+        const uint8_t cmd = u8(pos);
+        if (cmd == 0x66)
+            break;
+        if (cmd == 0xB4)
+        {
+            const uint8_t reg = u8(pos + 1);
+            if (reg > 0x1F)
+                throw std::runtime_error("VGM: NES register outside $4000-$401F (FDS not supported)");
+            out.writes.push_back({ now, 0, reg, u8(pos + 2) });
+            pos += 3;
+        }
+        else if (cmd == 0x67)
+        {
+            if (u8(pos + 1) != 0x66 || u8(pos + 2) != 0xC2)
+                throw std::runtime_error("VGM: only data blocks of type 0xC2 (NES APU RAM write) are supported");
+            const uint32_t size = u32(pos + 3);
+            if (size < 2)
+                throw std::runtime_error("VGM: empty RAM write block");
+            const uint32_t address = static_cast<uint32_t>(u8(pos + 7)) | (static_cast<uint32_t>(u8(pos + 8)) << 8);
+            if (address + (size - 2) > 0x10000)
+                throw std::runtime_error("VGM: RAM write block beyond $FFFF");
+            for (uint32_t i = 0; i < size - 2; ++i)
+                out.memory[address + i] = u8(pos + 9 + i);
+            pos += 7 + size;
+        }
+        else if (cmd == 0x61)
+        {
+            now += static_cast<uint32_t>(u8(pos + 1)) | (static_cast<uint32_t>(u8(pos + 2)) << 8);
+            pos += 3;
+        }
+        else if (cmd == 0x62) { now += 735; pos += 1; }
+        else if (cmd == 0x63) { now += 882; pos += 1; }
+        else if ((cmd & 0xF0) == 0x70) { now += (cmd & 15u) + 1u; pos += 1; }
+        else
+        {
+            char buf[64];
+            std::snprintf(buf, sizeof buf, "VGM: unsupported command 0x%02X at 0x%zX", cmd, pos);
+            throw std::runtime_error(buf);
+        }
+    }
+    out.totalSamples = std::max(out.totalSamples, now);
+    return out;
+}
+
+int cmdRegsNes(int argc, char** argv)
+{
+    using namespace chipdsp::nes;
+    if (argc < 5)
+        return usage();
+    const std::string vgmPath = argv[3];
+    const std::string wavPath = argv[4];
+    double rate = 44100.0;
+    auto kernel = chipdsp::BandLimitedStepSynth::Kernel::ImpulseSum;   // as Nes2A03Engine
+    for (int i = 5; i < argc; ++i)
+    {
+        std::string v;
+        if (optionValue(argc, argv, i, "--rate", v)) rate = std::stod(v);
+        else if (optionValue(argc, argv, i, "--kernel", v))
+        {
+            if (v == "impulse") kernel = chipdsp::BandLimitedStepSynth::Kernel::ImpulseSum;
+            else if (v == "integrated") kernel = chipdsp::BandLimitedStepSynth::Kernel::IntegratedStep;
+            else throw std::runtime_error("--kernel must be impulse or integrated");
+        }
+        else throw std::runtime_error(std::string("unknown option ") + argv[i]);
+    }
+    const NesVgm vgm = parseVgmNes(readFile(vgmPath));
+    // The header clock selects the region; the chip then runs at the engine's integer clock.
+    const bool pal = vgm.clock < 1720000u;
+    const double cpuHz = pal ? kCpuHzPal : kCpuHzNtsc;
+    if (std::abs(static_cast<double>(vgm.clock) - cpuHz) > 10.0)
+        std::fprintf(stderr, "warning: VGM NES clock %u Hz differs from the engine clock %.0f Hz\n", vgm.clock, cpuHz);
+
+    NesApu chip;
+    chip.setRegion(pal);
+    chip.reset();
+    chip.dmc.setMemory(vgm.memory.data() + 0xC000, 0x4000);
+    NesMixer mixer;
+    mixer.build();
+    chipdsp::BandLimitedStepSynth synth;
+    synth.prepare(kCpuHzNtsc, rate, kBlockSize, kernel);   // as Nes2A03Engine::prepare
+    NesOutputStage stage;
+    stage.prepare(rate);
+
+    // Mirror of Nes2A03Engine::readLevels (ultrasonic triangle: constant 7.5 in the mixer, A2).
+    struct Levels
+    {
+        uint8_t p1 = 0, p2 = 0, tri = 0, noise = 0, dmc = 0;
+        bool triUltrasonic = false;
+        bool operator==(const Levels&) const = default;
+    };
+    auto readLevels = [&]() {
+        Levels lv;
+        lv.p1 = chip.pulse1.output();
+        lv.p2 = chip.pulse2.output();
+        lv.triUltrasonic = chip.triangle.isUltrasonic();
+        lv.tri = lv.triUltrasonic ? uint8_t { 0 } : chip.triangle.output();
+        lv.noise = chip.noise.output();
+        lv.dmc = chip.dmc.output();
+        return lv;
+    };
+    auto mixOf = [&](const Levels& lv) { return mixer.mix(lv.p1, lv.p2, lv.tri, lv.triUltrasonic, lv.noise, lv.dmc); };
+    // As Nes2A03Engine::reset(): the synth tracks changes relative to the power-up level.
+    Levels last = readLevels();
+    float lastMix = mixOf(last);
+
+    const double hostPerClock = rate / cpuHz;
+    const int total = static_cast<int>(std::lround(static_cast<double>(vgm.totalSamples) / 44100.0 * rate));
+    std::vector<float> out(static_cast<size_t>(total), 0.0f);
+    size_t next = 0;
+    uint64_t cycle = 0;
+    double t = 0.0;                                         // block-relative host time of this cycle
+    for (int pos = 0; pos < total; pos += kBlockSize)
+    {
+        const int n = std::min(kBlockSize, total - pos);
+        const double end = static_cast<double>(n);
+        while (t < end)
+        {
+            // Writes of VGM sample s land on CPU cycle round(s * cpu / 44100), before that
+            // cycle's clock (the engine's driver also writes before chip.clock()).
+            while (next < vgm.writes.size() &&
+                   static_cast<uint64_t>(std::llround(vgm.writes[next].sample * cpuHz / 44100.0)) <= cycle)
+            {
+                chip.write(static_cast<uint16_t>(0x4000 + vgm.writes[next].reg), vgm.writes[next].value);
+                ++next;
+            }
+            chip.clock();
+            ++cycle;
+            const Levels lv = readLevels();
+            if (!(lv == last))
+            {
+                const float mix = mixOf(lv);
+                if (mix != lastMix)
+                {
+                    synth.addDelta(t, mix - lastMix);
+                    lastMix = mix;
+                }
+                last = lv;
+            }
+            t += hostPerClock;
+        }
+        t -= end;
+        float* dst = out.data() + pos;
+        synth.endBlockReplace(dst, n);
+        stage.process(dst, n, false);
+    }
+    writeFile(wavPath, wavStereo16(out, out, static_cast<int>(std::lround(rate))));
+    return 0;
+}
+
 int cmdRegs(int argc, char** argv)
 {
     if (argc < 3)
@@ -1250,7 +1446,9 @@ int cmdRegs(int argc, char** argv)
         return cmdRegsGenesis(argc, argv);
     if (chip == "snes")
         return cmdRegsSnes(argc, argv);
-    throw std::runtime_error("regs: unknown chip " + chip + " (genesis or snes)");
+    if (chip == "nes")
+        return cmdRegsNes(argc, argv);
+    throw std::runtime_error("regs: unknown chip " + chip + " (genesis, snes or nes)");
 }
 
 } // namespace
