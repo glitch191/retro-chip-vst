@@ -226,8 +226,9 @@ class QaTests(unittest.TestCase):
 
 
 class LevelTests(unittest.TestCase):
-    def entry(self, rms, peak, peak_short=None):
-        return {"held_rms_db": rms, "peak_db": peak, "peak_short_db": peak if peak_short is None else peak_short}
+    def entry(self, rms, peak, peak_short=None, peak_v127=None):
+        return {"held_rms_db": rms, "peak_db": peak, "peak_short_db": peak if peak_short is None else peak_short,
+                "peak_v127_db": peak if peak_v127 is None else peak_v127, "peak_short_v127_db": peak}
 
     def test_rms_target_when_the_peak_allows_it(self):
         # A square-like tone: -33 dBFS RMS, -31 dBFS peak -> +15 dB puts it at -18 dBFS RMS.
@@ -240,8 +241,11 @@ class LevelTests(unittest.TestCase):
         decision = level.preset_gain(self.entry(-38.0, -9.8))
         self.assertEqual(decision.gain_db, 8.5)
         self.assertTrue(decision.limited_by_peak)
-        # The short pass peak counts too.
+        # The short pass peak counts too, and so do the velocity-127 peaks (the ceiling holds at
+        # full velocity while the RMS target stays at velocity 100).
         self.assertEqual(level.preset_gain(self.entry(-38.0, -20.0, -9.8)).gain_db, 8.5)
+        self.assertEqual(level.preset_gain(self.entry(-38.0, -20.0, peak_v127=-9.8)).gain_db, 8.5)
+        self.assertEqual(level.preset_gain(self.entry(-33.0, -31.0, peak_v127=-14.0)).gain_db, 13.0)
         # Rounding to the nearest 0.5 dB that would cross the ceiling steps down instead.
         self.assertEqual(level.preset_gain(self.entry(-30.0, -12.8)).gain_db, 11.5)   # 11.8 -> 12.0 -> 11.5
 
@@ -257,7 +261,9 @@ class LevelTests(unittest.TestCase):
     def test_assign_writes_global_and_skips_presets_without_features(self):
         a = Preset(name="A", chip="nes", category="Lead", subcategory="Pulse", global_params={"poly_channels": 1})
         b = Preset(name="B", chip="nes", category="Lead", subcategory="Pulse", global_params={"preset_gain": 3.0})
-        summary = level.assign_preset_gains([a, b], {"A": self.entry(-33.0, -31.0)})
+        # B has features without the velocity-127 peaks (an older features file): skipped.
+        old = {"held_rms_db": -33.0, "peak_db": -31.0, "peak_short_db": -31.0}
+        summary = level.assign_preset_gains([a, b], {"A": self.entry(-33.0, -31.0), "B": old})
         self.assertEqual(a.global_params, {"poly_channels": 1, "preset_gain": 15.0})
         self.assertNotIn("preset_gain", b.global_params)
         self.assertEqual((summary.count, summary.missing, summary.median), (1, 1, 15.0))

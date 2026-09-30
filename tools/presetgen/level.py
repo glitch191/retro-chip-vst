@@ -6,11 +6,13 @@ after the chip output, together with master_gain. It is derived from the long pa
 `chiptool features` (C4, velocity 100, held 1.4 s), which measures the chip output without
 preset_gain:
 
-* held_rms_db: stereo RMS over the 10 ms windows of the hold within 20 dB of the loudest one;
+* held_rms_db: stereo RMS over the 10 ms windows of the hold within 20 dB of the loudest one
+  (velocity 100: the loudness target is the playing level);
 * peak_db / peak_short_db: largest |sample| of either channel in the long (C4) and short (C3)
-  pass.
+  pass at velocity 100, peak_v127_db / peak_short_v127_db the same two renders at velocity
+  127, so the ceiling holds at every velocity.
 
-    gain = min(TARGET_RMS_DB - held_rms_db, PEAK_CEILING_DB - max(peak_db, peak_short_db))
+    gain = min(TARGET_RMS_DB - held_rms_db, PEAK_CEILING_DB - max(all four peaks))
 
 rounded to GAIN_STEP_DB, lowered by one step when the rounding would put the peak above the
 ceiling, and clamped to the parameter range. Arpeggiator presets are measured as a single
@@ -32,6 +34,8 @@ GAIN_STEP_DB = 0.5
 GAIN_MIN_DB = -24.0        # plugin parameter range (plugin/src/Parameters.cpp)
 GAIN_MAX_DB = 36.0
 SILENT_DB = -100.0         # held_rms_db at or below this: nothing to measure
+PEAK_KEYS = ("peak_db", "peak_short_db", "peak_v127_db", "peak_short_v127_db")
+REQUIRED_KEYS = ("held_rms_db",) + PEAK_KEYS
 
 
 @dataclass(frozen=True)
@@ -44,7 +48,7 @@ class GainDecision:
 def preset_gain(entry: Mapping[str, Any]) -> GainDecision:
     """preset_gain (dB) from one `chiptool features` entry."""
     rms = float(entry["held_rms_db"])
-    peak = max(float(entry["peak_db"]), float(entry.get("peak_short_db", entry["peak_db"])))
+    peak = max(float(entry[key]) for key in PEAK_KEYS)
     if rms <= SILENT_DB:
         return GainDecision(0.0, False, silent=True)
     for_rms = TARGET_RMS_DB - rms
@@ -64,7 +68,7 @@ class GainSummary:
     maximum: float = 0.0
     limited_by_peak: int = 0
     silent: int = 0
-    missing: int = 0     # presets without features: no preset_gain written
+    missing: int = 0     # presets without (complete) level features: no preset_gain written
 
     def describe(self) -> str:
         if self.count == 0:
@@ -86,7 +90,7 @@ def assign_preset_gains(presets: Sequence[Preset], features: Mapping[str, Any] |
     gains: list[float] = []
     for preset in presets:
         entry = features.get(preset.name)
-        if not isinstance(entry, Mapping) or "held_rms_db" not in entry:
+        if not isinstance(entry, Mapping) or any(key not in entry for key in REQUIRED_KEYS):
             summary.missing += 1
             preset.global_params.pop(PRESET_GAIN_KEY, None)
             continue

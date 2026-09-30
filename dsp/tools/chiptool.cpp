@@ -14,16 +14,19 @@
 //       --seconds in total (the rest is the release tail).
 //
 //   chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]
-//       Renders every preset of the bank twice at 48 kHz, each after a 0.4 s silent pre-roll
-//       (C4 for 2 s held 1.4 s, and C3 for 0.5 s held 80 ms) and writes
+//       Renders every preset of the bank twice at 48 kHz and velocity 100, each after a 0.4 s
+//       silent pre-roll (C4 for 2 s held 1.4 s, and C3 for 0.5 s held 80 ms), plus the same two
+//       renders at velocity 127 for the peaks only, and writes
 //       {name: {"mel": [40 left + 40 right log-energies in dB], "env": [20 RMS points],
 //               "pitch": [per-frame f0, cents re A4 + 10000, 0 = unvoiced],
 //               "mel_short": [...], "env_short": [...], "pitch_short": [...],
-//               "held_rms_db": R, "peak_db": P, "peak_short_db": S}}, computed
+//               "held_rms_db": R, "peak_db": P, "peak_short_db": S,
+//               "peak_v127_db": P127, "peak_short_v127_db": S127}}, computed
 //       with an inline radix-2 FFT and a 40-band mel filterbank. R is the stereo RMS (dBFS,
 //       full-scale sine = -3 dBFS) of the long pass between note-on and note-off over the
 //       10 ms windows within 20 dB of the loudest one (the part where the note sounds); P and
-//       S are the largest |sample| of either channel over each pass (dBFS). They measure the
+//       S are the largest |sample| of either channel over each pass (dBFS), P127 and S127 the
+//       same at velocity 127 (the loudest a note can be played). They measure the
 //       chip output: preset_gain is not applied (tools/presetgen derives it from them).
 //       The hardware channel is the lowest bit of the
 //       preset's global.poly_channels. Presets are rendered in
@@ -118,6 +121,7 @@ constexpr double kLevelActiveRangeDb = 20.0;    // windows this far below the lo
 constexpr double kLevelFloorDb = -120.0;        // level of silence
 constexpr int kFeatureNote = 60;
 constexpr int kFeatureVelocity = 100;
+constexpr int kPeakVelocity = 127;           // peak_v127_db / peak_short_v127_db
 
 // ----- files ------------------------------------------------------------------------------------
 
@@ -1034,6 +1038,23 @@ int cmdFeatures(int argc, char** argv)
                     if (pass == 0)
                         entry["held_rms_db"] = Value(heldRmsDb(left, right,
                                                                static_cast<size_t>(std::lround(kFeatureHoldSeconds * kFeatureRate))));
+                }
+                // Peaks at full velocity (the preset_gain ceiling holds for every velocity):
+                // the same two passes at velocity 127, each with a fresh engine.
+                for (int pass = 0; pass < 2; ++pass)
+                {
+                    RenderOptions passOpts = opts;
+                    passOpts.velocity = kPeakVelocity;
+                    if (pass == 1)
+                    {
+                        passOpts.seconds = kShortSeconds;
+                        passOpts.holdSeconds = kShortHoldSeconds;
+                        passOpts.note = kShortNote;
+                    }
+                    auto engine = chipdsp::createEngine(chip);
+                    engine->prepare(kFeatureRate, kBlockSize);
+                    renderPreset(*engine, preset, passOpts, false, &library, left, right);
+                    entry[pass == 0 ? "peak_v127_db" : "peak_short_v127_db"] = Value(peakDb(left, right));
                 }
                 names[index] = nameValue->asString();
                 results[index] = std::move(entry);
