@@ -2,6 +2,7 @@
 
 #include "ui/EditorLayout.h"
 #include "ui/GenesisPanel.h"
+#include "ui/KeyboardFocus.h"
 #include "ui/NesPanel.h"
 #include "ui/SnesPanel.h"
 #include "ui/Theme.h"
@@ -102,6 +103,8 @@ RetroChipEditor::RetroChipEditor (RetroChipProcessor& p)
                            panelArea.getBottom() - theme::kGap - DiagnosticsOverlay::preferredHeight(),
                            DiagnosticsOverlay::preferredWidth(), DiagnosticsOverlay::preferredHeight());
 
+    content.addMouseListener (&focusReleaser, true);
+
     rcvProcessor.visualizer().setEnabled (true);
     rcvProcessor.midiLearn().addChangeListener (this);
     rcvProcessor.presetManager().addChangeListener (this);
@@ -150,8 +153,16 @@ RetroChipEditor::RetroChipEditor (RetroChipProcessor& p)
     applyScreenshotSearch();
 }
 
+void RetroChipEditor::FocusReleaser::mouseDown (const juce::MouseEvent& e)
+{
+    // Called after the pressed component took the focus it wants for the click.
+    if (! owner.strip.keepsKeyboardFocus (e.originalComponent))
+        releaseKeyboardFocus (owner);
+}
+
 RetroChipEditor::~RetroChipEditor()
 {
+    content.removeMouseListener (&focusReleaser);
     rcvProcessor.presetManager().removeChangeListener (this);
     rcvProcessor.midiLearn().removeChangeListener (this);
     rcvProcessor.visualizer().setEnabled (false);

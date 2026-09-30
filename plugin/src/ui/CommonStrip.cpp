@@ -1,6 +1,9 @@
 #include "ui/CommonStrip.h"
 
+#include "ui/KeyboardFocus.h"
 #include "ui/Theme.h"
+
+#include "chipdsp/EngineFactory.h"
 
 #include <algorithm>
 #include <cmath>
@@ -24,7 +27,69 @@ namespace
     {
         return static_cast<int> (std::ceil (theme::textWidth (theme::font(), text)));
     }
+
+    // Short fixed-width chip label of a result row.
+    const char* chipTag (chipdsp::ChipId chip)
+    {
+        switch (chip)
+        {
+            case chipdsp::ChipId::Nes: return "NES";
+            case chipdsp::ChipId::Snes: return "SNES";
+            case chipdsp::ChipId::Genesis: return "GEN";
+        }
+        return "";
+    }
+
+    // Header line of the results list: the number of results, or "No preset matches".
+    class ResultsSummary final : public juce::Component
+    {
+    public:
+        void setText (const juce::String& newText)
+        {
+            if (newText == text)
+                return;
+            text = newText;
+            repaint();
+        }
+
+        void paint (juce::Graphics& g) override
+        {
+            g.fillAll (theme::colours::panel);
+            g.setFont (theme::font());
+            g.setColour (theme::colours::textDim);
+            g.drawText (text, getLocalBounds().reduced (theme::kGap, 0), juce::Justification::centredLeft, true);
+            g.setColour (theme::colours::divider);
+            g.fillRect (0.0f, static_cast<float> (getHeight()) - theme::kBorder, static_cast<float> (getWidth()), theme::kBorder);
+        }
+
+    private:
+        juce::String text;
+    };
 } // namespace
+
+// ----- SearchField --------------------------------------------------------------------------
+
+namespace
+{
+    bool isHostShortcut (const juce::ModifierKeys& mods)
+    {
+        return mods.isCtrlDown() || mods.isAltDown() || mods.isCommandDown();
+    }
+} // namespace
+
+bool CommonStrip::SearchField::keyPressed (const juce::KeyPress& key)
+{
+    if (onNavigationKey && onNavigationKey (key))
+        return true;
+    const bool used = juce::TextEditor::keyPressed (key);
+    return used || ! isHostShortcut (key.getModifiers());
+}
+
+bool CommonStrip::SearchField::keyStateChanged (bool isKeyDown)
+{
+    juce::TextEditor::keyStateChanged (isKeyDown);
+    return ! isHostShortcut (juce::ModifierKeys::currentModifiers);
+}
 
 // ----- FormSection --------------------------------------------------------------------------
 
@@ -115,12 +180,15 @@ CommonStrip::CommonStrip (RetroChipProcessor& p, UiContext& context)
     addAndMakeVisible (presetButton);
     addAndMakeVisible (nextButton);
 
-    searchField.setTextToShowWhenEmpty ("Search presets", theme::colours::textDim);
+    searchField.setTextToShowWhenEmpty ("Search all presets", theme::colours::textDim);
     searchField.setFont (theme::font());
     searchField.setIndents (theme::kGap, 0);
     searchField.setJustification (juce::Justification::centredLeft);
     searchField.setSelectAllWhenFocused (true);
-    searchField.setTooltip ("Filter presets by name and tags. Up and Down choose a match, Return loads it");
+    searchField.setComponentID ("presetSearch");
+    searchField.setTitle ("Preset search");
+    searchField.setTooltip ("Search the presets of all three chips. Every word must match the name, category, subcategory, "
+                            "a tag or the chip (nes, snes, genesis). Up and Down choose a result, Return loads it, Escape clears");
     searchField.onTextChange = [this] { updateSearch(); };
     searchField.onEscapeKey = [this]
     {
@@ -131,16 +199,20 @@ CommonStrip::CommonStrip (RetroChipProcessor& p, UiContext& context)
     searchField.onReturnKey = [this]
     {
         const int selected = resultsList.getSelectedRow();
-        applyResult (selected >= 0 ? selected : 0);
+        applyResult (isResultRow (selected) ? selected : firstResultRow());
     };
     searchField.onFocusLost = [this]
     {
         if (! resultsList.isMouseOver (true))
             resultsList.setVisible (false);
     };
-    searchField.addKeyListener (&searchKeys);
+    searchField.onNavigationKey = [this] (const juce::KeyPress& key) { return searchKeyPressed (key); };
     addAndMakeVisible (searchField);
 
+    auto summary = std::make_unique<ResultsSummary>();
+    resultsSummary = summary.get();
+    resultsSummary->setSize (theme::kResultsWidth, theme::kPopupItemHeight);
+    resultsList.setHeaderComponent (std::move (summary));
     resultsList.setRowHeight (theme::kPopupItemHeight);
     resultsList.setOutlineThickness (static_cast<int> (theme::kBorder));
     resultsList.setWantsKeyboardFocus (false);   // the search field keeps the keys
@@ -236,43 +308,48 @@ void CommonStrip::refreshSampleStatus()
 
 CommonStrip::~CommonStrip()
 {
-    searchField.removeKeyListener (&searchKeys);
     processor.presetManager().removeChangeListener (this);
+}
+
+bool CommonStrip::keepsKeyboardFocus (const juce::Component* c) const
+{
+    return c != nullptr && (c == &searchField || searchField.isParentOf (c) || c == &resultsList || resultsList.isParentOf (c));
 }
 
 bool CommonStrip::searchKeyPressed (const juce::KeyPress& key)
 {
     // Up / Down move the selection of the results list while the search field has focus.
-    if (! resultsList.isVisible() || results.empty())
-        return false;
-    const int count = static_cast<int> (results.size());
-    const int selected = resultsList.getSelectedRow();
     if (key == juce::KeyPress::downKey)
-    {
-        const int row = selected < 0 ? 0 : juce::jmin (count - 1, selected + 1);
-        resultsList.selectRow (row);
-        return true;
-    }
+        return moveSelection (1);
     if (key == juce::KeyPress::upKey)
-    {
-        const int row = selected < 0 ? count - 1 : juce::jmax (0, selected - 1);
-        resultsList.selectRow (row);
-        return true;
-    }
+        return moveSelection (-1);
     return false;
+}
+
+bool CommonStrip::moveSelection (int direction)
+{
+    if (! resultsList.isVisible() || numResults == 0)
+        return false;
+    const int count = static_cast<int> (resultRows.size());
+    int row = resultsList.getSelectedRow();
+    if (! isResultRow (row))
+        row = direction > 0 ? -1 : count;
+    for (int r = row + direction; r >= 0 && r < count; r += direction)
+    {
+        if (! isResultRow (r))
+            continue;
+        resultsList.selectRow (r);
+        if (r > 0 && ! isResultRow (r - 1))
+            resultsList.scrollToEnsureRowIsOnscreen (r - 1);   // keep the chip header in view
+        break;
+    }
+    return true;   // at either end the selection stays
 }
 
 void CommonStrip::releaseSearchFocus()
 {
-    // Focus moves to the editor content (it wants focus but handles no keys), so the caret
-    // disappears and keys go back to the host.
-    if (searchField.hasKeyboardFocus (true))
-    {
-        if (auto* parent = getParentComponent(); parent != nullptr && parent->getWantsKeyboardFocus())
-            parent->grabKeyboardFocus();
-        else
-            searchField.giveAwayKeyboardFocus();
-    }
+    // No component keeps the focus and the host gets the keyboard back (caret hidden).
+    releaseKeyboardFocus (*this);
 }
 
 void CommonStrip::setMaxScale (float maxScale)
@@ -337,9 +414,11 @@ void CommonStrip::resized()
     row.removeFromRight (theme::kUnit);
     presetButton.setBounds (row);
 
-    const int visibleRows = juce::jlimit (1, theme::kResultsMaxRows, getNumRows());
-    resultsList.setBounds (searchField.getRight() - theme::kResultsWidth, header.getBottom() + theme::kUnit,
-                           theme::kResultsWidth, visibleRows * theme::kPopupItemHeight + 2 * static_cast<int> (theme::kBorder));
+    // Results list: right-aligned to the field, header line + up to kResultsMaxRows rows.
+    const int visibleRows = juce::jlimit (0, theme::kResultsMaxRows, getNumRows());
+    const int listX = juce::jmax (header.getX(), searchField.getRight() - theme::kResultsWidth);
+    resultsList.setBounds (listX, header.getBottom() + theme::kUnit, searchField.getRight() - listX,
+                           theme::kPopupItemHeight + visibleRows * theme::kPopupItemHeight + 2 * static_cast<int> (theme::kBorder));
 
     // ----- sidebar
     auto side = sidebar;
@@ -372,10 +451,16 @@ void CommonStrip::chipChanged()
 {
     browseCategory.clear();
     browseSubcategory.clear();
-    searchField.clear();
-    results.clear();
-    resultsList.setVisible (false);
-    restoreBrowseList();
+    // A preset of another chip (search result, Previous/Next through cross-chip results,
+    // import) keeps the search and the list being walked; the chip selector clears them.
+    if (! processor.presetManager().isApplying())
+    {
+        searchField.clear();
+        resultRows.clear();
+        numResults = 0;
+        resultsList.setVisible (false);
+        restoreBrowseList();
+    }
     refreshPresetName();
 }
 
@@ -433,7 +518,7 @@ void CommonStrip::refreshPresetName()
     presetButton.setEnabled (any);
     previousButton.setEnabled (any);
     nextButton.setEnabled (any);
-    searchField.setEnabled (any);
+    searchField.setEnabled (pm.numPresets() > 0);   // the search covers every chip
 }
 
 void CommonStrip::restoreBrowseList()
@@ -441,7 +526,7 @@ void CommonStrip::restoreBrowseList()
     auto& pm = processor.presetManager();
     const auto chip = processor.selectedChip();
     if (searchField.getText().trim().isNotEmpty())
-        pm.search (chip, searchField.getText());
+        pm.searchAll (searchField.getText());
     else
         pm.presets (chip, browseCategory, browseSubcategory);
 }
@@ -542,56 +627,134 @@ void CommonStrip::choosePreset (const MenuEntry& entry)
 void CommonStrip::updateSearch()
 {
     auto& pm = processor.presetManager();
-    const auto chip = processor.selectedChip();
     const auto text = searchField.getText().trim();
-    results.clear();
+    resultRows.clear();
+    numResults = 0;
     if (text.isEmpty())
     {
         resultsList.setVisible (false);
         restoreBrowseList();
         return;
     }
-    for (const auto* preset : pm.search (chip, text))
-        results.push_back (preset->name);
+
+    // All chips, sorted by chip then category, subcategory, name; one header row per chip.
+    const auto found = pm.searchAll (text);
+    numResults = static_cast<int> (found.size());
+    size_t headerIndex = 0;
+    for (const auto* preset : found)
+    {
+        if (resultRows.empty() || resultRows.back().chip != preset->chip)
+        {
+            headerIndex = resultRows.size();
+            resultRows.push_back ({ preset->chip, {}, {}, 0 });
+        }
+        ++resultRows[headerIndex].count;
+        juce::String location = preset->category;
+        if (preset->subcategory.isNotEmpty())
+            location << (location.isNotEmpty() ? " / " : "") << preset->subcategory;
+        resultRows.push_back ({ preset->chip, preset->name, location, 0 });
+    }
+
+    static_cast<ResultsSummary*> (resultsSummary)
+        ->setText (numResults == 0 ? juce::String ("No preset matches")
+                                   : juce::String (numResults) + (numResults == 1 ? " preset matches" : " presets match"));
+    resultsList.deselectAllRows();
     resultsList.updateContent();
+    resultsList.getVerticalScrollBar().setCurrentRangeStart (0.0);
     resized();
     resultsList.setVisible (true);
     resultsList.repaint();
 }
 
+bool CommonStrip::isResultRow (int row) const
+{
+    return juce::isPositiveAndBelow (row, static_cast<int> (resultRows.size())) && ! resultRows[static_cast<size_t> (row)].isHeader();
+}
+
+int CommonStrip::firstResultRow() const
+{
+    for (int r = 0; r < static_cast<int> (resultRows.size()); ++r)
+        if (isResultRow (r))
+            return r;
+    return -1;
+}
+
 int CommonStrip::getNumRows()
 {
-    return results.empty() ? 1 : static_cast<int> (results.size());
+    return static_cast<int> (resultRows.size());
+}
+
+CommonStrip::RowLayout CommonStrip::rowLayout (int width, int height)
+{
+    // | 8 | chip tag 44 | 8 | name ... | 8 | Category / Subcategory 160 | 8 |
+    RowLayout l;
+    auto area = juce::Rectangle<int> (0, 0, width, height).reduced (theme::kGap, 0);
+    l.tag = area.removeFromLeft (theme::kChipTagWidth).withSizeKeepingCentre (theme::kChipTagWidth, theme::kChipTagHeight);
+    area.removeFromLeft (theme::kGap);
+    l.location = area.removeFromRight (juce::jmin (theme::kResultsCategoryWidth, area.getWidth() / 2));
+    area.removeFromRight (theme::kGap);
+    l.name = area;
+    return l;
 }
 
 void CommonStrip::paintListBoxItem (int row, juce::Graphics& g, int width, int height, bool selected)
 {
-    g.setFont (theme::font());
-    if (results.empty())
+    if (! juce::isPositiveAndBelow (row, static_cast<int> (resultRows.size())))
+        return;
+    const auto& r = resultRows[static_cast<size_t> (row)];
+
+    if (r.isHeader())
     {
-        g.setColour (theme::colours::textDim);
-        g.drawText ("No matching presets", theme::kGap, 0, width - 2 * theme::kGap, height, juce::Justification::centredLeft, true);
+        // Chip header: "SNES (41)", bold on the editor background.
+        g.fillAll (theme::colours::background);
+        g.setFont (theme::font (theme::kFontBody, true));
+        g.setColour (theme::colours::text);
+        g.drawText (juce::String (chipdsp::chipName (r.chip)) + " (" + juce::String (r.count) + ")", theme::kGap, 0,
+                    width - 2 * theme::kGap, height, juce::Justification::centredLeft, true);
         return;
     }
+
     if (selected)
         g.fillAll (theme::colours::surfaceHover);
+    const auto l = rowLayout (width, height);
+
+    // Chip tag: neutral surface, 1 px border, 4 px radius.
+    g.setColour (theme::colours::surface);
+    g.fillRoundedRectangle (l.tag.toFloat(), theme::kRadius);
+    g.setColour (theme::colours::border);
+    g.drawRoundedRectangle (l.tag.toFloat().reduced (0.5f * theme::kBorder), theme::kRadius, theme::kBorder);
+    g.setFont (theme::font());
     g.setColour (theme::colours::text);
-    g.drawText (results[static_cast<size_t> (row)], theme::kGap, 0, width - 2 * theme::kGap, height, juce::Justification::centredLeft, true);
+    g.drawText (chipTag (r.chip), l.tag, juce::Justification::centred, false);
+
+    g.drawText (r.name, l.name, juce::Justification::centredLeft, true);
+    g.setColour (theme::colours::textDim);
+    g.drawText (r.location, l.location, juce::Justification::centredLeft, true);
 }
 
 void CommonStrip::listBoxItemClicked (int row, const juce::MouseEvent&)
 {
-    applyResult (row);
+    applyResult (row);   // header rows do nothing
+}
+
+void CommonStrip::selectedRowsChanged (int lastRowSelected)
+{
+    // Header rows cannot be selected.
+    if (lastRowSelected >= 0 && ! isResultRow (lastRowSelected))
+        resultsList.deselectRow (lastRowSelected);
 }
 
 void CommonStrip::applyResult (int row)
 {
-    if (! juce::isPositiveAndBelow (row, static_cast<int> (results.size())))
+    if (! isResultRow (row))
         return;
+    const auto& r = resultRows[static_cast<size_t> (row)];
     auto& pm = processor.presetManager();
-    if (const auto* preset = pm.findByName (processor.selectedChip(), results[static_cast<size_t> (row)]))
+    // A result of another chip switches the chip (apply() writes `chip` last) and the panel
+    // follows; chipChanged() keeps the search because the change comes from apply().
+    if (const auto* preset = pm.findByName (r.chip, r.name))
         pm.apply (*preset);
-    // The matches stay the Previous/Next list; the list closes and the field lets go of the
+    // The results stay the Previous/Next list; the list closes and the field lets go of the
     // keyboard. Typing in the field again reopens the list.
     resultsList.selectRow (row);
     resultsList.setVisible (false);
@@ -600,10 +763,17 @@ void CommonStrip::applyResult (int row)
 
 juce::String CommonStrip::getTooltipForRow (int row)
 {
-    // Rows can be cut with an ellipsis in the 320 px list: the tooltip is the full name.
-    if (juce::isPositiveAndBelow (row, static_cast<int> (results.size())))
-        return results[static_cast<size_t> (row)];
-    return {};
+    // Only when the name or the location is cut with an ellipsis: the full text.
+    if (! isResultRow (row))
+        return {};
+    const auto& r = resultRows[static_cast<size_t> (row)];
+    const auto l = rowLayout (resultsList.getVisibleRowWidth(), theme::kPopupItemHeight);
+    const auto f = theme::font();
+    const bool cut = theme::textWidth (f, r.name) > static_cast<float> (l.name.getWidth())
+                  || theme::textWidth (f, r.location) > static_cast<float> (l.location.getWidth());
+    if (! cut)
+        return {};
+    return r.name + " (" + juce::String (chipdsp::chipName (r.chip)) + ", " + r.location + ")";
 }
 
 void CommonStrip::importSample()

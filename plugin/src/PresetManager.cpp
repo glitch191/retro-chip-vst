@@ -92,16 +92,51 @@ const float* Preset::globalValue (const juce::String& id) const noexcept
     return nullptr;
 }
 
+juce::StringArray Preset::searchWords (const juce::String& text)
+{
+    juce::StringArray words;
+    words.addTokens (text, " \t\r\n", {});
+    words.removeEmptyStrings();
+    return words;
+}
+
+std::optional<chipdsp::ChipId> Preset::chipForSearchWord (const juce::String& word)
+{
+    // "gen" is the chip label of the search results. Chip words match the chip only, never
+    // as substrings of other fields: every factory SNES name contains "nes" ("SNES ...").
+    if (word.equalsIgnoreCase ("gen"))
+        return chipdsp::ChipId::Genesis;
+    for (int c = 0; c < ParamRegistry::kNumChips; ++c)
+    {
+        const auto chip = static_cast<chipdsp::ChipId> (c);
+        if (word.equalsIgnoreCase (chipdsp::chipKey (chip)) || word.equalsIgnoreCase (chipdsp::chipName (chip)))
+            return chip;
+    }
+    return std::nullopt;
+}
+
+bool Preset::matchesWords (const juce::StringArray& words) const
+{
+    for (const auto& word : words)
+    {
+        if (const auto wordChip = chipForSearchWord (word))
+        {
+            if (*wordChip != chip)
+                return false;
+            continue;
+        }
+        bool found = name.containsIgnoreCase (word) || category.containsIgnoreCase (word) || subcategory.containsIgnoreCase (word);
+        for (int i = 0; ! found && i < tags.size(); ++i)
+            found = tags[i].containsIgnoreCase (word);
+        if (! found)
+            return false;
+    }
+    return true;
+}
+
 bool Preset::matches (const juce::String& text) const
 {
-    if (text.isEmpty())
-        return true;
-    if (name.containsIgnoreCase (text))
-        return true;
-    for (const auto& tag : tags)
-        if (tag.containsIgnoreCase (text))
-            return true;
-    return false;
+    return matchesWords (searchWords (text));
 }
 
 std::optional<chipdsp::ChipId> Preset::parseChip (const juce::var& value)
@@ -564,15 +599,41 @@ std::vector<const Preset*> PresetManager::presets (chipdsp::ChipId chip, const j
 std::vector<const Preset*> PresetManager::search (chipdsp::ChipId chip, const juce::String& text)
 {
     std::vector<const Preset*> result;
-    const auto needle = text.trim();
+    const auto words = Preset::searchWords (text);
     auto collect = [&] (const std::deque<Preset>& list)
     {
         for (const auto& p : list)
-            if (p.chip == chip && p.matches (needle))
+            if (p.chip == chip && p.matchesWords (words))
                 result.push_back (&p);
     };
     collect (factory);
     collect (user);
+    filteredList = result;
+    return result;
+}
+
+std::vector<const Preset*> PresetManager::searchAll (const juce::String& text)
+{
+    std::vector<const Preset*> result;
+    const auto words = Preset::searchWords (text);
+    auto collect = [&] (const std::deque<Preset>& list)
+    {
+        for (const auto& p : list)
+            if (p.matchesWords (words))
+                result.push_back (&p);
+    };
+    collect (factory);
+    collect (user);
+    std::stable_sort (result.begin(), result.end(), [] (const Preset* a, const Preset* b)
+    {
+        if (a->chip != b->chip)
+            return static_cast<int> (a->chip) < static_cast<int> (b->chip);
+        if (const int c = a->category.compareNatural (b->category); c != 0)
+            return c < 0;
+        if (const int c = a->subcategory.compareNatural (b->subcategory); c != 0)
+            return c < 0;
+        return a->name.compareNatural (b->name) < 0;
+    });
     filteredList = result;
     return result;
 }
@@ -621,6 +682,7 @@ bool PresetManager::isPresetManagedGlobal (const juce::String& id)
 void PresetManager::apply (const Preset& preset)
 {
     ++applies;
+    const juce::ScopedValueSetter<bool> applyingScope (applying, true);
     sampleError = {};
 
     // Order: engine parameters, preset-managed globals, samples, and the chip last. The

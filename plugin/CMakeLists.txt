@@ -24,7 +24,11 @@ juce_add_plugin(RetroChip
     NEEDS_MIDI_INPUT TRUE
     NEEDS_MIDI_OUTPUT FALSE
     IS_MIDI_EFFECT FALSE
-    EDITOR_WANTS_KEYBOARD_FOCUS FALSE
+    # The preset search field takes keys. In JUCE 9 this flag only changes the macOS
+    # wrappers (the editor view accepts key presses) and VST2's effKeysRequired; the
+    # Windows VST3 wrapper routes keys through its message hook whatever its value (see
+    # CommonStrip::SearchField and ui/KeyboardFocus.h for the Windows behaviour).
+    EDITOR_WANTS_KEYBOARD_FOCUS TRUE
     COPY_PLUGIN_AFTER_BUILD ${RCV_COPY_PLUGIN_AFTER_BUILD}
     VST3_COPY_DIR "$ENV{LOCALAPPDATA}/Programs/Common/VST3"
     VERSION ${PROJECT_VERSION})

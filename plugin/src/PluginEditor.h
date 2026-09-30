@@ -27,9 +27,14 @@ namespace rcv
 // written as one gesture once the drag has ended; a change of ui_scale (UI scale box,
 // state restore) resizes the editor.
 //
-// Keyboard: only the preset search field takes keys. Clicks elsewhere focus the clicked
-// control, section or the content itself, none of which handle keys, so the host keeps
-// its shortcuts (Space, arrows) and focus never jumps to an unrelated control.
+// Keyboard: only the preset search field takes keys; while focused it consumes every key
+// (CommonStrip::SearchField), so the host does not also play notes from them. A mouse
+// press anywhere else in the editor (FocusReleaser, which sees the presses of every
+// child) releases the keyboard: no component keeps the focus and, in a host window on
+// Windows, the native focus returns to the host (ui/KeyboardFocus.h), so the host keeps
+// its shortcuts and computer-keyboard note input. The clicked control, section or the
+// content still wants focus for the moment of the click, so JUCE never moves the focus
+// to the search field on its own.
 //
 // Rendering: a juce::VBlankAttachment drives everything that moves: MIDI learn draining,
 // control-state transitions (RcvLookAndFeel), the channel scopes and the diagnostics
@@ -101,6 +106,14 @@ private:
     ChannelScope scope;
     CommonStrip strip;
     juce::TooltipWindow tooltips;
+
+    struct FocusReleaser final : juce::MouseListener
+    {
+        explicit FocusReleaser (RetroChipEditor& o) : owner (o) {}
+        void mouseDown (const juce::MouseEvent& e) override;
+        RetroChipEditor& owner;
+    };
+    FocusReleaser focusReleaser { *this };
 
     std::unique_ptr<juce::ParameterAttachment> chipAttachment;
     std::unique_ptr<juce::ParameterAttachment> scaleAttachment;
