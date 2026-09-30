@@ -20,6 +20,20 @@
 //       parallel with std::thread, with a fresh engine instance per preset so that sample
 //       memory (SNES APU RAM budget) never carries over from one preset to the next.
 //
+//   chiptool regs genesis <stimulus.vgm> <out.wav> [--rate 44100] [--lowpass] [--asic]
+//   chiptool regs snes <stimulus.spc> <stimulus.events> <out.wav> [--seconds S]
+//       Register-level render for the differential check against a reference emulator
+//       (tools/refcheck). Genesis: plays the YM2612 (0x52/0x53) and SN76489 (0x50) writes and
+//       waits of a VGM file straight into Ym2612Core / Sn76489Core at their VGM sample times
+//       (44100 Hz base, converted to master clocks) and renders them through the engine's
+//       output path: same event loop in master clocks, same BandLimitedStepSynth resamplers,
+//       scales and PSG/FM ratio as GenesisEngine::renderChunk, then the 5 Hz coupling
+//       capacitor and, with --lowpass, the Model 1 low-pass. Ladder effect on (discrete
+//       YM2612) unless --asic. SNES: loads the SPC file's 64 KiB RAM image and DSP register
+//       snapshot into SnesDsp, applies the "sample register value" writes of the events file
+//       (no SPC700 CPU here: the stimulus generator lists what its SPC700 program writes and
+//       when) and writes the native 32 kHz main output unchanged (16-bit, no resampling).
+//
 //   Samples: a preset's "samples" object maps a slot parameter key to a sample name
 //   ({"dmc_sample": "kick_short"}). The sample is looked up in <DIR>/index.json
 //   (default: <bank dir>/../samples, then ./assets/samples), loaded into the slot given by
@@ -32,6 +46,12 @@
 
 #include "chipdsp/EngineFactory.h"
 #include "chipdsp/IChipEngine.h"
+#include "chipdsp/genesis/GenesisTables.h"
+#include "chipdsp/genesis/Sn76489Core.h"
+#include "chipdsp/genesis/Ym2612Core.h"
+#include "chipdsp/snes/SnesDsp.h"
+#include "chipdsp/util/BandLimitedStepSynth.h"
+#include "chipdsp/util/Filters.h"
 
 #include <algorithm>
 #include <atomic>
@@ -471,6 +491,25 @@ std::string wavStereo16(const std::vector<float>& left, const std::vector<float>
     return out;
 }
 
+// 16-bit WAV whose samples are exactly round(x * 32768), clamped: an int16 divided by 32768
+// comes back unchanged (bit-exact SNES output).
+std::string wavStereo16Exact(const std::vector<float>& left, const std::vector<float>& right, int rate)
+{
+    std::string out = wavStereo16(left, right, rate);
+    const auto q = [](float x) {
+        return static_cast<uint16_t>(static_cast<int16_t>(std::clamp(std::lround(x * 32768.0f), -32768L, 32767L)));
+    };
+    for (size_t i = 0; i < left.size(); ++i)
+    {
+        const uint16_t l = q(left[i]), r = q(right[i]);
+        out[44 + 4 * i + 0] = static_cast<char>(l & 0xFF);
+        out[44 + 4 * i + 1] = static_cast<char>(l >> 8);
+        out[44 + 4 * i + 2] = static_cast<char>(r & 0xFF);
+        out[44 + 4 * i + 3] = static_cast<char>(r >> 8);
+    }
+    return out;
+}
+
 // ----- features ---------------------------------------------------------------------------------
 
 // In-place iterative radix-2 FFT; a.size() must be a power of two.
@@ -711,7 +750,9 @@ int usage()
                  "  chiptool dump-params <nes|snes|genesis>\n"
                  "  chiptool render <preset.json> <out.wav> [--note 60] [--seconds 2] [--rate 48000]\n"
                  "                  [--velocity 100] [--channel N] [--samples DIR]\n"
-                 "  chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]\n");
+                 "  chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]\n"
+                 "  chiptool regs genesis <stimulus.vgm> <out.wav> [--rate 44100] [--lowpass] [--asic]\n"
+                 "  chiptool regs snes <stimulus.spc> <stimulus.events> <out.wav> [--seconds S]\n");
     return 1;
 }
 
@@ -896,6 +937,268 @@ int cmdFeatures(int argc, char** argv)
     return failures == 0 ? 0 : 2;
 }
 
+
+// ----- register-level renders (regs) -----------------------------------------------------------
+
+struct VgmEvent
+{
+    uint32_t sample = 0;   // VGM sample time (44100 Hz)
+    int kind = 0;          // 0 = YM2612 bank 0, 1 = YM2612 bank 1, 2 = PSG
+    uint8_t reg = 0;
+    uint8_t value = 0;
+};
+
+// Parses the commands the refcheck stimuli use (VGM specification: 0x50, 0x52, 0x53, 0x61,
+// 0x62, 0x63, 0x7n, 0x66). Anything else is an error, never silently skipped.
+std::vector<VgmEvent> parseVgm(const std::string& data, uint32_t& totalSamples)
+{
+    auto u8 = [&](size_t o) {
+        if (o >= data.size())
+            throw std::runtime_error("VGM: truncated");
+        return static_cast<uint8_t>(data[o]);
+    };
+    auto u32 = [&](size_t o) {
+        return static_cast<uint32_t>(u8(o)) | (static_cast<uint32_t>(u8(o + 1)) << 8) |
+               (static_cast<uint32_t>(u8(o + 2)) << 16) | (static_cast<uint32_t>(u8(o + 3)) << 24);
+    };
+    if (data.size() < 0x40 || data.compare(0, 4, "Vgm ") != 0)
+        throw std::runtime_error("not a VGM file");
+    const uint32_t version = u32(0x08);
+    totalSamples = u32(0x18);
+    size_t pos = (version >= 0x150 && u32(0x34) != 0) ? 0x34 + u32(0x34) : 0x40;
+    std::vector<VgmEvent> events;
+    uint32_t now = 0;
+    for (;;)
+    {
+        const uint8_t cmd = u8(pos);
+        if (cmd == 0x66)
+            break;
+        if (cmd == 0x50)
+        {
+            events.push_back({ now, 2, 0, u8(pos + 1) });
+            pos += 2;
+        }
+        else if (cmd == 0x52 || cmd == 0x53)
+        {
+            events.push_back({ now, cmd - 0x52, u8(pos + 1), u8(pos + 2) });
+            pos += 3;
+        }
+        else if (cmd == 0x61)
+        {
+            now += static_cast<uint32_t>(u8(pos + 1)) | (static_cast<uint32_t>(u8(pos + 2)) << 8);
+            pos += 3;
+        }
+        else if (cmd == 0x62) { now += 735; pos += 1; }
+        else if (cmd == 0x63) { now += 882; pos += 1; }
+        else if ((cmd & 0xF0) == 0x70) { now += (cmd & 15u) + 1u; pos += 1; }
+        else
+        {
+            char buf[64];
+            std::snprintf(buf, sizeof buf, "VGM: unsupported command 0x%02X at 0x%zX", cmd, pos);
+            throw std::runtime_error(buf);
+        }
+    }
+    totalSamples = std::max(totalSamples, now);
+    return events;
+}
+
+// Mirror of GenesisEngine::OutputFilters (coupling capacitor, optional Model 1 low-pass).
+struct GenesisOutputFilter
+{
+    chipdsp::OnePoleHighPass dc;
+    float b0 = 1.0f, b1 = 0.0f, b2 = 0.0f, a1 = 0.0f;
+    float x1 = 0.0f, x2 = 0.0f, y1 = 0.0f;
+    void prepare(double rate)
+    {
+        dc.prepare(chipdsp::genesis::kDcBlockHz, rate);
+        const auto c = chipdsp::genesis::rcLowPass(chipdsp::genesis::kModel1LowPassHz, rate);
+        b0 = static_cast<float>(c.b0);
+        b1 = static_cast<float>(c.b1);
+        b2 = static_cast<float>(c.b2);
+        a1 = static_cast<float>(c.a1);
+    }
+    float process(float x, bool lowPassOn)
+    {
+        const float y = dc.process(x);
+        const float z = b0 * y + b1 * x1 + b2 * x2 - a1 * y1;
+        x2 = x1;
+        x1 = y;
+        y1 = z;
+        return lowPassOn ? z : y;
+    }
+};
+
+int cmdRegsGenesis(int argc, char** argv)
+{
+    using namespace chipdsp::genesis;
+    if (argc < 5)
+        return usage();
+    const std::string vgmPath = argv[3];
+    const std::string wavPath = argv[4];
+    double rate = 44100.0;
+    bool lowPass = false;
+    bool ladder = true;
+    for (int i = 5; i < argc; ++i)
+    {
+        std::string v;
+        if (optionValue(argc, argv, i, "--rate", v)) rate = std::stod(v);
+        else if (std::strcmp(argv[i], "--lowpass") == 0) lowPass = true;
+        else if (std::strcmp(argv[i], "--asic") == 0) ladder = false;
+        else throw std::runtime_error(std::string("unknown option ") + argv[i]);
+    }
+    uint32_t totalSamples = 0;
+    const std::vector<VgmEvent> events = parseVgm(readFile(vgmPath), totalSamples);
+
+    const chipdsp::ClockStandard clockStd = chipdsp::ClockStandard::Ntsc;
+    const double master = masterClock(clockStd);
+    const double hostPerMaster = rate / master;
+    const double masterPerVgm = master / 44100.0;
+
+    Ym2612Core ym;
+    Sn76489Core psg;
+    ym.setLadderEffect(ladder);
+    chipdsp::BandLimitedStepSynth fmL, fmR, psgSynth;
+    fmL.prepare(fmSampleRate(clockStd), rate, kBlockSize);
+    fmR.prepare(fmSampleRate(clockStd), rate, kBlockSize);
+    psgSynth.prepare(psgTickRate(clockStd), rate, kBlockSize);
+    GenesisOutputFilter filterL, filterR;
+    filterL.prepare(rate);
+    filterR.prepare(rate);
+
+    // As GenesisEngine::reset(): settle the idle chip, then start the level trackers there.
+    for (int i = 0; i < 16; ++i)
+    {
+        ym.clockSample();
+        psg.clock();
+    }
+    int levelL = ym.outputLeft(), levelR = ym.outputRight(), levelPsg = psg.mix();
+
+    const int total = static_cast<int>(std::lround(static_cast<double>(totalSamples) / 44100.0 * rate));
+    std::vector<float> left(static_cast<size_t>(total), 0.0f), right(static_cast<size_t>(total), 0.0f);
+    std::vector<float> tmp(static_cast<size_t>(kBlockSize));
+    constexpr float kPsgScale = static_cast<float>(kPsgToFmGain) * kOutputScale;
+
+    size_t nextEvent = 0;
+    double nextFm = 0.0, nextPsg = 0.0, blockStart = 0.0;
+    for (int pos = 0; pos < total; pos += kBlockSize)
+    {
+        const int n = std::min(kBlockSize, total - pos);
+        const double blockEnd = static_cast<double>(pos + n) / hostPerMaster;
+        for (;;)
+        {
+            const double tEvent = nextEvent < events.size() ? events[nextEvent].sample * masterPerVgm : 1e300;
+            const double t = std::min(tEvent, std::min(nextFm, nextPsg));
+            if (t >= blockEnd)
+                break;
+            const double hostTime = (t - blockStart) * hostPerMaster;
+            if (tEvent <= t)
+            {
+                const VgmEvent& e = events[nextEvent++];
+                if (e.kind == 2)
+                    psg.write(e.value);
+                else
+                    ym.write(e.kind, e.reg, e.value);
+            }
+            else if (nextFm <= t)
+            {
+                ym.clockSample();
+                const int l = ym.outputLeft(), r = ym.outputRight();
+                if (l != levelL) { fmL.addDelta(hostTime, static_cast<float>(l - levelL) * kOutputScale); levelL = l; }
+                if (r != levelR) { fmR.addDelta(hostTime, static_cast<float>(r - levelR) * kOutputScale); levelR = r; }
+                nextFm += kMasterClocksPerFmSample;
+            }
+            else
+            {
+                psg.clock();
+                const int m = psg.mix();
+                if (m != levelPsg) { psgSynth.addDelta(hostTime, static_cast<float>(m - levelPsg) * kPsgScale); levelPsg = m; }
+                nextPsg += kMasterClocksPerPsgTick;
+            }
+        }
+        float* outL = left.data() + pos;
+        float* outR = right.data() + pos;
+        fmL.endBlock(outL, n);
+        fmR.endBlock(outR, n);
+        psgSynth.endBlockReplace(tmp.data(), n);
+        for (int i = 0; i < n; ++i)
+        {
+            outL[i] = filterL.process(outL[i] + tmp[static_cast<size_t>(i)], lowPass);
+            outR[i] = filterR.process(outR[i] + tmp[static_cast<size_t>(i)], lowPass);
+        }
+        blockStart = blockEnd;
+    }
+    writeFile(wavPath, wavStereo16(left, right, static_cast<int>(std::lround(rate))));
+    return 0;
+}
+
+int cmdRegsSnes(int argc, char** argv)
+{
+    if (argc < 6)
+        return usage();
+    const std::string spcPath = argv[3];
+    const std::string eventsPath = argv[4];
+    const std::string wavPath = argv[5];
+    double seconds = 1.0;
+    for (int i = 6; i < argc; ++i)
+    {
+        std::string v;
+        if (optionValue(argc, argv, i, "--seconds", v)) seconds = std::stod(v);
+        else throw std::runtime_error(std::string("unknown option ") + argv[i]);
+    }
+    const std::string spc = readFile(spcPath);
+    if (spc.size() < 0x10180 || spc.compare(0, 27, "SNES-SPC700 Sound File Data") != 0)
+        throw std::runtime_error(spcPath + ": not an SPC file");
+
+    struct Write { long sample; int reg; int value; };
+    std::vector<Write> writes;
+    {
+        std::istringstream in(readFile(eventsPath));
+        Write w{};
+        while (in >> w.sample >> w.reg >> w.value)
+            writes.push_back(w);
+        std::stable_sort(writes.begin(), writes.end(), [](const Write& a, const Write& b) { return a.sample < b.sample; });
+    }
+
+    // State load: RAM image, then the DSP snapshot (KON/KOFF/ENDX skipped, FLG last).
+    auto dsp = std::make_unique<chipdsp::snes::SnesDsp>();
+    std::memcpy(dsp->ram(), spc.data() + 0x100, 0x10000);
+    const auto* regs = reinterpret_cast<const uint8_t*>(spc.data() + 0x10100);
+    for (int a = 0; a < 128; ++a)
+        if (a != 0x4C && a != 0x5C && a != 0x7C && a != 0x6C)
+            dsp->writeRegister(a, regs[a]);
+    dsp->writeRegister(0x6C, regs[0x6C]);
+
+    const long total = std::lround(seconds * 32000.0);
+    std::vector<float> left(static_cast<size_t>(total)), right(static_cast<size_t>(total));
+    chipdsp::snes::SnesDspOutput out;
+    size_t next = 0;
+    for (long s = 0; s < total; ++s)
+    {
+        while (next < writes.size() && writes[next].sample <= s)
+        {
+            dsp->writeRegister(writes[next].reg, static_cast<uint8_t>(writes[next].value));
+            ++next;
+        }
+        dsp->step(out);
+        left[static_cast<size_t>(s)] = static_cast<float>(out.mainL) / 32768.0f;
+        right[static_cast<size_t>(s)] = static_cast<float>(out.mainR) / 32768.0f;
+    }
+    writeFile(wavPath, wavStereo16Exact(left, right, 32000));
+    return 0;
+}
+
+int cmdRegs(int argc, char** argv)
+{
+    if (argc < 3)
+        return usage();
+    const std::string chip = argv[2];
+    if (chip == "genesis")
+        return cmdRegsGenesis(argc, argv);
+    if (chip == "snes")
+        return cmdRegsSnes(argc, argv);
+    throw std::runtime_error("regs: unknown chip " + chip + " (genesis or snes)");
+}
+
 } // namespace
 
 int main(int argc, char** argv)
@@ -911,6 +1214,8 @@ int main(int argc, char** argv)
             return cmdRender(argc, argv);
         if (command == "features")
             return cmdFeatures(argc, argv);
+        if (command == "regs")
+            return cmdRegs(argc, argv);
         return usage();
     }
     catch (const std::exception& e)

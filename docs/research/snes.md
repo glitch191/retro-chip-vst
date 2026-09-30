@@ -1442,6 +1442,13 @@ top            echo buffer for EDL >= 1: ESA = 0x100 - 8 * EDL, 0x10000 - 2048 *
   copies the directory, dummy blocks and BRR data into the chip's APU RAM when the
   generation changed, and releases the claim. The message thread only waits while the audio
   thread is copying from the bank it wants to write.
+* Factory sample set (2026-09-29): the pianos, strings, brass, winds, pipe organ, upright
+  bass and the drum kit are CC0 recordings (VSCO 2 CE, VCSL; `docs/SOURCES.md`, "Samples
+  (CC0 recordings)"), converted by `tools/samplegen/cc0_import.py` to game-like formats:
+  melodic samples mostly at 16 kHz (bright piano and trumpet 24 kHz, bass 11 kHz), drums
+  16-32 kHz, an attack plus a short loop (25-275 ms) on 16-frame boundaries ending at the
+  sample end, 2-10 KiB of BRR each. The engine stores them at their own rate (no
+  decimation), so the pitch register at the root key is 0x800 (16 kHz) or 0xC00 (24 kHz).
 
 ### Output stage
 

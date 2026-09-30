@@ -1,20 +1,33 @@
-"""Procedural, rights-free sample generator for retro-chip-vst.
+"""Sample set generator for retro-chip-vst: procedural synthesis plus converted CC0 recordings.
 
 Usage::
 
     python tools\\gen_samples.py [--jobs N] [--chip nes|snes|genesis] [--out DIR]
-                                [--user-dir DIR]
+                                [--user-dir DIR] [--fetch-cc0] [--cc0-dir DIR]
 
 Writes mono 16-bit PCM WAV files to ``assets/samples/<chip>/<name>.wav`` and an index
 ``assets/samples/index.json``: a JSON array of ``{chip, name, file, sample_rate,
-root_note, loop_start, loop_end, category, description}`` sorted by chip then name
-(``loop_start``/``loop_end`` are frame counts or ``null`` for one-shots). Everything is
-standard-library Python; synthesis lives in ``tools/samplegen/`` (``synth`` primitives,
-``drums``, ``instruments``, ``wavio``, ``pool``).
+root_note, loop_start, loop_end, category, description, source, licence}`` sorted by chip
+then name (``loop_start``/``loop_end`` are frame counts or ``null`` for one-shots;
+``source`` is ``procedural: <builder>`` or the CC0 source files as ``repo:path`` joined
+by `` + ``). Everything is standard-library Python; synthesis lives in
+``tools/samplegen/`` (``synth`` primitives, ``drums``, ``instruments``, ``wavio``,
+``pool``), the CC0 conversion in ``tools/samplegen/cc0_import.py``.
 
-Determinism: every sample is rendered from its own ``random.Random`` seeded by a CRC of
-``chip/name``; the process pool returns results in catalogue order; JSON keys are
-sorted. Running the command twice produces byte-identical files.
+CC0 recordings: the SNES instruments and drum kit and the Genesis DAC drums are
+converted from CC0 recordings (VSCO 2 Community Edition and the Versilian Community
+Sample Library), the way 1990s composers built their sets from sample CDs. Every
+converted sample, with its source files, licence, root note, rate, loop mode and
+processing, is listed in ``tools/samplegen/cc0_manifest.json``; its entry replaces the
+procedural sample of the same chip and name. The source files are read from
+``third_party/cc0/<repo>/`` (git-ignored): ``--fetch-cc0`` downloads the missing ones at
+the pinned commits and checks their git blob ids; without them the command stops with
+an error before writing anything. The NES DMC set stays procedural.
+
+Determinism: every procedural sample is rendered from its own ``random.Random`` seeded
+by a CRC of ``chip/name``; the CC0 conversion uses no randomness; the process pool
+returns results in catalogue order; JSON keys are sorted. Running the command twice
+produces byte-identical files.
 
 Post-processing common to every sample: DC offset removed (mean subtraction), 4-frame
 fade-in and 5 ms fade-out on one-shots, peak normalised to -1 dBFS, SNES one-shots
@@ -28,11 +41,15 @@ Per-chip targets
   the sources are bold and simple: sine-based kicks/toms with pitch drops, tight
   noise snares, short hats, a 100 ms bass pluck, a synthetic orchestra hit, a formant
   voice blip and a filtered noise burst.
-* ``snes``: 32000 Hz (pads 16000 Hz). Each file stays under 12 KiB of BRR (about
-  21000 frames); sustained sounds carry loop points on 16-frame boundaries with a
-  whole number of pitch cycles inside the loop and a cross-fade over the wrap.
-* ``genesis``: 22050 Hz, 30-300 ms, delivered as 16-bit (the plugin reduces to 8-bit
-  DAC data): drums, a chunky "sega hit", a formant "uh" and a noise burst.
+* ``snes``: procedural samples at 32000 Hz (pads 16000 Hz); CC0 instruments mostly at
+  16000 Hz (bright ones 24000 Hz, bass 11025 Hz), drums at 16000-32000 Hz. Each file
+  stays under 12 KiB of BRR (about 21000 frames, most 2-8 KiB); sustained sounds carry
+  loop points on 16-frame boundaries with a cross-fade over the wrap and the loop end
+  at the end of the file.
+* ``genesis``: CC0 drums and the orchestra hit at 8000-16000 Hz, compressed and
+  normalised to -0.5 dBFS so that their decays stay above the 8-bit DAC floor; the
+  procedural voice "uh" and noise burst at 22050 Hz. Everything is delivered as 16-bit
+  (the plugin reduces it to 8-bit DAC data at the preset's ``dac_rate``).
 
 Synthesis families (see ``samplegen/drums.py`` and ``samplegen/instruments.py``)
 -------------------------------------------------------------------------------
@@ -98,7 +115,7 @@ TOOLS_DIR = os.path.dirname(os.path.abspath(__file__))
 if TOOLS_DIR not in sys.path:
     sys.path.insert(0, TOOLS_DIR)
 
-from samplegen import drums, instruments, pool, wavio  # noqa: E402
+from samplegen import cc0_import, drums, instruments, pool, wavio  # noqa: E402
 from samplegen import synth as S  # noqa: E402
 
 PROJECT_ROOT = os.path.dirname(TOOLS_DIR)
@@ -110,6 +127,7 @@ CHIP_MAX_FRAMES = {"nes": 32648, "snes": 21000, "genesis": 6615}
 CHIP_MIN_FRAMES = {"nes": 994, "snes": 16, "genesis": 661}
 BRR_BLOCK = 16
 NES_LOWPASS_HZ = 8000.0
+PROCEDURAL_LICENCE = "original (procedural synthesis, no third-party material)"
 
 Spec = namedtuple("Spec", "chip name category description sample_rate root_note builder params")
 
@@ -344,8 +362,44 @@ def render_job(args):
         "loop_end": loop_end,
         "category": spec.category,
         "description": spec.description,
+        "source": "procedural: " + spec.builder,
+        "licence": PROCEDURAL_LICENCE,
     }
     return entry, n, warnings
+
+
+def render_cc0_job(args):
+    """Convert one CC0 manifest entry to disk. Returns ``(index_entry, frames, warnings)``."""
+    spec, licence, out_dir, source_dir = args
+    chip, name = spec["chip"], spec["name"]
+    r = cc0_import.build_sample(spec, source_dir)
+    x, sr = r["frames"], r["rate"]
+    n = len(x)
+    warnings = []
+    if n < CHIP_MIN_FRAMES[chip] or n > CHIP_MAX_FRAMES[chip]:
+        warnings.append("%s/%s: %d frames outside the chip range %d..%d" % (
+            chip, name, n, CHIP_MIN_FRAMES[chip], CHIP_MAX_FRAMES[chip]))
+    wavio.write_wav(os.path.join(out_dir, chip, name + ".wav"), x, sr)
+    entry = {
+        "chip": chip,
+        "name": name,
+        "file": "%s/%s.wav" % (chip, name),
+        "sample_rate": sr,
+        "root_note": spec["root_note"],
+        "loop_start": r["loop_start"],
+        "loop_end": r["loop_end"],
+        "category": spec["category"],
+        "description": spec["description"],
+        "source": cc0_import.source_text(spec),
+        "licence": licence,
+    }
+    return entry, n, warnings
+
+
+def render_any(job):
+    """Pool entry point: ``("procedural", args)`` or ``("cc0", args)``."""
+    kind, args = job
+    return render_job(args) if kind == "procedural" else render_cc0_job(args)
 
 
 # ------------------------------------------------------------------------ user samples
@@ -396,6 +450,8 @@ def import_user_samples(user_dir, out_dir, chips):
                 "category": "user",
                 "description": "User-supplied sample from %s (resampled from %d Hz)"
                                % (fname, in_rate),
+                "source": "user: tools/user_samples/%s/%s" % (chip, fname),
+                "licence": "user-supplied",
             })
     return entries, warnings
 
@@ -429,15 +485,35 @@ def main(argv=None):
     parser.add_argument("--out", default=DEFAULT_OUT, help="output directory (assets/samples)")
     parser.add_argument("--user-dir", default=DEFAULT_USER_DIR,
                         help="directory with <chip>/*.wav user samples to import")
+    parser.add_argument("--fetch-cc0", action="store_true",
+                        help="download missing CC0 source recordings into --cc0-dir first")
+    parser.add_argument("--cc0-dir", default=cc0_import.DEFAULT_SOURCE_DIR,
+                        help="folder holding the CC0 sources (default third_party/cc0)")
     args = parser.parse_args(argv)
 
     out_dir = os.path.abspath(args.out)
     chips = [args.chip] if args.chip else sorted(CHIP_RATES)
+
+    manifest = cc0_import.load_manifest()
+    cc0_specs = [s for s in manifest["samples"] if s["chip"] in chips]
+    cc0_dir = os.path.abspath(args.cc0_dir)
+    if args.fetch_cc0:
+        for p in cc0_import.fetch(manifest, cc0_dir, set(chips)):
+            print("error: " + p)
+    missing = cc0_import.missing_sources(manifest, cc0_dir, set(chips))
+    if missing:
+        for repo, rel in missing:
+            print("error: CC0 source missing or modified: %s/%s" % (repo, rel))
+        print("error: run with --fetch-cc0 (downloads into %s); nothing was written" % cc0_dir)
+        return 1
+
     for chip in chips:
         os.makedirs(os.path.join(out_dir, chip), exist_ok=True)
-
-    specs = [s for s in catalogue() if s.chip in chips]
-    results = pool.run_ordered(render_job, [(s, out_dir) for s in specs], args.jobs)
+    cc0_keys = {(s["chip"], s["name"]) for s in cc0_specs}
+    specs = [s for s in catalogue() if s.chip in chips and (s.chip, s.name) not in cc0_keys]
+    jobs = [("procedural", (s, out_dir)) for s in specs]
+    jobs += [("cc0", (s, cc0_import.licence_text(manifest, s), out_dir, cc0_dir)) for s in cc0_specs]
+    results = pool.run_ordered(render_any, jobs, args.jobs)
     warnings = []
     entries = []
     for entry, _frames, warns in results:

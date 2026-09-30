@@ -7,9 +7,12 @@ and resamples the output with band-limited steps. A small "driver" layer, like t
 code a game runs on the console CPU, turns MIDI into register writes. The hardware's
 limits are kept on purpose: period and F-number quantisation, 4-bit volumes, the NES
 non-linear mixer, BRR and Gaussian interpolation on the SNES, the YM2612 9-bit DAC and
-ladder effect. The plugin ships 991 generated presets and 71 procedurally generated
-samples. All behaviour was implemented from public documentation only
-(`docs/SOURCES.md`). No emulator source code was read or used.
+ladder effect. The plugin ships 1011 generated presets and 78 samples: the SNES
+instruments and drum kit and the Genesis DAC drums are converted from CC0 recordings
+(VSCO 2 Community Edition and the Versilian Community Sample Library), the way 1990s
+composers used sample CDs; the NES DMC set, the chip waveforms, noises, pads, guitars,
+choirs and synth basses are procedural. All behaviour was implemented from public
+documentation only (`docs/SOURCES.md`). No emulator source code was read or used.
 
 ## Prerequisites
 
@@ -226,7 +229,7 @@ slots, `clock`, `chip_revision`, `console_filter`, `model1_lowpass`, `main_volum
 
 The preset browser has a two-level menu (category, then subcategory), a search box
 (name and tags; Up/Down select, Return loads, Escape clears) and previous/next buttons.
-Banks: NES 311, SNES 313, Genesis 367 presets. The preset menu also has "Export current
+Banks: NES 311, SNES 333, Genesis 367 presets. The preset menu also has "Export current
 settings..." (JSON) and "Import sample into slot N..." (a WAV into the slot the chip's
 sample parameter points to; root note 60, one-shot). Imported samples are saved in the
 plugin state. Loading a preset clears the chip's other factory samples, so any sequence
@@ -254,8 +257,10 @@ deterministic: the same inputs produce byte-identical files.
 
 ```powershell
 # 1. Samples -> assets\samples\<chip>\*.wav and assets\samples\index.json
-#    (WAVs in tools\user_samples\<chip>\ are included, see its README)
-python tools\gen_samples.py
+#    (WAVs in tools\user_samples\<chip>\ are included, see its README). The CC0 source
+#    recordings listed in tools\samplegen\cc0_manifest.json are read from third_party\cc0\
+#    (git-ignored, about 55 MB); --fetch-cc0 downloads the missing ones at the pinned commits.
+python tools\gen_samples.py --fetch-cc0
 
 # 2. Build chiptool
 . .\tools\dev-env.ps1

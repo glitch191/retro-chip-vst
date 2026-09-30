@@ -100,6 +100,40 @@ fetch summaries; jsgroth and ConsoleMods later returned bot-filter pages, so the
 divider table and AM phase (jsgroth part 6) could not be re-read (HARDWARE_NOTES,
 "LFO frequencies"). jsgroth credits Nuked-OPN2 for some facts; that emulator was not opened.
 
+## Samples (CC0 recordings)
+
+Product-owner decision of 2026-09-29: CC0 real-instrument recordings may be converted into
+the factory samples, the way 1990s SNES and Genesis composers built their sets from
+sample CDs. Never samples ripped from games, ROMs or soundtracks, never FM patch
+collections ripped from games. Conversion: `tools/samplegen/cc0_import.py`; every output
+sample with its source files, git blob ids, licence, root note, rate, loop mode and
+processing: `tools/samplegen/cc0_manifest.json`; `source` and `licence` of every sample:
+`assets/samples/index.json`.
+
+| # | Source | URL | Consulted | Taken |
+|---|---|---|---|---|
+| 1 | Versilian Studios, "VS Chamber Orchestra: Community Edition" (VSCO 2 CE), commit 440300901dfe9275fd84e0b7763af1f8443ae62e | https://github.com/sgossner/VSCO-2-CE | 2026-09-29 | Upright piano, violin/cello section sustains and pizzicato, trumpet, horn and trombone sustains and staccatos, flute, clarinet, oboe, contrabass pizzicato, timpani, muted concert bass drum (VSCO 1 percussion) |
+| 2 | Versilian Studios, "Versilian Community Sample Library" (VCSL), commit c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e | https://github.com/sgossner/VCSL | 2026-09-29 | Steinway B grand piano, TX81Z "FM Piano" recording, pipe organ, snares, cross-stick, toms, hi-hats, claps, cowbells, suspended and clash cymbals, shaker, conga, tambourine, open concert bass drum |
+
+Licence verification: both repositories' `LICENSE` files are the Creative Commons CC0 1.0
+Universal text, and the GitHub API reports `CC0-1.0` for both (checked 2026-09-29). The
+VSCO 2 CE `Readme.txt` also asks, without legal force under CC0, not to sell the samples
+directly and to credit Versilian Studios / Sam Gossner and Ivy Audio / Simon Dalzell: the
+samples are only shipped converted inside the plugin, and the credit is kept here and in
+the manifest. The TX81Z recording is a CC0 recording of a synthesizer's factory sound, not
+a patch collection ripped from a game.
+
+Octave labels: VSCO 2 CE names its strings, brass and woodwind files one octave below
+scientific pitch (the violin section's lowest file is labelled G2 for G3, 196 Hz), while
+its upright piano uses MIDI key numbers and VCSL uses scientific pitch. The manifest
+states the real pitch of every pitched layer; `measure_pitch` confirms it by
+autocorrelation (an octave-away label is an error) and the measured cents are folded into
+the resampling ratio, so every root note is exact. Several recordings (violin pizzicato,
+the open organ manual) correlate almost as well at half the period, which is why the
+octave comes from the label and not from the measurement.
+
+No reference emulator was downloaded or run for this work.
+
 ## Plugin layer
 
 | Source | URL | Taken |

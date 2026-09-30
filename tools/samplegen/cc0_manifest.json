@@ -1,0 +1,1395 @@
+{
+  "comment": "CC0 recordings converted by tools/samplegen/cc0_import.py. Paths are relative to the repository root of each source; files are fetched into third_party/cc0/<repo>/.",
+  "sources": {
+    "VSCO-2-CE": {
+      "url": "https://github.com/sgossner/VSCO-2-CE",
+      "commit": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "licence": "CC0-1.0",
+      "licence_file": "LICENSE",
+      "credit": "Versilian Studios / Sam Gossner, Simon Dalzell (Ivy Audio)",
+      "consulted": "2026-09-29"
+    },
+    "VCSL": {
+      "url": "https://github.com/sgossner/VCSL",
+      "commit": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "licence": "CC0-1.0",
+      "licence_file": "LICENSE",
+      "credit": "Versilian Studios LLC (Versilian Community Sample Library)",
+      "consulted": "2026-09-29"
+    }
+  },
+  "samples": [
+    {
+      "chip": "snes",
+      "name": "piano_soft",
+      "category": "keys",
+      "description": "Upright piano, soft touch, A3, attack plus a short sustain loop",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 57,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 420,
+        "search_ms": 40.0,
+        "min_ms": 60,
+        "max_ms": 160,
+        "xfade_ms": 12.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Keys/Upright Piano/Player_dyn1_rr1_018.wav",
+          "git_blob": "90745e10b1d8774db29a9817a218277102cd998b",
+          "bytes": 3002200,
+          "note": 57,
+          "target_note": 57
+        }
+      ],
+      "processing": {
+        "highpass_hz": 30.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "piano_bright",
+      "category": "keys",
+      "description": "Steinway B grand piano, loud, C4, 24 kHz, short sustain loop",
+      "licence": "CC0-1.0",
+      "rate": 24000,
+      "root_note": 60,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 380,
+        "search_ms": 40.0,
+        "min_ms": 50,
+        "max_ms": 140,
+        "xfade_ms": 12.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Chordophones/Zithers/Grand Piano, Steinway B/Sus/JHPiano_Sus_Close_C4_vl4_rr1.wav",
+          "git_blob": "ccdac54cf18579f0e27595eed95f8effa237c258",
+          "bytes": 6387436,
+          "note": 60,
+          "target_note": 60
+        }
+      ],
+      "processing": {
+        "highpass_hz": 30.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "epiano",
+      "category": "keys",
+      "description": "Yamaha TX81Z 'FM Piano' recording, C4, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 360,
+        "search_ms": 40.0,
+        "min_ms": 60,
+        "max_ms": 160,
+        "xfade_ms": 12.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Electrophones/TX81Z/FM Piano/FMPiano_C4_vl2.wav",
+          "git_blob": "5786a9fa63713f56bb2b945053331169a6c9fdaf",
+          "bytes": 941536,
+          "note": 60,
+          "target_note": 60
+        }
+      ],
+      "processing": {
+        "highpass_hz": 0.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "strings_ensemble",
+      "category": "strings",
+      "description": "Violin and cello sections in unison, A3, vibrato, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 57,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 600,
+        "search_ms": 100.0,
+        "min_ms": 100,
+        "max_ms": 250,
+        "xfade_ms": 60.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Strings/Violin Section/susVib/VlnEns_susVib_A2_v2.wav",
+          "git_blob": "5960b46c4678a146834594031d0bba1048855102",
+          "bytes": 2231504,
+          "note": 57,
+          "target_note": 57
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Strings/Cello Section/susvib/susvib_A2_v3_1.wav",
+          "git_blob": "ad696c6ad3cbacb37b6d9cf4f26da4a54521e7ce",
+          "bytes": 3082676,
+          "note": 57,
+          "gain_db": -4.0,
+          "target_note": 57
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "strings_pizz",
+      "category": "strings",
+      "description": "Violin section pizzicato, A3",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 57,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 450,
+        "fade_ms": 60.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Strings/Violin Section/Pizz/VlnEns_Pizz_A2_v2_rr1.wav",
+          "git_blob": "67424af2bfc19cbac72eee6a8fdba6acebbf735e",
+          "bytes": 187354,
+          "note": 57,
+          "target_note": 57
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -1.0,
+        "onset_db": -12.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "brass_section",
+      "category": "brass",
+      "description": "Trumpet, horn and trombone section, A3, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 57,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 380,
+        "search_ms": 40.0,
+        "min_ms": 80,
+        "max_ms": 200,
+        "xfade_ms": 20.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/Trumpet/sus/Sum_SHTrumpet_sus_A2_v1_rr1.wav",
+          "git_blob": "59f4b5eadb7907b9656c5251869efa435a485c15",
+          "bytes": 2100400,
+          "note": 57,
+          "target_note": 57
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/F Horn/sus/MOHorn_sus_A2_v2_1.wav",
+          "git_blob": "5ea35c7b0bf50d85195ba726380e611817f4ba9a",
+          "bytes": 2542000,
+          "note": 57,
+          "gain_db": -2.0,
+          "target_note": 57
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/Tenor Trombone/sus/tenortbn_sus_F2_v2_1.wav",
+          "git_blob": "34359f397938e10a675d5906f21cd90392cad15b",
+          "bytes": 1752628,
+          "note": 53,
+          "target_note": 57,
+          "gain_db": -4.0
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "trumpet",
+      "category": "brass",
+      "description": "Solo trumpet with vibrato, A#4, 24 kHz, looped",
+      "licence": "CC0-1.0",
+      "rate": 24000,
+      "root_note": 70,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 400,
+        "search_ms": 60.0,
+        "min_ms": 160,
+        "max_ms": 360,
+        "xfade_ms": 30.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/Trumpet/susvib/Sum_SHTrumpet_susvib_A#3_v2_rr1.wav",
+          "git_blob": "165691debf78d3fc3135a8c20a36cb00244fe604",
+          "bytes": 926408,
+          "note": 70,
+          "target_note": 70
+        }
+      ],
+      "processing": {
+        "highpass_hz": 60.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "horn",
+      "category": "brass",
+      "description": "Solo French horn, F3, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 53,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 400,
+        "search_ms": 40.0,
+        "min_ms": 80,
+        "max_ms": 200,
+        "xfade_ms": 20.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/F Horn/sus/MOHorn_sus_F2_v2_1.wav",
+          "git_blob": "37655b24ac23b96a47a6bb75c091bedef6913632",
+          "bytes": 2558276,
+          "note": 53,
+          "target_note": 53
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "trombone",
+      "category": "brass",
+      "description": "Solo tenor trombone, F3, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 53,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 400,
+        "search_ms": 40.0,
+        "min_ms": 80,
+        "max_ms": 200,
+        "xfade_ms": 20.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/Tenor Trombone/sus/tenortbn_sus_F2_v2_1.wav",
+          "git_blob": "34359f397938e10a675d5906f21cd90392cad15b",
+          "bytes": 1752628,
+          "note": 53,
+          "target_note": 53
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "flute",
+      "category": "winds",
+      "description": "Flute with vibrato and breath, A4, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 69,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 420,
+        "search_ms": 60.0,
+        "min_ms": 160,
+        "max_ms": 360,
+        "xfade_ms": 30.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Woodwinds/Flute/susvib/LDFlute_susvib_A3_v1_1.wav",
+          "git_blob": "1e8972d4e28dbf8b48e348b93c7862f29b0edfab",
+          "bytes": 2117124,
+          "note": 69,
+          "target_note": 69
+        }
+      ],
+      "processing": {
+        "highpass_hz": 80.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "clarinet",
+      "category": "winds",
+      "description": "Clarinet without vibrato, A#3, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 58,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 380,
+        "search_ms": 40.0,
+        "min_ms": 60,
+        "max_ms": 160,
+        "xfade_ms": 15.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Woodwinds/Clarinet/susLong/DCClar_susLong_A#2_v2_rr1_sum.wav",
+          "git_blob": "4ab307dd0c82ce0900eb7439bdb8d0a1008d4034",
+          "bytes": 1909388,
+          "note": 58,
+          "target_note": 58
+        }
+      ],
+      "processing": {
+        "highpass_hz": 60.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "oboe",
+      "category": "winds",
+      "description": "Oboe without vibrato, A#4, looped",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 70,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 380,
+        "search_ms": 40.0,
+        "min_ms": 60,
+        "max_ms": 160,
+        "xfade_ms": 15.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Woodwinds/Oboe/Sus/Oboe_Sus_A#3_v3_Main.wav",
+          "git_blob": "a647e2253125834b891e8eedb594a3902c8a1def",
+          "bytes": 1793592,
+          "note": 70,
+          "target_note": 70
+        }
+      ],
+      "processing": {
+        "highpass_hz": 80.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "organ_pipe",
+      "category": "organ",
+      "description": "Pipe organ, open manual 3, A3, short loop",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 57,
+      "loop": {
+        "mode": "loop",
+        "start_ms": 450,
+        "search_ms": 60.0,
+        "min_ms": 20,
+        "max_ms": 60,
+        "xfade_ms": 10.0,
+        "flatten": true
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Aerophones/Edge-blown Aerophones/Pipe Organ/Loud/Rode_Man3Open_A3.wav",
+          "git_blob": "c71f73bc8a4245b05ab1b708bdb3c59d8a374731",
+          "bytes": 2188610,
+          "note": 57,
+          "target_note": 57
+        }
+      ],
+      "processing": {
+        "highpass_hz": 30.0,
+        "normalize_db": -1.0,
+        "onset_db": -24.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "bass_upright",
+      "category": "bass",
+      "description": "Solo contrabass pizzicato, A2, 11 kHz",
+      "licence": "CC0-1.0",
+      "rate": 11025,
+      "root_note": 45,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 700,
+        "fade_ms": 80.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Strings/Solo Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav",
+          "git_blob": "311a5027a127715530f1e723a21f7927d280d493",
+          "bytes": 623260,
+          "note": 45,
+          "pitch_ms": 150.0,
+          "target_note": 45
+        }
+      ],
+      "processing": {
+        "highpass_hz": 25.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "kick",
+      "category": "drums",
+      "description": "Muted concert bass drum, hit hard",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 320,
+        "fade_ms": 60.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "VSCO 1 Percussion/drums/bass/bdrum_muted_fff_1.wav",
+          "git_blob": "a051490382a60b52a497175b615b85033602d1c0",
+          "bytes": 934396
+        }
+      ],
+      "processing": {
+        "highpass_hz": 25.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "snare",
+      "category": "drums",
+      "description": "Snare drum, snares on, forte",
+      "licence": "CC0-1.0",
+      "rate": 24000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 300,
+        "fade_ms": 60.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Snare Drum, Modern 1/Snare2_HitSN_v7_rr1_Mid.wav",
+          "git_blob": "9ee81272009a67d695836c1bd701c4e876fe1102",
+          "bytes": 271480
+        }
+      ],
+      "processing": {
+        "highpass_hz": 60.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "snare_rim",
+      "category": "drums",
+      "description": "Snare cross-stick (rim click)",
+      "licence": "CC0-1.0",
+      "rate": 24000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 120,
+        "fade_ms": 30.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Snare Drum, Modern 2/Snare3M_Xstick_v2_rr1_Mid.wav",
+          "git_blob": "83c790c7441afb69038e486a1b8489ebdb96675d",
+          "bytes": 201240
+        }
+      ],
+      "processing": {
+        "highpass_hz": 100.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "hat_closed",
+      "category": "drums",
+      "description": "Closed hi-hat",
+      "licence": "CC0-1.0",
+      "rate": 32000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 90,
+        "fade_ms": 30.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v3_rr1_Mid.wav",
+          "git_blob": "01ede5c05d228875c65e1542972f077df5ab2e2a",
+          "bytes": 218792
+        }
+      ],
+      "processing": {
+        "highpass_hz": 300.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "hat_open",
+      "category": "drums",
+      "description": "Open hi-hat",
+      "licence": "CC0-1.0",
+      "rate": 32000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 420,
+        "fade_ms": 120.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitO_rr1_Mid.wav",
+          "git_blob": "e55c1c8af186f34aee593b05f621aed9b11915b9",
+          "bytes": 1026612
+        }
+      ],
+      "processing": {
+        "highpass_hz": 300.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "tom_low",
+      "category": "drums",
+      "description": "Low tom, stick",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 420,
+        "fade_ms": 80.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v3_rr1_Mid.wav",
+          "git_blob": "5f088286ca22b0f736e3d475bb68609bb90b2fcd",
+          "bytes": 508520
+        }
+      ],
+      "processing": {
+        "highpass_hz": 30.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "tom_mid",
+      "category": "drums",
+      "description": "Mid tom: high tom recording played 4 semitones lower",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 380,
+        "fade_ms": 80.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v4_rr1_Mid.wav",
+          "git_blob": "08332f4a528dcdeb208a8081b39136778562adcb",
+          "bytes": 525140,
+          "shift_semitones": -4.0
+        }
+      ],
+      "processing": {
+        "highpass_hz": 30.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "tom_high",
+      "category": "drums",
+      "description": "High tom, stick",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 340,
+        "fade_ms": 80.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Tom 1/Stick/TomH_HitS_v3_rr1_Mid.wav",
+          "git_blob": "c9709d5bdaddaf3bd93a6b2c87cbc3cd6f148f8f",
+          "bytes": 424648
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "clap",
+      "category": "drums",
+      "description": "Group hand clap",
+      "licence": "CC0-1.0",
+      "rate": 24000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 260,
+        "fade_ms": 60.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Claps/Clap_rr1.wav",
+          "git_blob": "e033dc2c58e13d3edcb7a61bd6f1bc90310562ae",
+          "bytes": 141974
+        }
+      ],
+      "processing": {
+        "highpass_hz": 150.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "cowbell",
+      "category": "drums",
+      "description": "Cowbell",
+      "licence": "CC0-1.0",
+      "rate": 24000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 260,
+        "fade_ms": 60.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Cowbells/Cowbell1_Hit_v3_rr1_Mid.wav",
+          "git_blob": "4473b5711180bc314b4de86e8a86db0026a5f2c1",
+          "bytes": 204528
+        }
+      ],
+      "processing": {
+        "highpass_hz": 200.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "crash",
+      "category": "drums",
+      "description": "Suspended cymbal struck with a stick (crash), 22 kHz",
+      "licence": "CC0-1.0",
+      "rate": 22050,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 800,
+        "fade_ms": 250.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Suspended Cymbal 1/susCymb1_hit_stick_f1.wav",
+          "git_blob": "4529eca8c2b92f1b377b1eb0f55985152b245642",
+          "bytes": 1213358
+        }
+      ],
+      "processing": {
+        "highpass_hz": 200.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "ride",
+      "category": "drums",
+      "description": "Suspended cymbal, light stick hit (ride), 22 kHz",
+      "licence": "CC0-1.0",
+      "rate": 22050,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 650,
+        "fade_ms": 220.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Suspended Cymbal 2/susCymb2_hit_stick_mp1.wav",
+          "git_blob": "db121669434e23a457d30924c0a4276a29109579",
+          "bytes": 1343838
+        }
+      ],
+      "processing": {
+        "highpass_hz": 200.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "shaker",
+      "category": "drums",
+      "description": "Small shaker, one down stroke",
+      "licence": "CC0-1.0",
+      "rate": 32000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 140,
+        "fade_ms": 30.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Shaker, Small/Mid_ShakerDouble_Down_rr1.wav",
+          "git_blob": "f99341479f355a909f0cee16880e8a60d6bf925b",
+          "bytes": 46844
+        }
+      ],
+      "processing": {
+        "highpass_hz": 300.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "timpani",
+      "category": "drums",
+      "description": "Timpani hit, forte",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 900,
+        "fade_ms": 250.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Percussion/Timpani/Timpani2_Hit_v4_rr1_Sum.wav",
+          "git_blob": "9ea50b2bf3a7c6d438e939e348a698d93f30f1f3",
+          "bytes": 1638140
+        }
+      ],
+      "processing": {
+        "highpass_hz": 25.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "conga",
+      "category": "drums",
+      "description": "Conga, open tone",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 300,
+        "fade_ms": 60.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Conga/Conga_HitN_v3_rr1_Sum.wav",
+          "git_blob": "54484187ce3db3ea58ea04e22b1afd573499230d",
+          "bytes": 231124
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "snes",
+      "name": "tambourine",
+      "category": "drums",
+      "description": "Tambourine hit",
+      "licence": "CC0-1.0",
+      "rate": 32000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 300,
+        "fade_ms": 80.0,
+        "tail_db": -48.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Tambourine 1/Tamb1_Hit_v2_rr1_Mid.wav",
+          "git_blob": "aad955871ad59069036194cf73591a6930a91621",
+          "bytes": 293256
+        }
+      ],
+      "processing": {
+        "highpass_hz": 300.0,
+        "normalize_db": -1.0
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "kick",
+      "category": "drums",
+      "description": "Muted concert bass drum, hit hard, 11 kHz",
+      "licence": "CC0-1.0",
+      "rate": 11025,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 250,
+        "fade_ms": 50.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "VSCO 1 Percussion/drums/bass/bdrum_muted_fff_2.wav",
+          "git_blob": "c4bc6b8b4cd53f3535b64f0d4687aa8c00f581f5",
+          "bytes": 1170166
+        }
+      ],
+      "processing": {
+        "highpass_hz": 30.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "kick_deep",
+      "category": "drums",
+      "description": "Open concert bass drum, 8 kHz",
+      "licence": "CC0-1.0",
+      "rate": 8000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 320,
+        "fade_ms": 80.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Bass Drum 2/bassdrum_hit_ff.wav",
+          "git_blob": "1df2aa8cb2775318920eb35e6dd6b67d096be9da",
+          "bytes": 2198042
+        }
+      ],
+      "processing": {
+        "highpass_hz": 25.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "snare",
+      "category": "drums",
+      "description": "Snare drum, snares on, 11 kHz",
+      "licence": "CC0-1.0",
+      "rate": 11025,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 220,
+        "fade_ms": 50.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Snare Drum, Modern 2/Snare3M_HitSN_v5_rr1_Mid.wav",
+          "git_blob": "2396abbaf8e58ffc6cd12bbe23b8659e823573a7",
+          "bytes": 232712
+        }
+      ],
+      "processing": {
+        "highpass_hz": 80.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "snare_short",
+      "category": "drums",
+      "description": "Tight snare, cut short, 11 kHz",
+      "licence": "CC0-1.0",
+      "rate": 11025,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 110,
+        "fade_ms": 30.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Snare Drum, Modern 3/Snare4_HitSN_v4_rr1_Mid.wav",
+          "git_blob": "5a7e3a763fae4f7d95991845bfd4b5311cac6a13",
+          "bytes": 178720
+        }
+      ],
+      "processing": {
+        "highpass_hz": 100.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "clap",
+      "category": "drums",
+      "description": "Group hand clap, 11 kHz",
+      "licence": "CC0-1.0",
+      "rate": 11025,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 200,
+        "fade_ms": 50.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Claps/Clap_rr3.wav",
+          "git_blob": "045be34ec05a829f38d42cb643c4d1cda70e9cd0",
+          "bytes": 132222
+        }
+      ],
+      "processing": {
+        "highpass_hz": 150.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "hat_closed",
+      "category": "drums",
+      "description": "Closed hi-hat, 16 kHz",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 60,
+        "fade_ms": 20.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitC_v4_rr1_Mid.wav",
+          "git_blob": "4ff2616487d9b8f38bc623dfcedc9e3b6b9f4af4",
+          "bytes": 266280
+        }
+      ],
+      "processing": {
+        "highpass_hz": 400.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "hat_open",
+      "category": "drums",
+      "description": "Loose (half-open) hi-hat, 16 kHz",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 260,
+        "fade_ms": 80.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Hi-Hat Cymbal/HiHat_HitLoose_rr1_Mid.wav",
+          "git_blob": "67e3077f486357a757423db004192442429c9d50",
+          "bytes": 488080
+        }
+      ],
+      "processing": {
+        "highpass_hz": 400.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "tom",
+      "category": "drums",
+      "description": "Low tom, stick, 11 kHz",
+      "licence": "CC0-1.0",
+      "rate": 11025,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 260,
+        "fade_ms": 60.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Tom 2/Stick/TomL_HitS_v4_rr1_Mid.wav",
+          "git_blob": "f58b64ceb69a7013251497f06f5df3ed922cc230",
+          "bytes": 603516
+        }
+      ],
+      "processing": {
+        "highpass_hz": 40.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "cowbell",
+      "category": "drums",
+      "description": "Cowbell, 16 kHz",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 200,
+        "fade_ms": 50.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Cowbells/Cowbell2_Normal_v3_rr1_Mid.wav",
+          "git_blob": "f522f43ee269391835f8ff702e31ce859cb29fe5",
+          "bytes": 315048
+        }
+      ],
+      "processing": {
+        "highpass_hz": 200.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "rim",
+      "category": "drums",
+      "description": "Snare cross-stick, 16 kHz",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 70,
+        "fade_ms": 20.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Membranophones/Struck Membranophones/Snare Drum, Modern 2/Snare3M_Xstick_v2_rr2_Mid.wav",
+          "git_blob": "25cb818a51e16b327ab71319a01057a702ab0c05",
+          "bytes": 206000
+        }
+      ],
+      "processing": {
+        "highpass_hz": 150.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "crash_short",
+      "category": "drums",
+      "description": "Short crash cymbal (clash cymbals, short), 16 kHz",
+      "licence": "CC0-1.0",
+      "rate": 16000,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 330,
+        "fade_ms": 110.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VCSL",
+          "path": "Idiophones/Struck Idiophones/Clash Cymbals 1/cymbal_crash1_short1.wav",
+          "git_blob": "0c673c045f65656bec9b09d68473718bd9a5b0dc",
+          "bytes": 420946
+        }
+      ],
+      "processing": {
+        "highpass_hz": 250.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    },
+    {
+      "chip": "genesis",
+      "name": "sega_hit",
+      "category": "hit",
+      "description": "Orchestra hit: C major stab layered from trumpet, horn, trombone, violin and cello staccato notes plus a timpani hit, C4, 11 kHz",
+      "licence": "CC0-1.0",
+      "rate": 11025,
+      "root_note": 60,
+      "loop": {
+        "mode": "one_shot",
+        "length_ms": 320,
+        "fade_ms": 100.0,
+        "tail_db": -42.0
+      },
+      "layers": [
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/Trumpet/stac/Sum_SHTrumpet_stac_C3_v3_rr1.wav",
+          "git_blob": "2f50c4afc81b078ba9d67d75212d398b5115bfe6",
+          "bytes": 214984,
+          "note": 60,
+          "target_note": 60
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/Trumpet/stac/Sum_SHTrumpet_stac_G3_v3_rr1.wav",
+          "git_blob": "53ef5d48ac2c8263da2f6e70f73302e84e520227",
+          "bytes": 226840,
+          "note": 67,
+          "gain_db": -2.0,
+          "target_note": 67
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/F Horn/stac/MOHorn_stac_C3_v3_rr1.wav",
+          "git_blob": "e7974939bf27e3b7c6bc7b79340f1a251d8ad869",
+          "bytes": 280932,
+          "note": 60,
+          "gain_db": -2.0,
+          "target_note": 60
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Brass/Tenor Trombone/stac/tenortbn_stac_A#1_v4_rr1.wav",
+          "git_blob": "9947fab6818aebb2977c473e964088638b02ff14",
+          "bytes": 230512,
+          "note": 46,
+          "target_note": 48,
+          "gain_db": -1.0
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Strings/Violin Section/Spic/VlnEns_Spic_C4_v2_rr1.wav",
+          "git_blob": "ae3b8629fbbdb12ca1c6627ecdc5c0228ecb9ed0",
+          "bytes": 167454,
+          "note": 72,
+          "gain_db": -3.0,
+          "target_note": 72
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Strings/Violin Section/Spic/VlnEns_Spic_E4_v2_rr1.wav",
+          "git_blob": "f95512f43f61703daa2c436071627ef6b7bb6a9d",
+          "bytes": 106314,
+          "note": 76,
+          "gain_db": -4.0,
+          "target_note": 76
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Strings/Cello Section/spic/spic_C3_v2_RR1.wav",
+          "git_blob": "44110289cbce539a41aabc50f6d48a665f563198",
+          "bytes": 536360,
+          "note": 60,
+          "gain_db": -3.0,
+          "target_note": 60
+        },
+        {
+          "repo": "VSCO-2-CE",
+          "path": "Percussion/Timpani/Timpani1_Hit_v3_rr1_Sum.wav",
+          "git_blob": "86d8e078c8820d49fd15124fe037cbd667ae8fa2",
+          "bytes": 1602676,
+          "gain_db": -3.0
+        }
+      ],
+      "processing": {
+        "highpass_hz": 60.0,
+        "normalize_db": -0.5,
+        "compress": {
+          "threshold_db": -18.0,
+          "ratio": 3.0,
+          "attack_ms": 0.5,
+          "release_ms": 40.0
+        }
+      }
+    }
+  ]
+}

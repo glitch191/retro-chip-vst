@@ -11,7 +11,7 @@ plugin/   JUCE layer (VST3): PluginProcessor, parameters, editor, presets, MIDI 
    |
    v      IChipEngine (dsp/include/chipdsp/IChipEngine.h)
 dsp/      chipdsp static library, no JUCE: engines, arpeggiator, glide, resampling
-tools/    Python generators: preset banks, procedural samples, QA reports
+tools/    Python generators: preset banks, samples (procedural and converted CC0 recordings), QA reports
 assets/   Generated preset banks (JSON) and samples (WAV), embedded in the binary
 ```
 
