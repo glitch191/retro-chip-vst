@@ -167,6 +167,16 @@ def main() -> int:
             result = {"chip": chip, "category": category, "phrase": phrase}
             for side, name in (("before", before_name), ("after", after_name)):
                 bank = banks[(side, chip)]
+                if name not in bank and side == "before":
+                    # Older revisions may predate the preset: fall back to the first preset of the
+                    # same category and subcategory (else category) in that bank.
+                    target = banks[("after", chip)].get(after_name, {})
+                    same = [n for n, p in bank.items() if p.get("category") == target.get("category")
+                            and p.get("subcategory") == target.get("subcategory")]
+                    same = same or [n for n, p in bank.items() if p.get("category") == target.get("category")]
+                    if same:
+                        print(f"before: {name} not in {commit}, using {sorted(same)[0]}")
+                        name = sorted(same)[0]
                 if name not in bank:
                     raise SystemExit(f"{side}: preset not found: {name}")
                 wav = args.out / f"{base}_{side}.wav"
