@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22)
 
 project(RetroChipVst
-    VERSION 0.1.0
+    VERSION 0.2.0
     DESCRIPTION "Hardware-faithful NES, SNES and Genesis chip synthesis VST3"
     LANGUAGES C CXX)
 
