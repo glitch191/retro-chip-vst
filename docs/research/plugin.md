@@ -66,6 +66,11 @@ into docs/HARDWARE_NOTES.md.
   switch. A mask with no channel of the current chip also falls back to the chip default.
   Any other mask is kept across chips.
 * Alternative: one mask parameter per chip (three host parameters instead of one).
+* Editor (2026-10-01): the Poly channels toggles show the resolved mask. A click that
+  would leave no channel of the current chip is refused (the host would fall back to the
+  default, so the click would light other channels); a click that gives exactly the chip
+  default writes 0, so the default keeps following the chip. Alternative: write the mask
+  as shown, which pins the default of one chip onto the others.
 
 ### Second chip switch during a crossfade
 
