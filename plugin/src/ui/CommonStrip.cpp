@@ -93,28 +93,30 @@ bool CommonStrip::SearchField::keyStateChanged (bool isKeyDown)
 
 // ----- FormSection --------------------------------------------------------------------------
 
-void FormSection::addRow (std::vector<juce::Component*> items)
+void FormSection::addRow (std::vector<juce::Component*> items, int height)
 {
     items.erase (std::remove (items.begin(), items.end(), nullptr), items.end());   // parameter not in the layout
     if (items.empty())
         return;
     for (auto* c : items)
         addAndMakeVisible (c);
-    rows.push_back (std::move (items));
+    rows.push_back ({ std::move (items), height });
 }
 
 void FormSection::setLabelWidth (int width)
 {
     for (auto& row : rows)
-        for (auto* c : row)
+        for (auto* c : row.items)
             if (auto* pc = dynamic_cast<ParamControl*> (c); pc != nullptr && pc->style() == ControlStyle::Inline)
                 pc->setLabelWidth (width);
 }
 
 int FormSection::heightForWidth (int) const
 {
-    const int n = static_cast<int> (rows.size());
-    return theme::kGroupTitleHeight + n * theme::kControlHeight + juce::jmax (0, n - 1) * theme::kGap + theme::kPad;
+    int h = theme::kGroupTitleHeight + theme::kPad - theme::kGap;
+    for (const auto& row : rows)
+        h += row.height + theme::kGap;
+    return rows.empty() ? theme::kGroupTitleHeight + theme::kPad : h;
 }
 
 int FormSection::preferredWidth() const
@@ -123,7 +125,7 @@ int FormSection::preferredWidth() const
     for (const auto& row : rows)
     {
         int rowW = -theme::kGap;
-        for (auto* c : row)
+        for (auto* c : row.items)
             rowW += (dynamic_cast<ParamControl*> (c) != nullptr ? dynamic_cast<ParamControl*> (c)->preferredWidth() : 0) + theme::kGap;
         w = juce::jmax (w, rowW);
     }
@@ -136,12 +138,16 @@ void FormSection::resized()
     const int contentW = getWidth() - 2 * theme::kPad;
     for (const auto& row : rows)
     {
-        const int n = static_cast<int> (row.size());
+        std::vector<juce::Component*> shown;
+        for (auto* c : row.items)
+            if (c->isVisible())
+                shown.push_back (c);
+        const int n = static_cast<int> (shown.size());
         const int w = (contentW - (n - 1) * theme::kGap) / juce::jmax (1, n);
         for (int i = 0; i < n; ++i)
-            row[static_cast<size_t> (i)]->setBounds (theme::kPad + i * (w + theme::kGap), y, i == n - 1 ? contentW - i * (w + theme::kGap) : w,
-                                                     theme::kControlHeight);
-        y += theme::kControlHeight + theme::kGap;
+            shown[static_cast<size_t> (i)]->setBounds (theme::kPad + i * (w + theme::kGap), y, i == n - 1 ? contentW - i * (w + theme::kGap) : w,
+                                                       row.height);
+        y += row.height + theme::kGap;
     }
 }
 
@@ -252,16 +258,18 @@ CommonStrip::CommonStrip (RetroChipProcessor& p, UiContext& context)
     arpSection.addRow ({ addControl (arpSection, ParamIds::arpPattern, "Pattern", ControlStyle::Inline) });
     arpSection.addRow ({ addControl (arpSection, ParamIds::arpOctaves, "Octaves", ControlStyle::Inline) });
     arpSection.addRow ({ addControl (arpSection, ParamIds::arpRateMode, "Rate", ControlStyle::Inline) });
+    // Division (Sync) and Free rate (Free) share one row: only the one the rate mode uses is shown.
     arpDivision = addControl (arpSection, ParamIds::arpSyncDivision, "Division", ControlStyle::Inline);
-    arpSection.addRow ({ arpDivision });
     arpFreeRate = addControl (arpSection, ParamIds::arpFreeRate, "Free rate", ControlStyle::Inline);
-    arpSection.addRow ({ arpFreeRate });
+    arpSection.addRow ({ arpDivision, arpFreeRate });
     arpSection.addRow ({ addControl (arpSection, ParamIds::arpGate, "Gate", ControlStyle::Inline) });
 
     glideSection.addRow ({ addControl (glideSection, ParamIds::glideTime, "Time", ControlStyle::Inline) });
     glideSection.addRow ({ addControl (glideSection, ParamIds::glideMode, "Mode", ControlStyle::Inline) });
 
     outputSection.addRow ({ addControl (outputSection, ParamIds::voiceMode, "Voice mode", ControlStyle::Inline) });
+    polyChannels = std::make_unique<PolyChannelsControl> (ctx);
+    outputSection.addRow ({ polyChannels.get() }, PolyChannelsControl::preferredHeight());
     outputSection.addRow ({ addControl (outputSection, ParamIds::rawOutput, "Raw output", ControlStyle::Inline) });
     outputSection.addRow ({ addControl (outputSection, ParamIds::masterGain, "Gain", ControlStyle::Inline) });
 
@@ -372,9 +380,10 @@ void CommonStrip::updateArpRateControls()
     const auto* raw = ctx.apvts.getRawParameterValue (ParamIds::arpRateMode);
     const bool free = raw != nullptr && raw->load() > 0.5f;
     if (arpDivision != nullptr)
-        arpDivision->setEnabled (! free);
+        arpDivision->setVisible (! free);
     if (arpFreeRate != nullptr)
-        arpFreeRate->setEnabled (free);
+        arpFreeRate->setVisible (free);
+    arpSection.resized();
 }
 
 void CommonStrip::setAreas (juce::Rectangle<int> headerArea, juce::Rectangle<int> sidebarArea)
