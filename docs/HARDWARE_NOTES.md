@@ -728,7 +728,8 @@ Alternative: global effect.
 ### Plugin: chip default of poly_channels [plugin.md]
 Ambiguity: one host parameter cannot hold three chip defaults.
 Sources: docs/PLUGIN_SPECS.md.
-Decision: 0 means "chip default mask", resolved on the audio thread at each switch.
+Decision: 0 means "chip default mask", resolved on the audio thread at each switch. The
+editor's toggles refuse an empty mask and write a mask equal to the chip default as 0.
 Alternative: one mask parameter per chip.
 
 ### Plugin: second chip switch during a crossfade [plugin.md]
