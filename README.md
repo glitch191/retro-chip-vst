@@ -219,8 +219,7 @@ The per-channel SNES buses are dry: they carry the voice through VOL L/R and MVO
 no echo. `Main` always carries the full mix; the per-channel buses are copies, not a
 split of it.
 
-What to check in Renoise (the developer did not test Renoise; the product owner
-validates this by hand):
+Routing the outputs in Renoise:
 
 1. Load Retro Chip as an instrument and open the instrument's plugin properties.
 2. Enable the plugin's extra outputs there, and route `Out 1` .. `Out 10` to tracks.
@@ -234,9 +233,13 @@ validates this by hand):
   hardware channels enabled in `poly_channels`, with oldest-note stealing. The default
   (`poly_channels` = 0) is the chip's own mask: NES pulses and triangle, all 8 SNES
   voices, Genesis FM 1..6. `poly_channels` is a 10-bit mask (bit n = hardware channel n,
-  numbered like the buses from 0). It has no control on the panel; set it through the
-  host's parameter list or automation. Presets can set it too. A mask with no channel of
-  the current chip falls back to the chip's default.
+  numbered like the buses from 0). The `Poly channels` toggles in the Output box show it
+  for the active chip (NES P1 P2 Tri / Noi DMC, SNES 1..8, Genesis F1..F6 / T1 T2 T3 N;
+  lit = used) and a click switches one channel; the last lit channel stays on, and a mask
+  equal to the chip's default is stored as 0 so it keeps following the chip. The host's
+  parameter list, automation and presets can set it too. A mask with no channel of the
+  current chip falls back to the chip's default. The toggles are disabled in `MIDI
+  channel` mode, which does not use the mask.
 * `Voice mode` = `MIDI channel`: MIDI channel N plays hardware channel N-1. NES: 1..5
   (4 = noise, 5 = DMC); SNES: 1..8; Genesis: 1..6 FM (6 is the DAC when `dac_enable` is
   on), 7..9 PSG tone, 10 PSG noise.
@@ -326,9 +329,8 @@ The `Diagnostics` button in the strip shows an overlay (off by default, no cost 
 * Repaints: editor paints per second. It must read 0 at rest (the editor repaints only
   when something changed; the text caret does not blink).
 
-The editor is driven by the display's vblank. On the development machine (3440 x 1440 at
-360 Hz) the overlay reads 360.1 Hz, a mean frame cost of 0.04 ms and a worst 1 % of 0.33 ms
-while a chord plays (screenshot above), and 0 repaints per second at rest.
+The editor is driven by the display's vblank, so it repaints at the display's own refresh
+rate while something changes, and reads 0 repaints per second at rest.
 
 ## Regenerating samples and presets
 
@@ -510,4 +512,3 @@ separate tool downloaded for validation and is not linked.
   single note: chords and the arpeggiator's overlapping notes can exceed it.
 * The DC blocker (5 Hz) and the output coupling behaviour at reset are modelling
   choices, not measured hardware values.
-* `poly_channels` has no editor control.

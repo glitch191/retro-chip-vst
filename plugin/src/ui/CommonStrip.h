@@ -5,6 +5,8 @@
 #include "ui/ParamChoice.h"
 #include "ui/ParamGroup.h"
 #include "ui/ParamToggle.h"
+#include "ui/PolyChannels.h"
+#include "ui/Theme.h"
 
 #include <functional>
 #include <memory>
@@ -14,13 +16,14 @@ namespace rcv
 {
 
 // A titled box of label + control rows (the sidebar forms). Each row holds one control or
-// several side by side with equal widths; inline controls share one label column.
+// several side by side with equal widths (hidden ones take no width); inline controls share
+// one label column. Rows are kControlHeight high unless addRow() is given a height.
 class FormSection final : public PanelSection
 {
 public:
     explicit FormSection (juce::String titleIn) : PanelSection (std::move (titleIn)) {}
 
-    void addRow (std::vector<juce::Component*> items);
+    void addRow (std::vector<juce::Component*> items, int height = theme::kControlHeight);
     void setLabelWidth (int width);
 
     int heightForWidth (int width) const override;
@@ -30,15 +33,21 @@ public:
     void resized() override;
 
 private:
-    std::vector<std::vector<juce::Component*>> rows;
+    struct Row
+    {
+        std::vector<juce::Component*> items;
+        int height = 0;
+    };
+    std::vector<Row> rows;
 };
 
 // Controls shared by the three chips (docs/PLUGIN_SPECS.md "CommonStrip"):
 //
 //   header:  chip selector, preset browser (previous / name menu / next, search field with a
 //            results list), randomize amount and button, UI scale, Diagnostics toggle;
-//   sidebar: arpeggiator (enable, hold, pattern, octaves, rate mode, division or free rate,
-//            gate), glide (time, mode) and output (voice mode, raw output, master gain).
+//   sidebar: arpeggiator (enable, hold, pattern, octaves, rate mode, division or free rate
+//            in one row, gate), glide (time, mode) and output (voice mode, poly channels,
+//            raw output, master gain).
 //
 // The strip covers the whole editor content but only its children take mouse clicks, so the
 // chip panel between the header and the sidebar stays reachable. The preset menu is two
@@ -170,6 +179,7 @@ private:
     std::vector<std::unique_ptr<ParamControl>> sidebarControls;
     ParamControl* arpDivision = nullptr;
     ParamControl* arpFreeRate = nullptr;
+    std::unique_ptr<PolyChannelsControl> polyChannels;
     std::unique_ptr<juce::ParameterAttachment> rateModeAttachment;
     juce::Label sampleStatus;   // PresetManager::sampleStatus() under the sidebar forms, hidden when empty
     void refreshSampleStatus();

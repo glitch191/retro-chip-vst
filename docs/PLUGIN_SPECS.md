@@ -79,7 +79,8 @@ and the crossfade.
 * Chip switches: a switch requested during a running crossfade waits until it ends.
 * `poly_channels` 0 (the default) or a mask with no channel of the current chip selects
   the chip's default mask, resolved on the audio thread at each switch; the plugin never
-  writes `poly_channels` itself.
+  writes `poly_channels` on its own (only the editor's Poly channels toggles do, on a
+  click).
 * `activeEngine()`, `engine(ChipId)`, `activeChip()`.
 * Sample loading for the user WAV import: `loadUserSample(ChipId, slot, AudioBuffer, sampleRate)`
   is message-thread only and forwards to `IChipEngine::loadSample`. The editor reaches it
@@ -94,7 +95,7 @@ editor and README document the mapping per chip (NES: 1 Pulse 1, 2 Pulse 2, 3 Tr
 4 Noise, 5 DMC; SNES: 1..8 voices; Genesis: 1..6 FM, 7..9 PSG tone, 10 PSG noise).
 `isBusesLayoutSupported`: main must be stereo; each extra bus is stereo or disabled.
 Renoise note: Renoise exposes plugin multi-outs as routing targets when the bus is
-enabled; the README records what was observed.
+enabled; the README describes the routing steps.
 
 ## State
 
@@ -221,8 +222,16 @@ write indices, read by the UI. No locks.
   panel is visible. No effects section for NES and Genesis.
 * `CommonStrip`: chip selector, preset browser (two-level menu: category then
   subcategory, plus a search field over all three chips), previous/next, randomize
-  amount + button, arpeggiator knobs, glide knobs, raw output toggle, voice mode, master
-  gain, UI scale.
+  amount + button, arpeggiator knobs (Division and Free rate share one row: only the one
+  the rate mode uses is shown), glide knobs, raw output toggle, voice mode, Poly channels
+  toggles, master gain, UI scale.
+* Poly channels (`PolyChannelsControl`): a "Poly channels" caption and one toggle of at
+  least 24 px per hardware channel of the active chip on two rows (NES P1 P2 Tri / Noi
+  DMC, SNES 1..4 / 5..8, Genesis F1..F6 / T1 T2 T3 N, full names in the tooltips). Lit
+  toggles show the mask the engine host resolves (stored bits of the chip, else the chip
+  default). A click writes the whole mask as one host gesture and keeps the bits of
+  channels the chip does not have; the last lit channel cannot be switched off; a mask
+  equal to the chip default is written as 0. Disabled in `MIDI channel` voice mode.
 * Preset search: the field ("Search all presets") runs `searchAll` at each text change and
   shows the results in a list under it (640 px wide, right-aligned to the field, up to 16
   rows of 24 px before it scrolls). The list's header line gives the total and the count

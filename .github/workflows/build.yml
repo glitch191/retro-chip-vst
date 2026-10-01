@@ -1,6 +1,7 @@
 # Builds the VST3 on a GitHub-hosted Windows runner, runs the unit tests and pluginval,
 # and publishes the bundle as a downloadable artefact. Pushing a tag such as v1.0.0 also
-# attaches the zipped bundle to a GitHub Release of that tag.
+# attaches the zipped bundle to a GitHub Release of that tag (created if it does not
+# exist yet, otherwise the zip is added to the existing release).
 #
 # JUCE and Catch2 are fetched by CMake (cmake/Dependencies.cmake); nothing else is needed.
 
@@ -25,7 +26,7 @@ jobs:
         shell: pwsh
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Configure, build and run ctest (DSP and plugin tests) with the release preset.
       - name: Build and test
@@ -41,7 +42,7 @@ jobs:
           New-Item -ItemType Directory -Force dist | Out-Null
           Compress-Archive -Path $bundle.FullName -DestinationPath dist\RetroChip-VST3-win64.zip
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: RetroChip-VST3-win64
           path: dist/RetroChip-VST3-win64.zip
@@ -49,7 +50,7 @@ jobs:
 
       - name: pluginval reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: pluginval-reports
           path: build-reports/pluginval
@@ -62,11 +63,20 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: RetroChip-VST3-win64
 
-      - name: Create the GitHub Release
+      # A release written by hand before the tag build finishes keeps its title and notes;
+      # the zip is only attached (or replaced) there.
+      - name: Create or update the GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "${{ github.ref_name }}" RetroChip-VST3-win64.zip --repo "${{ github.repository }}" --title "${{ github.ref_name }}" --generate-notes
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if gh release view "$TAG" --repo "$REPO" > /dev/null 2>&1; then
+            gh release upload "$TAG" RetroChip-VST3-win64.zip --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" RetroChip-VST3-win64.zip --repo "$REPO" --title "$TAG" --generate-notes
+          fi
