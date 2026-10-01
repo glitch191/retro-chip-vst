@@ -483,11 +483,16 @@ engines run together for 20 ms.
 
 ## Licence
 
-The plugin links JUCE 9, which is available under the AGPLv3 or a commercial JUCE
-licence. A commercial JUCE licence is planned by the owner. Distributing a binary
-requires one of the two. The project's own code carries no licence constraint beyond
-this note. Catch2 (Boost Software Licence) is used only by the tests. pluginval is a
-separate tool downloaded for validation and is not linked.
+Retro Chip is free software, licensed under the GNU Affero General Public License,
+version 3 (`LICENSE`). Copyright (C) 2026 Olivier Cyr. It is a personal, non-commercial
+project.
+
+The plugin links JUCE 9, which it uses under JUCE's AGPLv3 option. Anyone who
+redistributes the plugin, modified or not, must provide its source code under the same
+licence. Catch2 (Boost Software Licence) is used only by the tests. pluginval is a
+separate tool downloaded for validation and is not linked. The SNES and Genesis samples
+converted from CC0 recordings keep their CC0 status; their sources are listed in
+`docs/SOURCES.md`.
 
 ## Known limitations and what was not verified
 
