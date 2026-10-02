@@ -106,7 +106,13 @@ if ($Install) {
     if (-not $bundle) { throw "No .vst3 bundle found under $buildDir (was the plugin built?)" }
     $dest = Join-Path $env:CommonProgramFiles "VST3"
     $target = Join-Path $dest $bundle.Name
-    $copy = "New-Item -ItemType Directory -Force -Path '$dest' | Out-Null; " +
+    # The copy stops at the first error, and checks first that no host has the installed
+    # plugin loaded: removing a bundle whose DLL is locked deletes the other files and then
+    # copies the new bundle inside the old folder.
+    $installedDll = Join-Path $target "Contents\x86_64-win\$($bundle.Name)"
+    $copy = "`$ErrorActionPreference = 'Stop'; " +
+            "if (Test-Path '$installedDll') { [IO.File]::Open('$installedDll', 'Open', 'ReadWrite', 'None').Close() }; " +
+            "New-Item -ItemType Directory -Force -Path '$dest' | Out-Null; " +
             "if (Test-Path '$target') { Remove-Item -Recurse -Force '$target' }; " +
             "Copy-Item -Recurse -Path '$($bundle.FullName)' -Destination '$target'"
     $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -116,7 +122,10 @@ if ($Install) {
         $p = Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile", "-Command", $copy -Wait -PassThru
         if ($p.ExitCode -ne 0) { throw "Install failed (elevated copy exit code $($p.ExitCode))" }
     }
-    if (-not (Test-Path $target)) { throw "Install failed: $target not found" }
+    $builtDll = Join-Path $bundle.FullName "Contents\x86_64-win\$($bundle.Name)"
+    if (-not (Test-Path $installedDll) -or (Get-FileHash $installedDll).Hash -ne (Get-FileHash $builtDll).Hash) {
+        throw "Install failed: $installedDll is not the built plugin (is a host using it? close it and retry)"
+    }
     Write-Host "Installed: $target"
 }
 
