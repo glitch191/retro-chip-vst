@@ -15,6 +15,9 @@
 
 .PARAMETER Install
     Copy the built .vst3 bundle to C:\Program Files\Common Files\VST3 (asks for elevation).
+    The windows-x64-release preset also copies it after every build that relinks the
+    plugin (RCV_COPY_PLUGIN_AFTER_BUILD), without elevation: that copy needs write access
+    to the installed bundle folder and only warns when it fails.
 
 .PARAMETER Clean
     Delete the preset's build directory before configuring.
