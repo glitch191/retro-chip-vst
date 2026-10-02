@@ -16,7 +16,10 @@ option(RCV_BUILD_PLUGIN "Build the JUCE VST3 plugin (fetches JUCE)" ON)
 option(RCV_BUILD_TESTS  "Build the chipdsp unit tests (fetches Catch2)" ON)
 option(RCV_BUILD_BENCH  "Build the chipdsp CPU-cost benchmark" ON)
 option(RCV_BUILD_TOOLS  "Build chiptool (preset rendering and parameter dump CLI)" ON)
-option(RCV_COPY_PLUGIN_AFTER_BUILD "Copy the .vst3 to the user VST3 folder after build" OFF)
+option(RCV_COPY_PLUGIN_AFTER_BUILD "Copy the .vst3 over the installed one (RCV_VST3_INSTALL_DIR) after each build" OFF)
+# CommonProgramW6432 is the 64-bit "Common Files" folder; CommonProgramFiles can name the x86
+# one, depending on the process that runs CMake.
+set(RCV_VST3_INSTALL_DIR "$ENV{CommonProgramW6432}/VST3" CACHE PATH "VST3 folder RCV_COPY_PLUGIN_AFTER_BUILD copies into")
 option(RCV_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
 
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

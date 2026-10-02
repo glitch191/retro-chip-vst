@@ -17,7 +17,7 @@
       "name": "windows-x64-release",
       "displayName": "Windows x64 Release (Ninja + MSVC)",
       "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "RCV_COPY_PLUGIN_AFTER_BUILD": "ON" }
     },
     {
       "name": "windows-x64-debug",

@@ -29,11 +29,30 @@ juce_add_plugin(RetroChip
     # Windows VST3 wrapper routes keys through its message hook whatever its value (see
     # CommonStrip::SearchField and ui/KeyboardFocus.h for the Windows behaviour).
     EDITOR_WANTS_KEYBOARD_FOCUS TRUE
-    COPY_PLUGIN_AFTER_BUILD ${RCV_COPY_PLUGIN_AFTER_BUILD}
-    VST3_COPY_DIR "$ENV{LOCALAPPDATA}/Programs/Common/VST3"
     VERSION ${PROJECT_VERSION})
 
 target_sources(RetroChip PRIVATE ${RCV_PLUGIN_SOURCES})
+
+# JUCE's rule for RetroChip_resources.rc (the Windows file version) does not depend on the
+# project version, so a version bump kept the old file version in existing build folders.
+# rcv_version.txt is only rewritten when the version changes (file(CONFIGURE)), so the
+# resource file is regenerated then and not at every configure.
+if(WIN32)
+    get_target_property(rcv_juce_code RetroChip JUCE_GENERATED_SOURCES_DIRECTORY)
+    file(CONFIGURE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/rcv_version.txt" CONTENT "${PROJECT_VERSION}\n")
+    add_custom_command(OUTPUT "${rcv_juce_code}/RetroChip_resources.rc"
+        DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/rcv_version.txt" APPEND)
+endif()
+
+# After each build of the VST3, copy the bundle over the installed one (cmake/CopyVst3Bundle.cmake;
+# a failed copy is only a warning). The windows-x64-release preset turns it on; CI builds
+# (CI environment variable set) never copy.
+if(RCV_COPY_PLUGIN_AFTER_BUILD AND NOT DEFINED ENV{CI})
+    add_custom_command(TARGET RetroChip_VST3 POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" "-DSRC=$<GENEX_EVAL:$<TARGET_PROPERTY:RetroChip_VST3,JUCE_PLUGIN_ARTEFACT_FILE>>"
+                "-DDEST_DIR=${RCV_VST3_INSTALL_DIR}" -P "${CMAKE_SOURCE_DIR}/cmake/CopyVst3Bundle.cmake"
+        VERBATIM)
+endif()
 target_include_directories(RetroChip PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 # Embedded assets: preset banks, procedurally generated samples and the sample index.
