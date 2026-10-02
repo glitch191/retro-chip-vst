@@ -98,6 +98,21 @@ To install it, run `.\build.ps1 -Install`, which copies it to
 `C:\Program Files\Common Files\VST3` (the standard VST3 folder; Windows asks once for
 administrator rights), or copy the `Retro Chip.vst3` folder there by hand.
 
+After that, every build with the `windows-x64-release` preset that produces a new plugin
+binary copies the bundle over the installed one (`RCV_COPY_PLUGIN_AFTER_BUILD`, target
+folder `RCV_VST3_INSTALL_DIR`). This needs write access to the installed
+`Retro Chip.vst3` folder, which an administrator can grant once:
+
+```powershell
+icacls "C:\Program Files\Common Files\VST3\Retro Chip.vst3" /grant "${env:USERNAME}:(OI)(CI)M"
+```
+
+Without that access, or while a host has the plugin loaded, the copy is skipped with a
+CMake warning and the build still succeeds; `.\build.ps1 -Install` then copies with
+elevation. CI builds never copy. The VST3 folder can be changed with
+`-DRCV_VST3_INSTALL_DIR=<folder>`, and the copy turned off with
+`-DRCV_COPY_PLUGIN_AFTER_BUILD=OFF`.
+
 Then rescan plugins in the host.
 
 ## Project structure
