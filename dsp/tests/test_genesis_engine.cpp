@@ -841,3 +841,28 @@ TEST_CASE("Render WAV files for inspection", "[genesis][engine][render]")
     }
 }
 
+
+TEST_CASE("FM pan Off clears both $B4 output bits: the channel is not heard", "[genesis][engine]")
+{
+    for (float revision : { 1.0f, 0.0f })   // YM3438 first: no ladder crosstalk at all
+    {
+        INFO("chip_revision " << revision);
+        GenesisEngine e;
+        e.setParameter(E::ChipRevision, revision);
+        e.prepare(kRate, kBlock);
+        e.setParameter(E::Fm1Pan, 1);   // centre: the reference
+        e.setParameter(E::Fm2Pan, 3);   // off
+        e.noteOn(0, 60.0f, 1.0f);
+        e.noteOn(1, 60.0f, 1.0f);
+        const Render out = render(e, 9600, true);
+        const double reference = rms(out.chL[0], 4800, 9600);
+        REQUIRE(reference > 0.01);
+        CHECK(rms(out.chL[1], 4800, 9600) < 0.1 * reference);
+        CHECK(rms(out.chR[1], 4800, 9600) < 0.1 * reference);
+        if (revision == 1.0f)
+        {
+            CHECK(rms(out.chL[1], 4800, 9600) < 1e-3);
+            CHECK(rms(out.chR[1], 4800, 9600) < 1e-3);
+        }
+    }
+}

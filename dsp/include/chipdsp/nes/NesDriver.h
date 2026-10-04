@@ -52,6 +52,7 @@ struct DriverSettings
     TriangleSettings triangle {};
     NoiseSettings noise {};
     DmcSettings dmc {};
+    int frameMode = 0;   // $4017 bit 7: 0 = 4-step sequence, 1 = 5-step
 };
 
 // A DMC sample as mapped at $C000: 'capacity' readable bytes, 'length' = L * 16 + 1 bytes
@@ -142,6 +143,7 @@ private:
 
     std::array<ToneVoice, 4> voices {}; // pulse 1, pulse 2, triangle, noise
     bool dmcGate = false;
+    int frameModeWritten = 0;   // sequence mode last written to $4017
 };
 
 } // namespace chipdsp::nes

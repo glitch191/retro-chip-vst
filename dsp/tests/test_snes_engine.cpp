@@ -99,7 +99,7 @@ TEST_CASE("Engine: parameter descriptors match ENGINE_SPECS", "[snes][engine]")
     SnesDspEngine engine;
     const auto descs = engine.parameterDescriptors();
     REQUIRE(descs.size() == static_cast<size_t>(SnesDspEngine::NumParams));
-    REQUIRE(descs.size() == 35);
+    REQUIRE(descs.size() == 45);
 
     struct Spec { const char* key; float min, max, def; };
     const Spec specs[] = {
@@ -110,9 +110,12 @@ TEST_CASE("Engine: parameter descriptors match ENGINE_SPECS", "[snes][engine]")
         { "vibrato_rate", 0, 63, 0 }, { "vibrato_depth", 0, 64, 0 }, { "vibrato_delay", 0, 250, 0 },
         { "noise_enable", 0, 1, 0 }, { "noise_clock", 0, 31, 0 }, { "pmon", 0, 1, 0 }, { "loop_override", 0, 2, 0 },
         { "echo_enable", 0, 1, 0 }, { "echo_delay", 0, 15, 0 }, { "echo_feedback", -128, 127, 0 },
-        { "echo_volume", -128, 127, 0 }, { "fir_preset", 0, 7, 0 }, { "v1_echo", 0, 1, 0 }, { "v2_echo", 0, 1, 0 },
+        { "echo_volume", -128, 127, 0 }, { "fir_preset", 0, 8, 0 }, { "v1_echo", 0, 1, 0 }, { "v2_echo", 0, 1, 0 },
         { "v3_echo", 0, 1, 0 }, { "v4_echo", 0, 1, 0 }, { "v5_echo", 0, 1, 0 }, { "v6_echo", 0, 1, 0 },
         { "v7_echo", 0, 1, 0 }, { "v8_echo", 0, 1, 0 }, { "main_volume", 0, 127, 127 },
+        { "fir_c0", -128, 127, 127 }, { "fir_c1", -128, 127, 0 }, { "fir_c2", -128, 127, 0 }, { "fir_c3", -128, 127, 0 },
+        { "fir_c4", -128, 127, 0 }, { "fir_c5", -128, 127, 0 }, { "fir_c6", -128, 127, 0 }, { "fir_c7", -128, 127, 0 },
+        { "invert_left", 0, 1, 0 }, { "invert_right", 0, 1, 0 },
     };
     REQUIRE(std::size(specs) == descs.size());
     for (size_t i = 0; i < descs.size(); ++i)
@@ -131,6 +134,7 @@ TEST_CASE("Engine: parameter descriptors match ENGINE_SPECS", "[snes][engine]")
                 REQUIRE(d.choiceLabels[k] != nullptr);
     }
     REQUIRE(std::string(descs[SnesDspEngine::FirPreset].choiceLabels[5]) == "Comb");
+    REQUIRE(std::string(descs[SnesDspEngine::FirPreset].choiceLabels[8]) == "Custom");
     REQUIRE(engine.numChannels() == 8);
     REQUIRE(std::string(engine.channelInfo(0).name) == "Voice 1");
     REQUIRE(std::string(engine.channelInfo(7).shortName) == "V8");
@@ -506,4 +510,63 @@ TEST_CASE("Engine: raw output is a zero-order hold of the 32 kHz stream", "[snes
     for (int i = 0; i + 2 < 96; i += 3)
         holds += std::abs(rig.l[static_cast<size_t>(i)] - rig.l[static_cast<size_t>(i + 1)]) < 1e-3f ? 1 : 0;
     REQUIRE(holds >= 30);
+}
+
+TEST_CASE("Engine: fir_preset Custom writes fir_c0..fir_c7 to FIR0..FIR7", "[snes][engine]")
+{
+    Rig rig;
+    rig.engine->setParameter(SnesDspEngine::FirPreset, 3.0f);   // High-pass
+    rig.render();
+    for (int k = 0; k < 8; ++k)
+        REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(k * 16 + kRegFir)) == kFirPresets[3].taps[k]);
+
+    const int taps[8] = { -128, 127, -5, 0, 64, -64, 1, 100 };
+    for (int k = 0; k < 8; ++k)
+        rig.engine->setParameter(SnesDspEngine::FirC0 + k, static_cast<float>(taps[k]));
+    rig.render();   // custom values are ignored until fir_preset selects Custom
+    REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(kRegFir)) == kFirPresets[3].taps[0]);
+
+    rig.engine->setParameter(SnesDspEngine::FirPreset, 8.0f);   // Custom
+    rig.render();
+    for (int k = 0; k < 8; ++k)
+    {
+        INFO("FIR" << k);
+        REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(k * 16 + kRegFir)) == taps[k]);
+    }
+}
+
+TEST_CASE("Engine: invert_left / invert_right write VxVOL negative and invert that side", "[snes][engine]")
+{
+    Rig rig;
+    const auto cycle = sineCycles(4);
+    REQUIRE(rig.engine->loadSample(0, cycle.data(), static_cast<int>(cycle.size()), 32000.0));
+    REQUIRE(rig.engine->setSampleLoop(0, 0));
+    rig.engine->setParameter(SnesDspEngine::InvertLeft, 1.0f);
+    rig.engine->noteOn(0, 60.0f, 1.0f);
+    rig.render();
+    REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(0x00)) == -100);
+    REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(0x01)) == 100);
+
+    // Centre pan, left inverted: the two outputs are opposite.
+    rig.renderSeconds(0.1);
+    double dot = 0.0, ll = 0.0, rr = 0.0;
+    for (int b = 0; b < 10; ++b)
+    {
+        rig.render();
+        for (size_t i = 0; i < rig.l.size(); ++i)
+        {
+            dot += static_cast<double>(rig.l[i]) * rig.r[i];
+            ll += static_cast<double>(rig.l[i]) * rig.l[i];
+            rr += static_cast<double>(rig.r[i]) * rig.r[i];
+        }
+    }
+    REQUIRE(ll > 1e-6);
+    REQUIRE(dot / std::sqrt(ll * rr) < -0.99);
+
+    rig.engine->setParameter(SnesDspEngine::InvertLeft, 0.0f);
+    rig.engine->setParameter(SnesDspEngine::InvertRight, 1.0f);
+    rig.engine->noteOn(1, 60.0f, 1.0f);
+    rig.render();
+    REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(0x10)) == 100);
+    REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(0x11)) == -100);
 }

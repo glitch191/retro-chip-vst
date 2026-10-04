@@ -21,7 +21,8 @@ namespace
     const char* const kReleaseModes[] = { "Hardware KOFF", "GAIN exponential" };
     const char* const kLoopOverrides[] = { "Sample default", "Force one-shot", "Force loop" };
     const char* const kFirNames[] = { kFirPresets[0].name, kFirPresets[1].name, kFirPresets[2].name, kFirPresets[3].name,
-                                      kFirPresets[4].name, kFirPresets[5].name, kFirPresets[6].name, kFirPresets[7].name };
+                                      kFirPresets[4].name, kFirPresets[5].name, kFirPresets[6].name, kFirPresets[7].name,
+                                      "Custom" };
     static_assert(kNumFirPresets == 8, "update kFirNames");
 
     using E = SnesDspEngine;
@@ -53,7 +54,7 @@ namespace
         { E::EchoDelay,    "echo_delay",    "Echo Delay",       "Echo", 0.0f, 15.0f, 0.0f, true, "", nullptr },
         { E::EchoFeedback, "echo_feedback", "Echo Feedback",    "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
         { E::EchoVolume,   "echo_volume",   "Echo Volume",      "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
-        { E::FirPreset,    "fir_preset",    "FIR Preset",       "Echo", 0.0f, 7.0f, 0.0f, true, "", kFirNames },
+        { E::FirPreset,    "fir_preset",    "FIR Preset",       "Echo", 0.0f, 8.0f, 0.0f, true, "", kFirNames },
         { E::V1Echo,       "v1_echo",       "Voice 1 Echo",     "Echo", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
         { E::V2Echo,       "v2_echo",       "Voice 2 Echo",     "Echo", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
         { E::V3Echo,       "v3_echo",       "Voice 3 Echo",     "Echo", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
@@ -63,6 +64,19 @@ namespace
         { E::V7Echo,       "v7_echo",       "Voice 7 Echo",     "Echo", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
         { E::V8Echo,       "v8_echo",       "Voice 8 Echo",     "Echo", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
         { E::MainVolume,   "main_volume",   "Main Volume",      "Global", 0.0f, 127.0f, 127.0f, true, "", nullptr },
+        // FIR0..FIR7 ($0F..$7F) of fir_preset Custom, signed 1.7 fixed point; FIR0 weights the
+        // oldest echo sample. Defaults: pass-through (FIR0 = 127).
+        { E::FirC0,        "fir_c0",        "FIR 0",            "Echo", -128.0f, 127.0f, 127.0f, true, "", nullptr },
+        { E::FirC1,        "fir_c1",        "FIR 1",            "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
+        { E::FirC2,        "fir_c2",        "FIR 2",            "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
+        { E::FirC3,        "fir_c3",        "FIR 3",            "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
+        { E::FirC4,        "fir_c4",        "FIR 4",            "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
+        { E::FirC5,        "fir_c5",        "FIR 5",            "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
+        { E::FirC6,        "fir_c6",        "FIR 6",            "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
+        { E::FirC7,        "fir_c7",        "FIR 7",            "Echo", -128.0f, 127.0f, 0.0f, true, "", nullptr },
+        // VOL L / VOL R are signed: a negative value inverts that side's phase.
+        { E::InvertLeft,   "invert_left",   "Invert Left",      "Instrument", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
+        { E::InvertRight,  "invert_right",  "Invert Right",     "Instrument", 0.0f, 1.0f, 0.0f, true, "", kOffOn },
     };
     static_assert(static_cast<int>(std::size(kDescs)) == E::NumParams, "one descriptor per parameter");
 
@@ -195,6 +209,10 @@ SnesDriverParams SnesDspEngine::readParams() const noexcept
     p.echoFeedback = paramInt(EchoFeedback);
     p.echoVolume = paramInt(EchoVolume);
     p.firPreset = paramInt(FirPreset);
+    for (int k = 0; k < 8; ++k)
+        p.firCustom[static_cast<size_t>(k)] = paramInt(FirC0 + k);
+    p.invertLeft = paramInt(InvertLeft);
+    p.invertRight = paramInt(InvertRight);
     p.eonMask = 0;
     for (int v = 0; v < kSnesChannels; ++v)
         p.eonMask |= paramInt(V1Echo + v) != 0 ? (1 << v) : 0;

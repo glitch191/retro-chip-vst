@@ -223,8 +223,14 @@ void SnesDriver::flushKeyOns(SnesDsp& dsp, const SnesDriverParams& p, const Samp
         dsp.writeRegister(base + kRegAdsr2, adsr2Value(inst));   // ADSR2/GAIN before ADSR1
         dsp.writeRegister(base + kRegGain, gainValue(inst));
         dsp.writeRegister(base + kRegAdsr1, adsr1Value(inst));
-        dsp.writeRegister(base + kRegVolL, static_cast<uint8_t>(left));
-        dsp.writeRegister(base + kRegVolR, static_cast<uint8_t>(right));
+        // invert_left / invert_right: VOL L / VOL R are signed, a negative value inverts the
+        // phase of that side (the "surround" trick some games used).
+        if (inst.invertLeft != 0)
+            left = -left;
+        if (inst.invertRight != 0)
+            right = -right;
+        dsp.writeRegister(base + kRegVolL, static_cast<uint8_t>(static_cast<int8_t>(left)));
+        dsp.writeRegister(base + kRegVolR, static_cast<uint8_t>(static_cast<int8_t>(right)));
         dsp.writeRegister(base + kRegPitchL, static_cast<uint8_t>(c.pitch & 0xFF));
         dsp.writeRegister(base + kRegPitchH, static_cast<uint8_t>(c.pitch >> 8));
     }
@@ -288,9 +294,14 @@ void SnesDriver::writeGlobals(SnesDsp& dsp, const SnesDriverParams& p) noexcept
     dsp.writeRegister(kRegNon, static_cast<uint8_t>(p.noiseEnable != 0 ? 0xFF : 0x00));
     dsp.writeRegister(kRegPmon, static_cast<uint8_t>(p.pmon != 0 ? 0xFE : 0x00));   // voices 1..7
 
+    // fir_preset 0..7: named sets; kNumFirPresets (Custom): the fir_c0..fir_c7 coefficients.
+    const bool custom = p.firPreset >= kNumFirPresets;
     const FirPreset& fir = kFirPresets[std::clamp(p.firPreset, 0, kNumFirPresets - 1)];
     for (int k = 0; k < 8; ++k)
-        dsp.writeRegister(k * 16 + kRegFir, static_cast<uint8_t>(fir.taps[k]));
+    {
+        const int tap = custom ? std::clamp(p.firCustom[static_cast<size_t>(k)], -128, 127) : fir.taps[k];
+        dsp.writeRegister(k * 16 + kRegFir, static_cast<uint8_t>(static_cast<int8_t>(tap)));
+    }
 
     const auto evol = static_cast<uint8_t>(echoRunning ? static_cast<int8_t>(std::clamp(p.echoVolume, -128, 127)) : 0);
     dsp.writeRegister(kRegEvolL, evol);

@@ -157,7 +157,7 @@ capture chain.
 * Emulated: the four duty sequences, the hardware envelope, length counters, sweep with
   its mute rules, the triangle's linear counter, the noise LFSR (long mode 32767 steps,
   short mode 93 or 31), the DMC 1-bit delta counter, the frame sequencer (4- and 5-step
-  modes), the exact non-linear mixer, and the NES-001 filters (90 Hz and 440 Hz
+  modes, `frame_mode`), the exact non-linear mixer, and the NES-001 filters (90 Hz and 440 Hz
   high-pass, 14 kHz low-pass) under `console_filter`.
 * Quirks kept: 11-bit period quantisation (low notes are out of tune); the sweep mutes a
   channel whose period is below 8 or whose target exceeds $7FF; a $4003/$4007 write
@@ -173,7 +173,9 @@ capture chain.
 * Emulated: BRR decoding (four filters, the shift 13-15 rule), 4-point Gaussian
   interpolation from the 512-entry table, 14-bit pitch with pitch modulation (PMON),
   noise, ADSR and the five GAIN modes with the global rate counter and offset tables,
-  key-on and key-off timing, the 8-tap FIR echo with feedback, the 16-bit clamps, and the
+  key-on and key-off timing, the 8-tap FIR echo with feedback (named coefficient sets or
+  eight free coefficients with `fir_preset` = Custom), signed voice volumes
+  (`invert_left` / `invert_right` invert one side's phase), the 16-bit clamps, and the
   final phase inversion.
 * Quirks kept: the Gaussian filter's muffled top end; the key-on delay (5 silent samples
   before the first data sample); the echo buffer takes APU RAM (EDL x 2 KiB) from the
@@ -186,8 +188,9 @@ capture chain.
 
 * YM2612: 6 FM channels with 4 operators, 8 algorithms, feedback, detune, multiplier,
   key scaling, the envelope generator (12-bit global counter, one update per 3 FM
-  samples, attack formula, SL 15 = 93 dB), SSG-EG, LFO with AM and PM, and the DAC on
-  channel 6. Output is at 53267 Hz (NTSC).
+  samples, attack formula, SL 15 = 93 dB), SSG-EG, LFO with AM and PM, the L/R output
+  bits per channel (left, centre, right or off), and the DAC on channel 6. Output is at
+  53267 Hz (NTSC).
 * `chip_revision` 0 (default) is the discrete YM2612 with the ladder effect, a DAC
   crossover gap around zero that adds distortion at low levels. 1 is the YM3438 / ASIC
   without it.
@@ -519,8 +522,11 @@ converted from CC0 recordings keep their CC0 status; their sources are listed in
 * Only Windows x64 and VST3 are built. The Standalone target
   (`-DRCV_BUILD_STANDALONE=ON`) exists for development and screenshots only.
 * Not modelled: the Genesis Model 2 output filter (no published cutoff), the Model 1
-  VA3-VA6 2.84 kHz variant, the YM2612 timers and CSM mode, GManiac's DAC level-ordering
-  glitches, the Famicom output stage, and the NES $4011 write collision.
+  VA3-VA6 2.84 kHz variant, the YM2612 timers, CSM mode and channel 3 special mode (one
+  frequency per operator), GManiac's DAC level-ordering glitches, the Famicom output
+  stage, and the NES $4011 write collision. The Genesis FM patch is shared by the six
+  channels (the chip allows one patch per channel), and the SNES main volume is one
+  positive value for both sides (MVOL L/R are signed on the chip).
 * The YM2612 LFO divider table could not be re-read from its only source during
   verification (`docs/HARDWARE_NOTES.md`, "LFO frequencies").
 * The scope of the MIDI Channel Mode messages (CC 120/121/123 per channel) follows

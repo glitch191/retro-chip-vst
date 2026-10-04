@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 #include <new>
 #include <numbers>
 #include <set>
@@ -138,7 +139,7 @@ TEST_CASE("NES engine parameter descriptors: every ENGINE_SPECS parameter with n
     Nes2A03Engine e;
     const auto descs = e.parameterDescriptors();
     REQUIRE(descs.size() == static_cast<size_t>(Nes2A03Engine::NumParams));
-    REQUIRE(descs.size() == 64);
+    REQUIRE(descs.size() == 65);
 
     std::set<std::string> keys;
     for (size_t i = 0; i < descs.size(); ++i)
@@ -177,6 +178,8 @@ TEST_CASE("NES engine parameter descriptors: every ENGINE_SPECS parameter with n
     REQUIRE(find("nz_period").maxValue == 15.0f);
     REQUIRE(find("dmc_direct_level").maxValue == 127.0f);
     REQUIRE(find("dmc_rate").maxValue == 15.0f);
+    REQUIRE(find("frame_mode").maxValue == 1.0f);
+    REQUIRE(find("frame_mode").defaultValue == 0.0f);
 
     // setParameter clamps to the hardware bounds and rounds to whole register values.
     e.setParameter(Nes2A03Engine::P1Duty, 7.0f);
@@ -776,4 +779,25 @@ TEST_CASE("NES engine raw output bypasses band-limiting but keeps the level", "[
     REQUIRE(rms(r.main, 4800) > 0.03);
     REQUIRE(measureFrequency(r.main, 14400) == Approx(440.3969).margin(0.1));
     delete e;
+}
+
+TEST_CASE("NES frame_mode writes the 5-step sequence to $4017 at the next driver frame", "[nes][engine][frame]")
+{
+    std::unique_ptr<Nes2A03Engine> e(makeEngine(false));
+    std::vector<float> l(static_cast<size_t>(kBlock)), r(static_cast<size_t>(kBlock));
+    const auto renderFrames = [&](int blocks) {
+        for (int b = 0; b < blocks; ++b)
+            e->renderBlock(l.data(), r.data(), nullptr, nullptr, kBlock);
+    };
+
+    renderFrames(10);
+    REQUIRE_FALSE(e->apu().frame.isFiveStep());   // default: 4-step ($4017 = $40)
+
+    e->setParameter(Nes2A03Engine::FrameMode, 1.0f);
+    renderFrames(10);                              // more than one video frame
+    REQUIRE(e->apu().frame.isFiveStep());
+
+    e->setParameter(Nes2A03Engine::FrameMode, 0.0f);
+    renderFrames(10);
+    REQUIRE_FALSE(e->apu().frame.isFiveStep());
 }

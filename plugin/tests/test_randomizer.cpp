@@ -32,7 +32,7 @@ TEST_CASE ("Randomizer exclusion list", "[randomizer]")
         const auto key = info.engineKey();
         const bool expectedExcluded = info.isGlobal() || key == "sample" || key.endsWith ("_sample") || key == "clock"
                                    || key == "chip_revision" || key == "console_filter" || key == "model1_lowpass"
-                                   || key == "main_volume";
+                                   || key == "main_volume" || key == "frame_mode";
         CHECK (rcv::Randomizer::isExcluded (info) == expectedExcluded);
     }
     // The preset's level correction is a global: never randomized.
@@ -91,6 +91,8 @@ TEST_CASE ("Randomizer stays inside ParamDesc bounds and never touches excluded 
                     FAIL_CHECK ("seed " << seed << ": integer " << info.id << " = " << native);
                 if (amount == 0.0f && after[i] != before[i])
                     FAIL_CHECK ("seed " << seed << ": amount 0 changed " << info.id);
+                if (chip == chipdsp::ChipId::Genesis && info.engineKey().endsWith ("_pan") && native == 3.0f)
+                    FAIL_CHECK ("seed " << seed << ": " << info.id << " randomized to Off");
                 anyChange = anyChange || after[i] != before[i];
             }
             if (anyChange)
