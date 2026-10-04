@@ -464,10 +464,10 @@ a monophonic phrase on the preset's hardware channel.
 3. the `.vst3` bundle, zipped as `RetroChip-VST3-win64.zip`, is kept as a run artefact
    (Actions tab, run page, "Artifacts"), with the pluginval reports.
 
-Pushing a tag that starts with `v` (for example `git tag v0.2.2` then
-`git push origin v0.2.2`) also attaches the zip to the GitHub Release of that tag,
+Pushing a tag that starts with `v` (for example `git tag v0.3.0` then
+`git push origin v0.3.0`) also attaches the zip to the GitHub Release of that tag,
 creating the release when none exists. A release drafted beforehand (for example with
-`gh release create v0.2.2 --draft`) keeps its notes and stays a draft until published. Unzip it and copy the `Retro Chip.vst3` folder into
+`gh release create v0.3.0 --draft`) keeps its notes and stays a draft until published. Unzip it and copy the `Retro Chip.vst3` folder into
 `C:\Program Files\Common Files\VST3`. The plugin version comes from `project(VERSION)` in
 `CMakeLists.txt`, not from the tag, so keep the two in step. Publishing a binary is
 subject to the JUCE licence (see "Licence").
