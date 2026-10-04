@@ -26,8 +26,8 @@ class Randomizer
 {
 public:
     static constexpr float kDefaultAmount = 0.3f;
-    static constexpr std::array<const char*, 6> kExcludedKeys = {
-        "sample", "clock", "chip_revision", "console_filter", "model1_lowpass", "main_volume"
+    static constexpr std::array<const char*, 7> kExcludedKeys = {
+        "sample", "clock", "chip_revision", "console_filter", "model1_lowpass", "main_volume", "frame_mode"
     };
 
     Randomizer (juce::AudioProcessorValueTreeState& apvts, const ParamRegistry& registry);

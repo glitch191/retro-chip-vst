@@ -48,7 +48,11 @@ encoded from PCM by a 1-bit delta encoder at the DMC rate selected by `dmc_rate`
 Parameters (key: range, default):
 
 * Global: `clock` 0..1 (NTSC/PAL) 0; `console_filter` 0..1 (NES-001 90 Hz + 440 Hz
-  high-pass, 14 kHz low-pass) 1.
+  high-pass, 14 kHz low-pass) 1; `frame_mode` 0..1 ($4017 bit 7: 0 = 4-step sequence,
+  1 = 5-step) 0. The driver writes $4017 ($40 or $C0, IRQ inhibited) at the next driver
+  frame after a change, and only then, since every write restarts the sequence; the
+  5-step mode clocks envelopes, the triangle's linear counter, sweeps and length counters
+  less often (four quarter frames per 5-step sequence instead of per 4-step sequence).
 * Pulse 1 and Pulse 2 (prefix `p1_` / `p2_`): `duty` 0..3 (2); `volume` 0..15 (12);
   `env_enable` 0..1 (0, 1 = hardware decay envelope, volume = decay divider period);
   `env_loop` 0..1; `sweep_enable` 0..1; `sweep_period` 0..7; `sweep_negate` 0..1;
@@ -105,9 +109,14 @@ Parameters (key: range, default):
   `noise_enable` 0..1; `noise_clock` 0..31; `pmon` 0..1 (voices 1..7 modulated by
   previous voice); `loop_override` 0..2 (sample default / force one-shot / force loop).
 * Echo: `echo_enable` 0..1; `echo_delay` 0..15; `echo_feedback` -128..127;
-  `echo_volume` -128..127; `fir_preset` 0..N-1 (named coefficient sets, at least:
-  Pass-through, Low-pass soft, Low-pass strong, High-pass, Band-pass, Comb, Bright,
-  Dark); `v1_echo` .. `v8_echo` 0..1 (EON per voice); `main_volume` 0..127.
+  `echo_volume` -128..127; `fir_preset` 0..8 (named coefficient sets: Pass-through,
+  Low-pass soft, Low-pass strong, High-pass, Band-pass, Comb, Bright, Dark; 8 = Custom);
+  `fir_c0` .. `fir_c7` -128..127 (FIR0..FIR7 written as-is when `fir_preset` is Custom;
+  defaults 127, 0, ..., 0 = pass-through; FIR0 weights the oldest echo sample);
+  `v1_echo` .. `v8_echo` 0..1 (EON per voice); `main_volume` 0..127.
+* Instrument, added after the first release: `invert_left`, `invert_right` 0..1 (VOL L /
+  VOL R written negative: the hardware registers are signed and a negative volume inverts
+  that side's phase, the "surround" trick some games used).
 
 Required tests (`dsp/tests/test_snes_*.cpp`): BRR decode of hand-built blocks for
 all four filters against manual computation; BRR encode -> decode round trip error
@@ -136,7 +145,9 @@ Parameters (key: range, default):
   `fms` 0..7; `transpose` -24..24; `fine_tune` -100..100; `vibrato_rate` 0..15;
   `vibrato_depth` 0..64 (fnum units); `vibrato_delay` 0..60; `unison_detune` 0..15
   (0 = off; otherwise each note takes two FM channels, the second offset by this
-  many fnum units); `pan` 0..2 (L, C, R) per FM channel as `fm1_pan`..`fm6_pan`.
+  many fnum units); `pan` 0..3 (L, C, R, Off) per FM channel as `fm1_pan`..`fm6_pan`
+  ($B4 bits L and R; Off clears both, so the channel is not output; on channel 6 this
+  also mutes the DAC, which goes through channel 6's output bits).
   Per operator n = 1..4 (prefix `op1_`..`op4_`): `tl` 0..127; `ar` 0..31; `dr` 0..31;
   `sr` 0..31; `rr` 0..15; `sl` 0..15; `mul` 0..15; `dt` 0..7; `rs` 0..3; `am` 0..1;
   `ssg` 0..8 (0 = off, 1..8 = SSG-EG mode bits 0..7 with enable set).

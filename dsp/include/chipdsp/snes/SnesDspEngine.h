@@ -51,7 +51,7 @@ public:
         EchoDelay,        // echo_delay 0..15
         EchoFeedback,     // echo_feedback -128..127
         EchoVolume,       // echo_volume -128..127
-        FirPreset,        // fir_preset 0..7
+        FirPreset,        // fir_preset 0..8 (8 = Custom: fir_c0..fir_c7)
         V1Echo,           // v1_echo .. v8_echo 0..1
         V2Echo,
         V3Echo,
@@ -61,6 +61,18 @@ public:
         V7Echo,
         V8Echo,
         MainVolume,       // main_volume 0..127
+
+        // Added after the first release (ids stay stable).
+        FirC0,            // fir_c0 .. fir_c7 -128..127 (FIR0..FIR7, used when fir_preset = Custom)
+        FirC1,
+        FirC2,
+        FirC3,
+        FirC4,
+        FirC5,
+        FirC6,
+        FirC7,
+        InvertLeft,       // invert_left 0..1 (VOL L written negative)
+        InvertRight,      // invert_right 0..1 (VOL R written negative)
         NumParams
     };
 

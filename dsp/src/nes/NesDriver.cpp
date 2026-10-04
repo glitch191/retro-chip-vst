@@ -125,6 +125,7 @@ void NesDriver::reset(NesApu& apu) noexcept
 {
     voices = {};
     dmcGate = false;
+    frameModeWritten = 0;
 
     // NESdev "APU basics" initialisation; $4017 = $40: 4-step sequence, IRQ inhibited (A15).
     apu.write(0x4000, 0x30);
@@ -284,6 +285,15 @@ void NesDriver::deferFirstTick(int channel) noexcept
 
 void NesDriver::tick(NesApu& apu, const DriverSettings& s) noexcept
 {
+    // frame_mode: $4017 is written only when the mode changes, since every write restarts
+    // the sequence (and a 5-step write also clocks the envelopes, sweeps and length
+    // counters at once). IRQ stays inhibited.
+    if (s.frameMode != frameModeWritten)
+    {
+        apu.write(0x4017, s.frameMode != 0 ? 0xC0 : 0x40);
+        frameModeWritten = s.frameMode;
+    }
+
     for (int c = 0; c < 4; ++c)
     {
         ToneVoice& v = voices[static_cast<size_t>(c)];

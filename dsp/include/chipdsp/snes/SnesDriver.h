@@ -8,6 +8,7 @@
 
 #include "chipdsp/snes/SnesDsp.h"
 
+#include <array>
 #include <cstdint>
 
 namespace chipdsp::snes
@@ -53,6 +54,8 @@ struct SnesDriverParams
     int vibratoRate = 0, vibratoDepth = 0, vibratoDelay = 0;
     int noiseEnable = 0, noiseClock = 0, pmon = 0, loopOverride = 0;
     int echoEnable = 0, echoDelay = 0, echoFeedback = 0, echoVolume = 0, firPreset = 0;
+    std::array<int, 8> firCustom { 127, 0, 0, 0, 0, 0, 0, 0 };   // fir_preset == kNumFirPresets (Custom)
+    int invertLeft = 0, invertRight = 0;
     int eonMask = 0;
     int mainVolume = 127;
 };

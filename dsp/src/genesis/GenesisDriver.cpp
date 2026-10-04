@@ -11,8 +11,17 @@ namespace
     constexpr int kFirstPsg = 6;
     constexpr int kNoiseChannel = 9;
 
-    // pan 0 = L, 1 = C, 2 = R -> $B4 bits 7 (L) and 6 (R).
-    constexpr int panBits(int pan) noexcept { return pan <= 0 ? 0x80 : pan >= 2 ? 0x40 : 0xC0; }
+    // pan 0 = L, 1 = C, 2 = R, 3 = off -> $B4 bits 7 (L) and 6 (R).
+    constexpr int panBits(int pan) noexcept
+    {
+        switch (pan)
+        {
+            case 0: return 0x80;
+            case 2: return 0x40;
+            case 3: return 0x00;
+            default: return 0xC0;
+        }
+    }
 
     constexpr int ssgRegister(int ssg) noexcept { return ssg <= 0 ? 0 : 0x08 | ((ssg - 1) & 7); }
 } // namespace

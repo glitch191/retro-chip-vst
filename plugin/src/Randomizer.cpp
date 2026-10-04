@@ -53,7 +53,10 @@ void Randomizer::randomize (chipdsp::ChipId chip, float amount, juce::uint32 see
             if (unit (rng) >= amount)
                 continue;
             const int lo = static_cast<int> (std::lround (minValue));
-            const int hi = static_cast<int> (std::lround (maxValue));
+            int hi = static_cast<int> (std::lround (maxValue));
+            // Genesis FM pan: Left / Center / Right only; Off (3) would leave notes silent.
+            if (info->engineKey().endsWith ("_pan") && info->chip == chipdsp::ChipId::Genesis)
+                hi = std::min (hi, 2);
             std::uniform_int_distribution<int> choice (lo, hi);
             next = static_cast<float> (choice (rng));
         }

@@ -15,6 +15,7 @@ namespace
     const char* const kOffOn[] = { "Off", "On" };
     const char* const kDutyLabels[] = { "12.5 %", "25 %", "50 %", "75 %" };
     const char* const kNoiseModeLabels[] = { "Long", "Short" };
+    const char* const kFrameModeLabels[] = { "4-step", "5-step" };
 
     using E = Nes2A03Engine;
 
@@ -89,6 +90,9 @@ namespace
         { E::DmcLoop,        "dmc_loop",         "DMC Loop",         "DMC", 0, 1, 0, true, "", kOffOn },
         { E::DmcKeyed,       "dmc_keyed",        "DMC Keyed",        "DMC", 0, 1, 0, true, "", kOffOn },
         { E::DmcDirectLevel, "dmc_direct_level", "DMC Direct Level", "DMC", 0, 127, 64, true, "", nullptr },
+
+        // $4017 bit 7: the frame sequencer's 4-step (default) or 5-step mode.
+        { E::FrameMode,      "frame_mode",       "Frame Mode",       "Global", 0, 1, 0, true, "", kFrameModeLabels },
     };
     static_assert(std::size(kDescs) == Nes2A03Engine::NumParams, "one descriptor per parameter id");
 
@@ -293,6 +297,7 @@ void Nes2A03Engine::applyParam(int id, int v) noexcept
         case DmcLoop:        d.loop = v; break;
         case DmcKeyed:       d.keyed = v; break;
         case DmcDirectLevel: d.directLevel = v; break;
+        case FrameMode:      settings.frameMode = v; break;
         default: break; // Clock and ConsoleFilter are read at block start
     }
 }

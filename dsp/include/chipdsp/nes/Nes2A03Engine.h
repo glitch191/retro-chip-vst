@@ -52,6 +52,9 @@ public:
         // DMC (dmc_*)
         DmcRate, DmcSample, DmcLoop, DmcKeyed, DmcDirectLevel,
 
+        // Added after the first release (ids stay stable): global frame_mode 0..1.
+        FrameMode,
+
         NumParams
     };
     static constexpr int kPulseParamStride = P2Duty - P1Duty;

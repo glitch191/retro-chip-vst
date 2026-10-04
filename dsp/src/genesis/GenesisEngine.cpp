@@ -24,7 +24,9 @@ namespace
         "4: S1>S2 + S3>S4", "5: S1>(S2+S3+S4)", "6: S1>S2 + S3 + S4", "7: S1+S2+S3+S4" };
     const char* const kAmsLabels[] = { "0 dB", "1.4 dB", "5.9 dB", "11.8 dB" };
     const char* const kFmsLabels[] = { "0 cents", "3.4 cents", "6.7 cents", "10 cents", "14 cents", "20 cents", "40 cents", "80 cents" };
-    const char* const kPanLabels[] = { "Left", "Center", "Right" };
+    // "Off" (L = R = 0, the channel is not output) was added after the first release at the
+    // end of the list, so the stored values 0..2 keep their meaning.
+    const char* const kPanLabels[] = { "Left", "Center", "Right", "Off" };
     const char* const kMulLabels[] = { "x0.5", "x1", "x2", "x3", "x4", "x5", "x6", "x7",
                                        "x8", "x9", "x10", "x11", "x12", "x13", "x14", "x15" };
     const char* const kDtLabels[] = { "0", "+1", "+2", "+3", "-0", "-1", "-2", "-3" };
@@ -67,12 +69,12 @@ namespace
         { E::VibratoDepth, "vibrato_depth", "Vibrato Depth", "FM Patch", 0, 64, 0, true, "fnum", nullptr },
         { E::VibratoDelay, "vibrato_delay", "Vibrato Delay", "FM Patch", 0, 60, 0, true, "frames", nullptr },
         { E::UnisonDetune, "unison_detune", "Unison Detune", "FM Patch", 0, 15, 0, true, "fnum", nullptr },
-        { E::Fm1Pan, "fm1_pan", "FM 1 Pan", "FM Patch", 0, 2, 1, true, "", kPanLabels },
-        { E::Fm2Pan, "fm2_pan", "FM 2 Pan", "FM Patch", 0, 2, 1, true, "", kPanLabels },
-        { E::Fm3Pan, "fm3_pan", "FM 3 Pan", "FM Patch", 0, 2, 1, true, "", kPanLabels },
-        { E::Fm4Pan, "fm4_pan", "FM 4 Pan", "FM Patch", 0, 2, 1, true, "", kPanLabels },
-        { E::Fm5Pan, "fm5_pan", "FM 5 Pan", "FM Patch", 0, 2, 1, true, "", kPanLabels },
-        { E::Fm6Pan, "fm6_pan", "FM 6 Pan", "FM Patch", 0, 2, 1, true, "", kPanLabels },
+        { E::Fm1Pan, "fm1_pan", "FM 1 Pan", "FM Patch", 0, 3, 1, true, "", kPanLabels },
+        { E::Fm2Pan, "fm2_pan", "FM 2 Pan", "FM Patch", 0, 3, 1, true, "", kPanLabels },
+        { E::Fm3Pan, "fm3_pan", "FM 3 Pan", "FM Patch", 0, 3, 1, true, "", kPanLabels },
+        { E::Fm4Pan, "fm4_pan", "FM 4 Pan", "FM Patch", 0, 3, 1, true, "", kPanLabels },
+        { E::Fm5Pan, "fm5_pan", "FM 5 Pan", "FM Patch", 0, 3, 1, true, "", kPanLabels },
+        { E::Fm6Pan, "fm6_pan", "FM 6 Pan", "FM Patch", 0, 3, 1, true, "", kPanLabels },
         { E::VelocityDepth, "velocity_depth", "Velocity Depth", "FM Patch", 0, 127, 16, true, "TL", nullptr },
 
         RCV_GEN_OP(1, 30, 31, 8, 2, 7, 2, 1),
