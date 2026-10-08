@@ -11,7 +11,9 @@
 //       the preset's global.preset_gain (dB, as the plugin applies it after the chip).
 //       --notes plays a monophonic phrase on the same channel instead: note i starts at
 //       i * step seconds and is released gate * step seconds later; the render lasts
-//       --seconds in total (the rest is the release tail).
+//       --seconds in total (the rest is the release tail). With --chord the --notes start
+//       together on consecutive channels (as Poly mode spreads them) and are held like
+//       --note.
 //
 //   chiptool features <bank.json> <features.json> [--jobs N] [--samples DIR]
 //       Renders every preset of the bank twice at 48 kHz and velocity 100, each after a 0.4 s
@@ -21,13 +23,25 @@
 //               "pitch": [per-frame f0, cents re A4 + 10000, 0 = unvoiced],
 //               "mel_short": [...], "env_short": [...], "pitch_short": [...],
 //               "held_rms_db": R, "peak_db": P, "peak_short_db": S,
-//               "peak_v127_db": P127, "peak_short_v127_db": S127}}, computed
+//               "peak_v127_db": P127, "peak_short_v127_db": S127,
+//               "chord_saturation": {...} (SNES only)}}, computed
 //       with an inline radix-2 FFT and a 40-band mel filterbank. R is the stereo RMS (dBFS,
 //       full-scale sine = -3 dBFS) of the long pass between note-on and note-off over the
 //       10 ms windows within 20 dB of the loudest one (the part where the note sounds); P and
 //       S are the largest |sample| of either channel over each pass (dBFS), P127 and S127 the
 //       same at velocity 127 (the loudest a note can be played). They measure the
 //       chip output: preset_gain is not applied (tools/presetgen derives it from them).
+//       SNES presets are also rendered as four held chords at velocity 127 on four
+//       consecutive voices, held 3 s of 4 s (C3 G3 C4 E4, C4 D4 E4 F4, C6 E6 G6 C7,
+//       E2 B2 E3 G#3), and
+//       "chord_saturation" counts the samples at which the S-DSP arithmetic saturated or
+//       wrapped during them (snes::SaturationCounts:
+//       "mix", "echo_mix", "echo_input", "fir_wrap", "fir_clamp", "output") and
+//       "chord_peak" the largest |value| those stages would compute without any clamp,
+//       / 32768 (above 1: saturated), the largest of the four chords, each measured on
+//       one more render at a quarter of the voice volume and scaled back by the ratio.
+//       tools/presetgen/headroom.py scales the voice volume from chord_peak and the preset
+//       QA requires every count to be 0 in the final bank.
 //       The hardware channel is the lowest bit of the
 //       preset's global.poly_channels. Presets are rendered in
 //       parallel with std::thread, with a fresh engine instance per preset so that sample
@@ -73,6 +87,7 @@
 #include "chipdsp/genesis/Ym2612Core.h"
 #include "chipdsp/nes/NesApu.h"
 #include "chipdsp/snes/SnesDsp.h"
+#include "chipdsp/snes/SnesDspEngine.h"
 #include "chipdsp/util/BandLimitedStepSynth.h"
 #include "chipdsp/util/Filters.h"
 
@@ -122,6 +137,17 @@ constexpr double kLevelFloorDb = -120.0;        // level of silence
 constexpr int kFeatureNote = 60;
 constexpr int kFeatureVelocity = 100;
 constexpr int kPeakVelocity = 127;           // peak_v127_db / peak_short_v127_db
+// SNES chord passes (chord_peak, chord_saturation): four notes held together at full
+// velocity, long enough for the echo buffer (240 ms at most) to fill and feed back many
+// times. An open chord, a cluster (close pitches beat and align their peaks) and a top
+// chord (notes above the S-DSP pitch limit play at the same rate, in phase) and a low one.
+const std::vector<std::vector<int>> kChords = { { 48, 55, 60, 64 },    // C3 G3 C4 E4
+                                                { 60, 62, 64, 65 },    // C4 D4 E4 F4
+                                                { 84, 88, 91, 96 },    // C6 E6 G6 C7
+                                                { 40, 47, 52, 56 } };  // E2 B2 E3 G#3
+constexpr double kChordSeconds = 4.0;
+constexpr double kChordHoldSeconds = 3.0;
+constexpr double kChordProbeDivisor = 4.0;   // chord_peak is measured at volume / 4
 
 // ----- files ------------------------------------------------------------------------------------
 
@@ -433,6 +459,7 @@ struct RenderOptions
     std::vector<int> notes;    // non-empty: phrase mode (replaces 'note' and 'holdSeconds')
     double stepSeconds = 0.4;  // phrase: time between note-ons
     double gate = 0.8;         // phrase: held fraction of each step
+    bool chord = false;        // --chord: 'notes' start together on consecutive channels
 };
 
 // Engine must already be prepared at opts.rate.
@@ -464,15 +491,19 @@ void renderPreset(chipdsp::IChipEngine& engine, const Value& preset, const Rende
     channel = std::clamp(channel, 0, engine.numChannels() - 1);
     const float velocity = static_cast<float>(std::clamp(opts.velocity, 0, 127)) / 127.0f;
 
-    if (opts.notes.empty())
+    if (opts.notes.empty() || opts.chord)
     {
-        engine.noteOn(channel, static_cast<float>(opts.note), velocity);
+        // Chord: the notes start together on consecutive channels, like Poly mode.
+        const std::vector<int> held = opts.chord ? opts.notes : std::vector<int> { opts.note };
+        for (size_t i = 0; i < held.size(); ++i)
+            engine.noteOn((channel + static_cast<int>(i)) % engine.numChannels(), static_cast<float>(held[i]), velocity);
         bool released = false;
         for (int pos = 0; pos < total; pos += kBlockSize)
         {
             if (!released && pos >= noteOffAt)
             {
-                engine.noteOff(channel);
+                for (size_t i = 0; i < held.size(); ++i)
+                    engine.noteOff((channel + static_cast<int>(i)) % engine.numChannels());
                 released = true;
             }
             const int n = std::min(kBlockSize, total - pos);
@@ -912,6 +943,7 @@ int cmdRender(int argc, char** argv)
         else if (optionValue(argc, argv, i, "--velocity", v)) opts.velocity = std::stoi(v);
         else if (optionValue(argc, argv, i, "--channel", v))  opts.channel = std::stoi(v);
         else if (optionValue(argc, argv, i, "--samples", v))  samplesDir = v;
+        else if (std::string (argv[i]) == "--chord")           opts.chord = true;
         else if (optionValue(argc, argv, i, "--step", v))     opts.stepSeconds = std::stod(v);
         else if (optionValue(argc, argv, i, "--gate", v))     opts.gate = std::stod(v);
         else if (optionValue(argc, argv, i, "--notes", v))
@@ -942,6 +974,12 @@ int cmdRender(int argc, char** argv)
     engine->prepare(opts.rate, kBlockSize);
     std::vector<float> left, right;
     renderPreset(*engine, preset, opts, true, &library, left, right);
+    if (const auto* snesEngine = dynamic_cast<const chipdsp::SnesDspEngine*>(engine.get()))
+    {
+        const auto& s = snesEngine->chip().saturation();
+        std::fprintf(stderr, "S-DSP saturation: mix %u, echo mix %u, echo input %u, FIR wrap %u, FIR clamp %u, output %u; peak %.3f\n",
+                     s.mix, s.echoMix, s.echoInput, s.firWrap, s.firClamp, s.output, static_cast<double>(s.peak) / 32768.0);
+    }
     const float gain = presetGain(preset);
     for (size_t i = 0; i < left.size(); ++i)
     {
@@ -1055,6 +1093,58 @@ int cmdFeatures(int argc, char** argv)
                     engine->prepare(kFeatureRate, kBlockSize);
                     renderPreset(*engine, preset, passOpts, false, &library, left, right);
                     entry[pass == 0 ? "peak_v127_db" : "peak_short_v127_db"] = Value(peakDb(left, right));
+                }
+                if (chip == chipdsp::ChipId::Snes)
+                {
+                    RenderOptions chordOpts = opts;
+                    chordOpts.velocity = kPeakVelocity;
+                    chordOpts.chord = true;
+                    chordOpts.seconds = kChordSeconds;
+                    chordOpts.holdSeconds = kChordHoldSeconds;
+                    auto renderChord = [&](const Value& p) {
+                        auto engine = chipdsp::createEngine(chip);
+                        engine->prepare(kFeatureRate, kBlockSize);
+                        renderPreset(*engine, p, chordOpts, false, &library, left, right);
+                        return dynamic_cast<const chipdsp::SnesDspEngine&>(*engine).chip().saturation();
+                    };
+                    // chord_peak: the chord at a quarter of the voice volume, where nothing
+                    // saturates, scaled back by the volume ratio. Every stage is linear in
+                    // the voice volume until it saturates, and a saturated stage would hide
+                    // how far beyond full scale the preset goes.
+                    const Value* params = preset.find("params");
+                    const Value* volume = params != nullptr ? params->find("volume") : nullptr;
+                    double chordPeak = 0.0;
+                    chipdsp::snes::SaturationCounts counts;
+                    for (const auto& chordNotes : kChords)
+                    {
+                        chordOpts.notes = chordNotes;
+                        const auto loud = renderChord(preset);
+                        counts.mix += loud.mix;
+                        counts.echoMix += loud.echoMix;
+                        counts.echoInput += loud.echoInput;
+                        counts.firWrap += loud.firWrap;
+                        counts.firClamp += loud.firClamp;
+                        counts.output += loud.output;
+                        double peak = static_cast<double>(loud.peak) / 32768.0;
+                        if (volume != nullptr && volume->isNumber() && volume->asNumber() > 0.0)
+                        {
+                            const double full = volume->asNumber();
+                            const double probe = std::max(1.0, std::round(full / kChordProbeDivisor));
+                            Value quiet = preset;
+                            quiet["params"]["volume"] = Value(probe);
+                            peak = static_cast<double>(renderChord(quiet).peak) / 32768.0 * full / probe;
+                        }
+                        chordPeak = std::max(chordPeak, peak);
+                    }
+                    Value saturation{Value::Object{}};
+                    saturation["mix"] = Value(static_cast<double>(counts.mix));
+                    saturation["echo_mix"] = Value(static_cast<double>(counts.echoMix));
+                    saturation["echo_input"] = Value(static_cast<double>(counts.echoInput));
+                    saturation["fir_wrap"] = Value(static_cast<double>(counts.firWrap));
+                    saturation["fir_clamp"] = Value(static_cast<double>(counts.firClamp));
+                    saturation["output"] = Value(static_cast<double>(counts.output));
+                    entry["chord_saturation"] = std::move(saturation);
+                    entry["chord_peak"] = Value(chordPeak);
                 }
                 names[index] = nameValue->asString();
                 results[index] = std::move(entry);

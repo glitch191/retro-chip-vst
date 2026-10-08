@@ -570,3 +570,35 @@ TEST_CASE("Engine: invert_left / invert_right write VxVOL negative and invert th
     REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(0x10)) == 100);
     REQUIRE(static_cast<int8_t>(rig.engine->chip().readRegister(0x11)) == -100);
 }
+
+TEST_CASE("Engine: saturation counts follow the voice volume and never change the output", "[snes][engine][saturation]")
+{
+    // Four voices playing the same looped full-scale sine in phase: at volume 127 the voice
+    // mix clamps, at volume 24 nothing does and the peak shows the remaining headroom.
+    auto renderChord = [](float volume) {
+        Rig rig;
+        const auto sine = sineCycles(64, 1.0f);
+        REQUIRE(rig.engine->loadSample(0, sine.data(), static_cast<int>(sine.size()), 32000.0));
+        REQUIRE(rig.engine->setSampleLoop(0, 0));
+        rig.engine->setParameter(SnesDspEngine::Volume, volume);
+        rig.renderSeconds(0.1);
+        for (int v = 0; v < 4; ++v)
+            rig.engine->noteOn(v, 60.0f, 1.0f);
+        const auto out = rig.renderSeconds(0.5);
+        return std::make_pair(rig.engine->chip().saturation(), out);
+    };
+
+    const auto [loud, loudOut] = renderChord(127.0f);
+    REQUIRE(loud.mix > 0);
+    REQUIRE(loud.peak > 32767);
+
+    const auto [quiet, quietOut] = renderChord(24.0f);
+    REQUIRE(quiet.total() == 0);
+    REQUIRE(quiet.peak > 0);
+    REQUIRE(quiet.peak <= 32767);
+
+    // The same render twice gives the same samples: counting is measurement only.
+    const auto [again, againOut] = renderChord(127.0f);
+    REQUIRE(again.mix == loud.mix);
+    REQUIRE(againOut == loudOut);
+}

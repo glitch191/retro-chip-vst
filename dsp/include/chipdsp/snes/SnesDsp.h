@@ -11,6 +11,7 @@
 #include "chipdsp/snes/BrrCodec.h"
 #include "chipdsp/snes/SnesTables.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 
@@ -57,6 +58,24 @@ struct Echo
 
 // One 32 kHz output sample: the main stereo pair and each voice alone through the same
 // output stage (VxVOL, MVOL, mute, final inversion; no echo).
+// Samples at which the hardware arithmetic saturated or wrapped since reset(), per stage
+// (left and right counted separately). Measurement only: counting never changes a sample.
+// Used by the preset QA (chiptool features, "chord" pass) to reject presets that drive the
+// mixers or the echo buffer to full scale; `peak` / 32768 is how close a render came (all
+// these stages scale linearly with the voice volumes while nothing saturates).
+struct SaturationCounts
+{
+    uint32_t mix = 0;          // main voice mix clamped (clamp16 after an addition)
+    uint32_t echoMix = 0;      // echo voice mix (EON voices) clamped
+    uint32_t echoInput = 0;    // echo buffer write (echo mix + feedback) clamped
+    uint32_t firWrap = 0;      // FIR taps 0-6 wrapped at 16 bits (the audible clicks)
+    uint32_t firClamp = 0;     // FIR tap 7 addition clamped
+    uint32_t output = 0;       // main output (main + echo) clamped
+    int32_t peak = 0;          // largest |value| any of these stages computed before its clamp or wrap
+
+    uint32_t total() const noexcept { return mix + echoMix + echoInput + firWrap + firClamp + output; }
+};
+
 struct SnesDspOutput
 {
     int16_t mainL = 0;
@@ -94,6 +113,8 @@ public:
     uint16_t noiseState() const noexcept { return noise; }
     const Echo& echo() const noexcept { return echoState; }
     uint64_t samplesElapsed() const noexcept { return sampleIndex; }
+    const SaturationCounts& saturation() const noexcept { return saturationCounts; }
+    void clearSaturation() noexcept { saturationCounts = {}; }
 
     // ----- pure hardware arithmetic, exposed for unit tests -------------------------------
     // Envelope/noise event test for a rate against the global counter.
@@ -113,8 +134,9 @@ public:
     {
         return pitch14 + (((prevOut16 >> 5) * pitch14) >> 10);
     }
-    // 8-tap echo FIR over 15-bit samples [0] oldest .. [7] newest, taps FIR0..FIR7.
-    static int32_t firFilter(const int16_t history[8], const int8_t taps[8]) noexcept;
+    // 8-tap echo FIR over 15-bit samples [0] oldest .. [7] newest, taps FIR0..FIR7. With
+    // `counts`, a wrap of taps 0-6 and a clamp of tap 7 are counted.
+    static int32_t firFilter(const int16_t history[8], const int8_t taps[8], SaturationCounts* counts = nullptr) noexcept;
     // Voice volume: (env15 * VxVOL) >> 6 (fullsnes; Ambiguity 18).
     static int32_t voiceVolume(int32_t env15, int8_t vol) noexcept { return (env15 * vol) >> 6; }
     // MVOL / EVOL / EFB products, clamped to 16 bits (Ambiguity 16 decision).
@@ -123,6 +145,14 @@ public:
     static int echoLengthForEdl(int edl) noexcept { return (edl & 15) == 0 ? 1 : (edl & 15) * 512; }
 
 private:
+    // clamp16 that counts the samples it changed.
+    int32_t countedClamp16(int32_t v, uint32_t& counter) noexcept
+    {
+        const int32_t c = clamp16(v);
+        counter += c != v ? 1u : 0u;
+        saturationCounts.peak = std::max(saturationCounts.peak, v < 0 ? -v : v);
+        return c;
+    }
     int voiceReg(int v, int offset) const noexcept { return regs[static_cast<size_t>(v * 16 + offset)]; }
     uint16_t readDirectory(int v, bool loopEntry) const noexcept;
     void checkBlockEnd(int v) noexcept;
@@ -139,6 +169,7 @@ private:
     int counter = 0;             // global rate counter, 0x77FF..0
     uint16_t noise = 0x4000;     // 15-bit LFSR
     uint64_t sampleIndex = 0;    // even samples poll KON/KOFF
+    SaturationCounts saturationCounts;
 };
 
 } // namespace chipdsp::snes

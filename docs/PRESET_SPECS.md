@@ -115,6 +115,36 @@ no `preset_gain` (the plugin then uses 0 dB), and so does an entry without the f
 the candidate banks of step 3 in the README have none. The report lists the distribution
 per chip.
 
+## Polyphony headroom (`headroom.py`, SNES)
+
+The S-DSP clamps its voice mix, its echo mix and its echo buffer writes to 16 bits, and its
+echo FIR adds taps 0-6 with a 16-bit wrap (docs/research/snes.md, "Echo"): with several
+notes held, loud voices distort, and with echo they click, as on the console. Games keep
+their voice volumes low enough; the factory presets follow the same rule, checked by
+rendering (owner report, 2026-10-08: "SNES Pad Slow Strings" crackled with held chords).
+
+* `chiptool features` renders every SNES preset as four held chords on four consecutive
+  voices at velocity 127 (C3 G3 C4 E4, the cluster C4 D4 E4 F4, C6 E6 G6 C7, E2 B2 E3 G#3;
+  held 3 s of 4 s, so the echo feeds back many times) and reports `chord_peak`, the
+  largest value the voice mix, echo mix, echo buffer write, FIR and output stages would
+  reach without clamping, as a fraction of full scale (measured at a quarter of the voice
+  volume and scaled back, since every stage is linear in the voice volume until one
+  saturates), and `chord_saturation`, the number of samples each stage saturated or
+  wrapped at the preset's own volume.
+* Rule: a preset with `chord_peak` above 0.75 gets
+  `volume = max(1, floor(volume * 0.75 / chord_peak))`, and its level features are moved
+  by `20 log10(new / old)` dB before the playing-level rule, so `preset_gain` restores
+  the level after the chip.
+* Check: features rendered from the written bank must have every `chord_saturation` count
+  at 0, and every `preset_gain` within 0.5 dB of the rule
+  (`gen_presets.py --verify-features`, README step 6).
+
+Validation on 2026-10-08 with eight other held chords per preset (2704 renders, none of
+them a measured chord): one render saturated (French Horn Echo Deep, D3 F3 A3 C4, peak
+1.04). With notes above the S-DSP pitch limit (F#6 to C7 for most samples) the four voices
+play at the same rate, in phase, like a unison; 21 of 338 presets still saturate on that
+cluster. Four held notes are the guarantee; five or more can still reach full scale.
+
 ## Naming
 
 `<Chip> <Category> <Descriptor...>` built from the seed's base name and the axis values

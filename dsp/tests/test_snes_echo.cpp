@@ -128,6 +128,19 @@ TEST_CASE("FIR: taps 0-6 wrap, tap 7 saturates, bit 0 cleared", "[snes][echo]")
     const int16_t mid[8] = { 0x1000, 0x1000, 0x1000, 0x1000, 0x1000, 0x1000, 0x1000, 0x1000 };
     const int8_t sixteen[8] = { 16, 16, 16, 16, 16, 16, 16, 16 };
     REQUIRE(SnesDsp::firFilter(mid, sixteen) == 8192);
+
+    // Saturation counts: the wrap of taps 0-6, the clamp of tap 7, the largest |value|.
+    SaturationCounts counts;
+    REQUIRE(SnesDsp::firFilter(full, oldestPair, &counts) == -516);
+    REQUIRE(counts.firWrap == 1);
+    REQUIRE(counts.firClamp == 0);
+    REQUIRE(counts.peak == 65020);
+    REQUIRE(SnesDsp::firFilter(full, newestPair, &counts) == 32766);
+    REQUIRE(counts.firWrap == 1);
+    REQUIRE(counts.firClamp == 1);
+    REQUIRE(SnesDsp::firFilter(mid, sixteen, &counts) == 8192);
+    REQUIRE(counts.firWrap == 1);
+    REQUIRE(counts.firClamp == 1);
 }
 
 TEST_CASE("Echo volume and feedback products", "[snes][echo]")

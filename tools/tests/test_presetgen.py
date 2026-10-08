@@ -13,7 +13,7 @@ TOOLS_DIR = Path(__file__).resolve().parents[1]
 if str(TOOLS_DIR) not in sys.path:
     sys.path.insert(0, str(TOOLS_DIR))
 
-from presetgen import level, naming, qa  # noqa: E402
+from presetgen import headroom, level, naming, qa  # noqa: E402
 from presetgen.model import CATEGORIES, CHIPS, ParamTable, Preset, PresetError, Seed, expand, expand_all  # noqa: E402
 
 GEN_PRESETS = TOOLS_DIR / "gen_presets.py"
@@ -279,6 +279,46 @@ class LevelTests(unittest.TestCase):
                    global_params={"poly_channels": 1, "preset_gain": 12.0, "glide_time": 50})
         result = qa.deduplicate([a, b, c], table, jobs=1)
         self.assertEqual([p.name for p in result.kept], ["A", "C"])   # B only differs in ignored globals
+
+
+class HeadroomTests(unittest.TestCase):
+    def entry(self, chord_peak, rms=-30.0, peak=-20.0, saturation=None):
+        return {"held_rms_db": rms, "peak_db": peak, "peak_short_db": peak, "peak_v127_db": peak,
+                "peak_short_v127_db": peak, "chord_peak": chord_peak,
+                "chord_saturation": saturation or {"mix": 0, "fir_wrap": 0}}
+
+    def preset(self, name, volume, chip="snes"):
+        return Preset(name=name, chip=chip, category="Pad", subcategory="Strings", params={"volume": volume})
+
+    def test_scaled_volume_reaches_the_target(self):
+        self.assertEqual(headroom.scaled_volume(88, headroom.CHORD_PEAK_TARGET), 88)   # at the target: unchanged
+        self.assertEqual(headroom.scaled_volume(88, 0.5), 88)
+        self.assertEqual(headroom.scaled_volume(100, 2.0 * headroom.CHORD_PEAK_TARGET), 50)
+        self.assertEqual(headroom.scaled_volume(88, 1.8), 36)   # floor(88 * 0.75 / 1.8) = floor(36.7)
+        self.assertEqual(headroom.scaled_volume(3, 100.0), 1)   # never silenced
+        self.assertEqual(headroom.scaled_volume(0, 2.0), 0)
+
+    def test_apply_lowers_the_volume_and_moves_the_level_by_the_same_ratio(self):
+        loud, quiet, other = self.preset("Loud", 100), self.preset("Quiet", 60), self.preset("Pulse", 12, chip="nes")
+        features = {"Loud": self.entry(2.0 * headroom.CHORD_PEAK_TARGET), "Quiet": self.entry(0.4),
+                    "Pulse": self.entry(5.0)}
+        adjusted, summary = headroom.apply([loud, quiet, other], features)
+        self.assertEqual(loud.params["volume"], 50)
+        self.assertEqual(quiet.params["volume"], 60)
+        self.assertEqual(other.params["volume"], 12)   # only SNES presets
+        self.assertAlmostEqual(adjusted["Loud"]["held_rms_db"], -30.0 - 6.0206, places=3)
+        self.assertAlmostEqual(adjusted["Loud"]["peak_v127_db"], -20.0 - 6.0206, places=3)
+        self.assertEqual(features["Loud"]["held_rms_db"], -30.0)   # the input is not modified
+        self.assertIs(adjusted["Quiet"], features["Quiet"])
+        self.assertEqual((summary.measured, summary.scaled), (2, 1))
+        # preset_gain restores the level: 6 dB more than before the cut.
+        before = level.preset_gain(features["Loud"]).gain_db
+        after = level.preset_gain(adjusted["Loud"]).gain_db
+        self.assertEqual(after - before, 6.0)
+
+    def test_saturating_lists_the_non_zero_counts(self):
+        features = {"A": self.entry(0.5), "B": self.entry(0.5, saturation={"mix": 0, "fir_wrap": 12})}
+        self.assertEqual(headroom.saturating(features, ["A", "B"]), [("B", {"fir_wrap": 12.0})])
 
 
 class DeterminismTests(unittest.TestCase):
