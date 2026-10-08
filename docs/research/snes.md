@@ -731,7 +731,12 @@ The identity filter is `7F 00 00 00 00 00 00 00` (Super Famicom Wiki, SNESdev), 
 passes the sample delayed by 7 taps at gain 127/128; fullsnes recommends the sum of all
 eight coefficients around +0x80, positive and negative partial sums of FIR0..FIR6 within
 +/-0x7F, and never -128 in any tap (multiply overflow). SnesLab: absolute sum <= 128
-avoids clicks from the wrapping accumulation; not all games obey this. Note: the SnesLab
+avoids clicks from the wrapping accumulation; not all games obey this. The N-SPC "low-pass
+5 kHz" filter (`Low-pass soft` here) has FIR0..FIR6 summing to +135: it wraps as soon as
+the echo buffer nears full scale, which held chords at high voice volumes reach. The
+engine keeps this behaviour; the factory presets keep the voice volumes below it
+(docs/PRESET_SPECS.md, "Polyphony headroom"), and `SnesDsp::saturation()` counts every
+clamp and wrap for that check. Note: the SnesLab
 page's last code line reads `S = S + (FIR[0] * x[n] >> 6)`; the surrounding text and every
 other source make clear it is FIR[7].
 

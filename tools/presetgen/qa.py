@@ -316,6 +316,7 @@ class QaResult:
     features_available: bool = False
     features_missing: int = 0  # presets without an entry in the features file
     gain_summary: str = ""     # preset_gain distribution (presetgen/level.py), set by gen_presets
+    headroom_summary: str = ""  # SNES voice volumes lowered (presetgen/headroom.py), set by gen_presets
 
     @property
     def after(self) -> int:
@@ -430,6 +431,8 @@ def report_section(result: QaResult) -> str:
         lines.append("* Removed as perceptual duplicates: 0 (no features file; run `chiptool features` "
                      "and pass `--features`)")
     lines.append(f"* Final: {result.after} (target {low}-{high}, {status})")
+    if result.headroom_summary:
+        lines.append(f"* Polyphony headroom: {result.headroom_summary}")
     if result.gain_summary:
         lines.append(f"* preset_gain: {result.gain_summary}")
     lines.append("")

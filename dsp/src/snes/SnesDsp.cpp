@@ -13,6 +13,7 @@ void SnesDsp::reset() noexcept
     for (auto& v : voices)
         v = Voice{};
     echoState = Echo{};
+    saturationCounts = {};
     konInternal = 0;
     counter = 0;
     noise = 0x4000;
@@ -51,16 +52,23 @@ int32_t SnesDsp::gaussianInterpolate(int32_t h0, int32_t h1, int32_t h2, int32_t
     return clamp15(out);
 }
 
-int32_t SnesDsp::firFilter(const int16_t history[8], const int8_t taps[8]) noexcept
+int32_t SnesDsp::firFilter(const int16_t history[8], const int8_t taps[8], SaturationCounts* counts) noexcept
 {
     // Taps 0..6 accumulate "without overflow handling" (16-bit wrap), tap 7 (newest) is
     // saturated, then bit 0 is cleared (research "8-tap FIR").
     int32_t sum = 0;
     for (int k = 0; k < 7; ++k)
         sum += (history[k] * taps[k]) >> 6;
-    sum = clip16(sum);
-    sum = clamp16(sum + ((history[7] * taps[7]) >> 6));
-    return sum & ~1;
+    const int32_t wrapped = clip16(sum);
+    const int32_t full = wrapped + ((history[7] * taps[7]) >> 6);
+    const int32_t clamped = clamp16(full);
+    if (counts != nullptr)
+    {
+        counts->firWrap += wrapped != sum ? 1u : 0u;
+        counts->firClamp += clamped != full ? 1u : 0u;
+        counts->peak = std::max({ counts->peak, sum < 0 ? -sum : sum, full < 0 ? -full : full });
+    }
+    return clamped & ~1;
 }
 
 uint16_t SnesDsp::readDirectory(int v, bool loopEntry) const noexcept
@@ -334,12 +342,12 @@ void SnesDsp::step(SnesDspOutput& out) noexcept
         dryL[v] = voiceVolume(env15, static_cast<int8_t>(voiceReg(v, kRegVolL)));
         dryR[v] = voiceVolume(env15, static_cast<int8_t>(voiceReg(v, kRegVolR)));
         // Mixed values are clamped to 16 bits after each addition (Anomie).
-        mixL = clamp16(mixL + dryL[v]);
-        mixR = clamp16(mixR + dryR[v]);
+        mixL = countedClamp16 (mixL + dryL[v], saturationCounts.mix);
+        mixR = countedClamp16 (mixR + dryR[v], saturationCounts.mix);
         if ((eon & bit) != 0)
         {
-            echoMixL = clamp16(echoMixL + dryL[v]);
-            echoMixR = clamp16(echoMixR + dryR[v]);
+            echoMixL = countedClamp16 (echoMixL + dryL[v], saturationCounts.echoMix);
+            echoMixR = countedClamp16 (echoMixR + dryR[v], saturationCounts.echoMix);
         }
     }
 
@@ -361,17 +369,17 @@ void SnesDsp::step(SnesDspOutput& out) noexcept
     int8_t taps[8];
     for (int k = 0; k < 8; ++k)
         taps[k] = static_cast<int8_t>(regs[static_cast<size_t>(k * 16 + kRegFir)]);
-    const int32_t firL = firFilter(ec.historyL, taps);
-    const int32_t firR = firFilter(ec.historyR, taps);
+    const int32_t firL = firFilter(ec.historyL, taps, &saturationCounts);
+    const int32_t firR = firFilter(ec.historyR, taps, &saturationCounts);
 
     const auto mvolL = static_cast<int8_t>(regs[kRegMvolL]);
     const auto mvolR = static_cast<int8_t>(regs[kRegMvolR]);
-    const int32_t outL = clamp16(volumeProduct(mixL, mvolL) + volumeProduct(firL, static_cast<int8_t>(regs[kRegEvolL])));
-    const int32_t outR = clamp16(volumeProduct(mixR, mvolR) + volumeProduct(firR, static_cast<int8_t>(regs[kRegEvolR])));
+    const int32_t outL = countedClamp16 (volumeProduct(mixL, mvolL) + volumeProduct(firL, static_cast<int8_t>(regs[kRegEvolL])), saturationCounts.output);
+    const int32_t outR = countedClamp16 (volumeProduct(mixR, mvolR) + volumeProduct(firR, static_cast<int8_t>(regs[kRegEvolR])), saturationCounts.output);
 
     const auto efb = static_cast<int8_t>(regs[kRegEfb]);
-    const int32_t echoInL = clamp16(echoMixL + volumeProduct(firL, efb)) & ~1;
-    const int32_t echoInR = clamp16(echoMixR + volumeProduct(firR, efb)) & ~1;
+    const int32_t echoInL = countedClamp16 (echoMixL + volumeProduct(firL, efb), saturationCounts.echoInput) & ~1;
+    const int32_t echoInR = countedClamp16 (echoMixR + volumeProduct(firR, efb), saturationCounts.echoInput) & ~1;
     if ((flg & kFlgEchoWriteDisable) == 0)
     {
         auto writeWord = [&](int offset, int32_t value) noexcept {
