@@ -136,24 +136,22 @@ void ChannelScope::update()
 
 void ChannelScope::paint (juce::Graphics& g)
 {
-    g.setFont (theme::font());
+    // Each tile is a recessed display: channel name in silkscreen, trace in light blue.
+    g.setFont (theme::silkFont());
     for (const auto& t : tiles)
     {
-        g.setColour (theme::colours::panel);
-        g.fillRoundedRectangle (t.bounds.toFloat(), theme::kRadius);
-        g.setColour (theme::colours::divider);
-        g.drawRoundedRectangle (t.bounds.toFloat().reduced (0.5f * theme::kBorder), theme::kRadius, theme::kBorder);
+        theme::drawRecess (g, t.bounds.toFloat());
 
-        g.setColour (theme::colours::textDim);
-        g.drawText (t.name, t.bounds.reduced (theme::kPad, 0).withHeight (theme::kLabelHeight + theme::kUnit),
+        g.setColour (theme::colours::silk);
+        g.drawText (t.name.toUpperCase(), t.bounds.reduced (theme::kPad, 0).withHeight (theme::kLabelHeight + theme::kUnit),
                     juce::Justification::centredLeft, true);
 
         const float midY = static_cast<float> (t.wave.getCentreY());
         const float half = 0.5f * static_cast<float> (t.wave.getHeight());
-        g.setColour (theme::colours::track);
+        g.setColour (theme::colours::separator);
         g.fillRect (static_cast<float> (t.wave.getX()), midY, static_cast<float> (t.wave.getWidth()), 1.0f);
 
-        g.setColour (theme::colours::accent);
+        g.setColour (theme::colours::silk);
         for (int c = 0; c < t.columns; ++c)
         {
             const float top = midY - t.high[static_cast<size_t> (c)] * half;

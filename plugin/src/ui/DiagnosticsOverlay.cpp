@@ -153,25 +153,22 @@ void DiagnosticsOverlay::refreshText (double nowMs)
 
 void DiagnosticsOverlay::paint (juce::Graphics& g)
 {
-    g.fillAll (theme::colours::background);
-    const auto b = getLocalBounds().toFloat().reduced (0.5f * theme::kBorder);
-    g.setColour (theme::colours::panel);
-    g.fillRoundedRectangle (b, theme::kRadius);
-    g.setColour (theme::colours::border);
-    g.drawRoundedRectangle (b, theme::kRadius, theme::kBorder);
+    // Opaque: the corners outside the rounded window are filled with the window's edge.
+    g.fillAll (theme::colours::controlEdge);
+    theme::drawRecess (g, getLocalBounds().toFloat());
 
-    g.setColour (theme::colours::text);
-    g.setFont (theme::font (theme::kFontGroup, true));
-    g.drawText ("Diagnostics", theme::kPad, theme::kOpticalOffset, getWidth() - 2 * theme::kPad, theme::kGroupTitleHeight, juce::Justification::centredLeft, false);
+    g.setColour (theme::colours::silk);
+    g.setFont (theme::silkFont (theme::kFontGroup));
+    g.drawText ("DIAGNOSTICS", theme::kPad, theme::kOpticalOffset, getWidth() - 2 * theme::kPad, theme::kGroupTitleHeight, juce::Justification::centredLeft, false);
 
     g.setFont (theme::font());
     int y = theme::kGroupTitleHeight;
     for (int i = 0; i < kLabels.size(); ++i)
     {
         g.setColour (theme::colours::textDim);
-        g.drawText (kLabels[i], theme::kPad, y, kLabelColumn, theme::kLabelHeight, juce::Justification::centredLeft, false);
+        g.drawFittedText (kLabels[i], theme::kPad, y, kLabelColumn, theme::kLabelHeight, juce::Justification::centredLeft, 1, theme::kMinHorizontalScale);
         g.setColour (theme::colours::text);
-        g.drawText (lines[i], theme::kPad + kLabelColumn, y, kValueColumn, theme::kLabelHeight, juce::Justification::centredRight, false);
+        g.drawFittedText (lines[i], theme::kPad + kLabelColumn, y, kValueColumn, theme::kLabelHeight, juce::Justification::centredRight, 1, theme::kMinHorizontalScale);
         y += theme::kLabelHeight + theme::kUnit;
     }
 }

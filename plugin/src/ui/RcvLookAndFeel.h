@@ -9,10 +9,12 @@
 namespace rcv
 {
 
-// Flat look and feel for every editor control (colours, fonts and sizes from Theme.h):
-// rotary knob = track arc + value arc + pointer on a flat disc; buttons and toggles = flat
-// rounded rectangles (accent fill when on); combo boxes, popup menus, tooltips, text
-// fields, list boxes and scroll bars in the same palette. No gradients, shadows or glow.
+// Rack-module look and feel for every editor control (colours, fonts, sizes and drawing
+// helpers from ui/Theme.h): rotary knob = grooved track + silkscreen value arc + pointer on
+// a dark cap lit from above; buttons and combo boxes = dark rectangular hardware buttons
+// with capitals, toggles with a red LED lit while on; text fields and tooltips in recessed
+// black windows; popup menus and lists select in blue with amber text; alert windows,
+// menus and tooltips in Bahnschrift (or the user typeface).
 //
 // Transitions: hover and toggle-state changes fade over theme::kTransitionMs. The value of
 // a transition is computed from elapsed wall-clock time (Time::getMillisecondCounterHiRes),
@@ -62,6 +64,10 @@ public:
     juce::Font getPopupMenuFont() override;
     int getPopupMenuBorderSize() override { return theme::kPopupBorder; }
 
+    juce::Font getAlertWindowTitleFont() override;
+    juce::Font getAlertWindowMessageFont() override;
+    juce::Font getAlertWindowFont() override;
+
     juce::Rectangle<int> getTooltipBounds (const juce::String& tipText, juce::Point<int> screenPos,
                                            juce::Rectangle<int> parentArea) override;
     void drawTooltip (juce::Graphics&, const juce::String& text, int width, int height) override;
@@ -79,7 +85,7 @@ public:
     void drawCornerResizer (juce::Graphics&, int w, int h, bool isMouseOver, bool isMouseDragging) override;
 
 private:
-    void drawFlatButton (juce::Graphics&, juce::Button&, const juce::String& text, bool isHighlighted, bool isDown);
+    void drawHardwareButton (juce::Graphics&, juce::Button&, const juce::String& text, bool isHighlighted, bool isDown);
 
     struct Transition
     {

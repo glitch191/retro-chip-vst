@@ -17,15 +17,33 @@ namespace
     constexpr int kExportId = 1000001;
     constexpr int kImportSampleId = 1000002;
     const juce::String kScaleCaption ("UI scale");
+    const juce::String kProductName ("Retro Chip");
+    const juce::String kModelLine1 ("Chiptune");
+    const juce::String kModelLine2 ("Sound module");
 
-    int textButtonWidth (const juce::String& text)
+    // Text buttons show their label in silkscreen capitals; a toggle also has room for its LED.
+    int textButtonWidth (const juce::Button& button)
     {
-        return static_cast<int> (std::ceil (theme::textWidth (theme::font(), text))) + 2 * theme::kGap + theme::kUnit;
+        const int text = static_cast<int> (std::ceil (theme::silkWidth (button.getButtonText())));
+        if (button.getClickingTogglesState())
+            return text + static_cast<int> (theme::kLedInsetX + theme::kLedWidth) + theme::kGap;
+        return text + theme::kGap + theme::kUnit;
     }
 
     int captionWidth (const juce::String& text)
     {
-        return static_cast<int> (std::ceil (theme::textWidth (theme::font(), text)));
+        return static_cast<int> (std::ceil (theme::silkWidth (text)));
+    }
+
+    juce::Font productFont()
+    {
+        return theme::font (theme::kFontProduct, true).italicised();
+    }
+
+    int productWidth()
+    {
+        const auto f = theme::layoutFont (theme::kFontProduct, true).italicised();
+        return static_cast<int> (std::ceil (theme::textWidth (f, kProductName))) + theme::kUnit;
     }
 
     // Short fixed-width chip label of a result row.
@@ -54,11 +72,11 @@ namespace
 
         void paint (juce::Graphics& g) override
         {
-            g.fillAll (theme::colours::panel);
+            g.fillAll (theme::colours::recess);
             g.setFont (theme::font());
             g.setColour (theme::colours::textDim);
             g.drawText (text, getLocalBounds().reduced (theme::kGap, 0), juce::Justification::centredLeft, true);
-            g.setColour (theme::colours::divider);
+            g.setColour (theme::colours::separator);
             g.fillRect (0.0f, static_cast<float> (getHeight()) - theme::kBorder, static_cast<float> (getWidth()), theme::kBorder);
         }
 
@@ -180,6 +198,9 @@ CommonStrip::CommonStrip (RetroChipProcessor& p, UiContext& context)
     presetButton.getProperties().set ("rcvDropDown", true);
     presetButton.setTooltip ("Choose a preset by category and subcategory");
     presetButton.onClick = [this] { showPresetMenu(); };
+    // Arrow buttons: the text stays the accessible name.
+    previousButton.getProperties().set ("rcvArrow", -1);
+    nextButton.getProperties().set ("rcvArrow", 1);
     previousButton.setTooltip ("Previous preset in the current list");
     nextButton.setTooltip ("Next preset in the current list");
     addAndMakeVisible (previousButton);
@@ -291,8 +312,8 @@ CommonStrip::CommonStrip (RetroChipProcessor& p, UiContext& context)
 
     sampleStatus.setFont (theme::font());
     sampleStatus.setColour (juce::Label::textColourId, theme::colours::text);
-    sampleStatus.setColour (juce::Label::backgroundColourId, theme::colours::panel);
-    sampleStatus.setColour (juce::Label::outlineColourId, theme::colours::border);
+    sampleStatus.setColour (juce::Label::backgroundColourId, theme::colours::recess);
+    sampleStatus.setColour (juce::Label::outlineColourId, theme::colours::controlEdge);
     sampleStatus.setJustificationType (juce::Justification::topLeft);
     sampleStatus.setBorderSize (juce::BorderSize<int> (theme::kUnit, theme::kPad, theme::kUnit, theme::kPad));
     sampleStatus.setMinimumHorizontalScale (1.0f);
@@ -402,24 +423,26 @@ void CommonStrip::resized()
     auto row = header.reduced (theme::kPad, 0).withSizeKeepingCentre (header.getWidth() - 2 * theme::kPad, theme::kControlHeight);
 
     // right side first
-    diagnosticsButton.setBounds (row.removeFromRight (textButtonWidth (diagnosticsButton.getButtonText())));
-    row.removeFromRight (theme::kClusterGap);
+    diagnosticsButton.setBounds (row.removeFromRight (textButtonWidth (diagnosticsButton)));
+    row.removeFromRight (theme::kHeaderGap);
     scaleBox.setBounds (row.removeFromRight (theme::kScaleBoxWidth));
     row.removeFromRight (theme::kGap + captionWidth (kScaleCaption));   // caption painted by paint()
-    row.removeFromRight (theme::kClusterGap);
-    randomizeButton.setBounds (row.removeFromRight (textButtonWidth (randomizeButton.getButtonText())));
+    row.removeFromRight (theme::kHeaderGap);
+    randomizeButton.setBounds (row.removeFromRight (textButtonWidth (randomizeButton)));
     row.removeFromRight (theme::kGap);
     randomAmount->setBounds (row.removeFromRight (randomAmount->preferredWidth()));
-    row.removeFromRight (theme::kClusterGap);
+    row.removeFromRight (theme::kHeaderGap);
 
+    // Product name and model line, painted by paint().
+    row.removeFromLeft (productWidth() + theme::kGap + theme::kModelLineWidth + theme::kHeaderGap);
     if (chipChoice != nullptr)
         chipChoice->setBounds (row.removeFromLeft (chipChoice->preferredWidth()));
-    row.removeFromLeft (theme::kClusterGap);
-    previousButton.setBounds (row.removeFromLeft (textButtonWidth (previousButton.getButtonText())));
+    row.removeFromLeft (theme::kHeaderGap);
+    previousButton.setBounds (row.removeFromLeft (theme::kControlHeight));
     row.removeFromLeft (theme::kUnit);
     searchField.setBounds (row.removeFromRight (theme::kSearchWidth));
     row.removeFromRight (theme::kGap);
-    nextButton.setBounds (row.removeFromRight (textButtonWidth (nextButton.getButtonText())));
+    nextButton.setBounds (row.removeFromRight (theme::kControlHeight));
     row.removeFromRight (theme::kUnit);
     presetButton.setBounds (row);
 
@@ -442,16 +465,26 @@ void CommonStrip::resized()
 
 void CommonStrip::paint (juce::Graphics& g)
 {
-    g.setColour (theme::colours::panel);
-    g.fillRoundedRectangle (header.toFloat(), theme::kRadius);
-    g.setColour (theme::colours::divider);
-    g.drawRoundedRectangle (header.toFloat().reduced (0.5f * theme::kBorder), theme::kRadius, theme::kBorder);
+    // On the faceplate: a dark rule under the header row.
+    g.setColour (theme::colours::rule);
+    g.fillRect (header.getX(), header.getBottom() + theme::kUnit - 1, header.getWidth(), 1);
 
-    g.setFont (theme::font());
-    g.setColour (theme::colours::text);
+    // Product name in large italic light blue, model line in two rows of small capitals beside it.
+    auto brand = header.reduced (theme::kPad, 0);
+    g.setColour (theme::colours::silk);
+    g.setFont (productFont());
+    g.drawFittedText (kProductName, brand.removeFromLeft (productWidth()), juce::Justification::centredLeft, 1, theme::kMinHorizontalScale);
+    brand.removeFromLeft (theme::kGap);
+    auto model = brand.removeFromLeft (theme::kModelLineWidth).withSizeKeepingCentre (theme::kModelLineWidth, 2 * theme::kLabelHeight);
+    g.setFont (theme::nameFont());
+    g.drawFittedText (kModelLine1.toUpperCase(), model.removeFromTop (theme::kLabelHeight), juce::Justification::bottomLeft, 1, theme::kMinHorizontalScale);
+    g.drawFittedText (kModelLine2.toUpperCase(), model, juce::Justification::topLeft, 1, theme::kMinHorizontalScale);
+
+    g.setFont (theme::nameFont());
+    g.setColour (theme::colours::silkOrange);
     const int captionW = captionWidth (kScaleCaption);
-    g.drawText (kScaleCaption, scaleBox.getX() - theme::kGap - captionW, scaleBox.getY(), captionW, scaleBox.getHeight(),
-                juce::Justification::centredLeft, false);
+    g.drawFittedText (kScaleCaption.toUpperCase(), scaleBox.getX() - theme::kGap - captionW, scaleBox.getY(), captionW, scaleBox.getHeight(),
+                      juce::Justification::centredLeft, 1, theme::kMinHorizontalScale);
 }
 
 // ----- chip / scale / diagnostics -----------------------------------------------------------
@@ -723,30 +756,29 @@ void CommonStrip::paintListBoxItem (int row, juce::Graphics& g, int width, int h
 
     if (r.isHeader())
     {
-        // Chip header: "SNES (41)", bold on the editor background.
-        g.fillAll (theme::colours::background);
-        g.setFont (theme::font (theme::kFontBody, true));
-        g.setColour (theme::colours::text);
-        g.drawText (juce::String (chipdsp::chipName (r.chip)) + " (" + juce::String (r.count) + ")", theme::kGap, 0,
+        // Chip header: "SNES (41)" in silkscreen capitals on the recessed list.
+        g.setFont (theme::silkFont());
+        g.setColour (theme::colours::silk);
+        g.drawText (juce::String (chipdsp::chipName (r.chip)).toUpperCase() + " (" + juce::String (r.count) + ")", theme::kGap, 0,
                     width - 2 * theme::kGap, height, juce::Justification::centredLeft, true);
         return;
     }
 
+    // Selection: blue with amber text.
     if (selected)
-        g.fillAll (theme::colours::surfaceHover);
+        g.fillAll (theme::colours::listBlue);
     const auto l = rowLayout (width, height);
 
-    // Chip tag: neutral surface, 1 px border, 4 px radius.
-    g.setColour (theme::colours::surface);
-    g.fillRoundedRectangle (l.tag.toFloat(), theme::kRadius);
-    g.setColour (theme::colours::border);
-    g.drawRoundedRectangle (l.tag.toFloat().reduced (0.5f * theme::kBorder), theme::kRadius, theme::kBorder);
-    g.setFont (theme::font());
+    // Chip tag: a small dark plate with silkscreen capitals.
+    theme::drawButtonFace (g, l.tag.toFloat(), true, 0.0f, false);
+    g.setFont (theme::silkFont());
     g.setColour (theme::colours::text);
     g.drawText (chipTag (r.chip), l.tag, juce::Justification::centred, false);
 
+    g.setFont (theme::font());
+    g.setColour (selected ? theme::colours::listAmber : theme::colours::text);
     g.drawText (r.name, l.name, juce::Justification::centredLeft, true);
-    g.setColour (theme::colours::textDim);
+    g.setColour (selected ? theme::colours::listAmber : theme::colours::textDim);
     g.drawText (r.location, l.location, juce::Justification::centredLeft, true);
 }
 

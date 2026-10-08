@@ -7,9 +7,9 @@
 namespace rcv
 {
 
-// Read-only "Samples" box of the SNES panel: the loaded sample slots (slot number and
-// factory sample name, or "User sample") flowing in columns, and the free APU RAM on the
-// last line. The editor sets the content on the message thread when a preset, a sample or
+// Read-only "Samples" section of the SNES panel: the loaded sample slots (slot number and
+// factory sample name, or "User sample") flowing in columns in a recessed window, and the
+// free APU RAM on the line under it. The editor sets the content on the message thread when a preset, a sample or
 // the echo delay changes; setContent() repaints only when the content differs, so nothing
 // repaints at rest.
 class SampleListSection final : public PanelSection

@@ -146,16 +146,15 @@ void PolyChannelsControl::refresh()
 
 void PolyChannelsControl::paint (juce::Graphics& g)
 {
-    // Cluster caption: dim text and a rule to the right edge, as in the chip panels.
-    const auto f = theme::font();
-    g.setFont (f);
-    g.setColour (isEnabled() ? theme::colours::textDim : theme::colours::textDisabled);
+    // Cluster caption: orange silkscreen and a rule to the right edge, as in the chip panels.
+    g.setFont (theme::silkFont());
+    g.setColour (isEnabled() ? theme::colours::silkOrange : theme::colours::textDisabled);
     const juce::Rectangle<int> area (0, 0, getWidth(), theme::kClusterTitleHeight);
-    g.drawText (kCaption, area, juce::Justification::centredLeft, true);
-    const int textRight = static_cast<int> (std::ceil (theme::textWidth (f, kCaption))) + theme::kGap;
+    g.drawFittedText (kCaption.toUpperCase(), area, juce::Justification::centredLeft, 1, theme::kMinHorizontalScale);
+    const int textRight = static_cast<int> (std::ceil (theme::drawnSilkWidth (kCaption, static_cast<float> (area.getWidth())))) + theme::kGap;
     if (textRight < area.getRight())
     {
-        g.setColour (theme::colours::divider);
+        g.setColour (theme::colours::silkOrange.withAlpha (0.35f));
         g.fillRect (textRight, area.getCentreY(), area.getRight() - textRight, 1);
     }
 }

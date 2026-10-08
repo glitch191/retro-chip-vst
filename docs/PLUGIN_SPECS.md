@@ -209,14 +209,47 @@ write indices, read by the UI. No locks.
 
 ## Editor (`ui/`)
 
-* `Theme.h`: every colour, font size, spacing and radius constant (neutral palette, one
-  accent, WCAG AA contrast, 4/8 px grid, 1 px borders, radius 4 px, no gradients or
-  shadows). Font: the system sans-serif (`juce::Font::getDefaultSansSerifFontName()`).
-* `RcvLookAndFeel`: rotary knob with visible label and value, toggle, combo, text button,
-  popup menu; 100-150 ms transitions only for control states, driven by elapsed time.
+* Style (owner decision, 2026-10-08): the front panel of a 1990s rack module, replacing
+  the former flat style (no gradients, shadows or textures, one accent).
+  * Faceplate: dark brushed metal generated in code (`theme::makeFaceplate()`, no image
+    file): horizontal streaks of varying length from two smoothed 1-D noise tables
+    (radius 48 and 1), two soft highlights (upper left +55 %, centre right +47 %), base
+    grey 28 with a slight blue tint, brightest point at most #434346. The editor paints
+    it outside the content's scale transform, at the window size in physical pixels, made
+    once per size and cached; the content and the panels on it are transparent.
+  * Sections have no boxes: the title in light blue silkscreen capitals (#86BCEB) over a
+    thin line with a short downward tick at each end. Secondary print in orange
+    silkscreen (#E8A24C): control names, cluster captions, "Poly channels", operator grid
+    names. Control names use no extra spacing and are squeezed horizontally (down to
+    60 %) rather than cut; a knob cell reserves 80 % of a name's width.
+  * Buttons and combo boxes: dark rectangles (gradient #3D3D42 to #323236, black edge,
+    2 px radius, light top line), labels in capitals. Toggles (parameter toggles, Poly
+    channels, Raw output, Diagnostics) carry a red LED in the top-left corner (#FF4636 lit,
+    #431816 off, slight halo). Previous / Next preset are arrow buttons.
+  * Recessed black windows (#0C0D0F, black edge, light bottom line): search field, results
+    list, sample list, channel scopes, diagnostics overlay, tooltips. Selection in lists
+    and menus: blue #2234C0 with amber text #DCC870; MIDI learn in amber.
+  * Header: "Retro Chip" in large italic light blue and a two-row model line in small
+    capitals ("CHIPTUNE" / "SOUND MODULE"); no logo or third-party brand name. Everything
+    in the header fits at 1280 x 720.
+  * Lettering: Bahnschrift (Windows 10 and 11), Regular and SemiBold for text, SemiBold
+    SemiCondensed slightly spaced for the silkscreen, everywhere (menus, tooltips, alert
+    windows). Optional user typeface: the first .ttf / .otf in
+    `%APPDATA%\retro-chip-vst\fonts` replaces it at 90 % of the size, loaded at run time
+    only and never bundled; every open editor holds it and the last one closed frees it.
+    Layout widths are always measured with Bahnschrift, so a wider user typeface is
+    squeezed into the same cells and every control keeps its place.
+  * Contrast: every text colour reaches 4.5:1 on the brightest faceplate point (figures in
+    `Theme.h`); decorative colours (LED, selection blue) never carry text.
+* `Theme.h` / `Theme.cpp`: every colour, font size, spacing and radius constant and the
+  faceplate drawing helpers (faceplate, section bracket, recess, button face, LED); 4/8 px
+  grid, 1 px lines.
+* `RcvLookAndFeel`: rotary knob (grooved track, silkscreen value arc, dark cap), toggle
+  with LED, combo, text button, popup menu, tooltip, text field, scroll bar, alert window
+  fonts; 100-150 ms transitions only for control states, driven by elapsed time.
 * `Knob`: rotary slider + label + value readout, attached to an APVTS parameter,
   right-click MIDI learn menu, minimum 24 px interactive target (documented density
-  constraint), tooltip with full name when the label is truncated.
+  constraint), tooltip with full name (also when the name is squeezed).
 * `ChipPanel` base + `NesPanel`, `SnesPanel`, `GenesisPanel`: groups of knobs laid out
   from `ParamInfo` groups in the order listed in ENGINE_SPECS.md; only the active chip's
   panel is visible. No effects section for NES and Genesis.
@@ -237,8 +270,8 @@ write indices, read by the UI. No locks.
   rows of 24 px before it scrolls). The list's header line gives the total and the count
   per chip ("193 presets match: NES 61, SNES 41, Genesis 91") or "No preset matches". Rows
   are grouped under a bold chip header ("SNES (41)", not selectable); each result row shows
-  a fixed-width chip tag ("NES", "SNES", "GEN": surface fill, 1 px border, 4 px radius, body
-  text), the preset name, and "Category / Subcategory" in the dim text colour; a row cut
+  a fixed-width chip tag ("NES", "SNES", "GEN": a small dark button plate with silkscreen
+  capitals), the preset name, and "Category / Subcategory" in the dim text colour; a row cut
   with an ellipsis has a tooltip with the full text. Choosing a result (click, or Up/Down
   then Return; Return alone takes the first result) applies it: a result of another chip
   switches `chip`, the panel follows, and the search text stays; the results become the
@@ -252,6 +285,8 @@ write indices, read by the UI. No locks.
   the last 2 s, repaint count per second. Frame time = the editor's work per frame (the
   vblank callback plus the paints since the previous vblank), not the interval between
   frames. Off by default, costs nothing when off. The overlay takes the clicks on its area.
+  The editor counts its own paints (the faceplate is the bottom layer) and times them
+  from its `paint()` to its `paintOverChildren()`, faceplate included.
 * Rendering: `juce::VBlankAttachment` on the editor drives scope updates and any
   transition; no `juce::Timer` for painting; nothing repaints when nothing changed
   (verify with the diagnostics repaint counter at rest = 0). The text caret does not

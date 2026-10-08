@@ -46,20 +46,18 @@ namespace
 
 void PanelSection::paintBox (juce::Graphics& g) const
 {
-    const auto b = getLocalBounds().toFloat().reduced (0.5f * theme::kBorder);
-    g.setColour (theme::colours::panel);
-    g.fillRoundedRectangle (b, theme::kRadius);
-    g.setColour (theme::colours::divider);
-    g.drawRoundedRectangle (b, theme::kRadius, theme::kBorder);
-
-    g.setColour (theme::colours::text);
-    g.setFont (theme::font (theme::kFontGroup, true));
-    g.drawText (title, titleArea(), juce::Justification::centredLeft, true);
+    // No box: the title in silkscreen capitals over a bracket line across the section.
+    theme::drawSectionTitle (g, title, getLocalBounds().removeFromTop (theme::kGroupTitleHeight));
 }
 
 juce::Rectangle<int> PanelSection::titleArea() const
 {
-    return getLocalBounds().removeFromTop (theme::kGroupTitleHeight).reduced (theme::kPad, 0).translated (0, theme::kOpticalOffset);
+    return getLocalBounds().removeFromTop (theme::kGroupTitleHeight - theme::kGap + theme::kOpticalOffset).withTrimmedLeft (theme::kOpticalOffset);
+}
+
+float PanelSection::titleWidth (const juce::String& text)
+{
+    return theme::silkWidth (text, theme::kFontGroup);
 }
 
 juce::String PanelSection::getTooltip()
@@ -67,14 +65,15 @@ juce::String PanelSection::getTooltip()
     const auto position = getMouseXYRelative();
     const auto area = titleArea();
     if (area.contains (position))
-        return theme::textWidth (theme::font (theme::kFontGroup, true), title) > static_cast<float> (area.getWidth()) ? title : juce::String();
+        return titleWidth (title) > static_cast<float> (area.getWidth()) ? title : juce::String();
     return truncatedCaptionAt (position);
 }
 
 juce::String ParamGroup::truncatedCaptionAt (juce::Point<int> position) const
 {
     for (const auto& cap : current.captions)
-        if (cap.area.contains (position) && theme::textWidth (theme::font(), cap.text) > static_cast<float> (cap.area.getWidth()))
+        if (cap.area.contains (position)
+            && theme::textWidth (theme::nameFont(), cap.text.toUpperCase()) * theme::kMinHorizontalScale > static_cast<float> (cap.area.getWidth()))
             return cap.text;
     return {};
 }
@@ -395,7 +394,7 @@ int ParamGroup::preferredWidth() const
             clusterW += col.width + theme::kGap;
         w += clusterW;
     }
-    const int titleW = static_cast<int> (std::ceil (theme::textWidth (theme::font (theme::kFontGroup, true), title)));
+    const int titleW = static_cast<int> (std::ceil (titleWidth (title)));
     return juce::jmax (w, titleW) + 2 * theme::kPad;
 }
 
@@ -434,17 +433,19 @@ void ParamGroup::paint (juce::Graphics& g)
 {
     paintBox (g);
 
-    const auto f = theme::font();
-    g.setFont (f);
+    // Cluster captions: orange silkscreen capitals, squeezed like the control names, and a
+    // fine rule to the cluster's end.
+    g.setFont (theme::nameFont());
     for (const auto& cap : current.captions)
     {
-        g.setColour (theme::colours::textDim);
-        g.drawText (cap.text, cap.area, juce::Justification::centredLeft, true);
+        const auto area = static_cast<float> (cap.area.getWidth());
+        g.setColour (theme::colours::silkOrange);
+        g.drawFittedText (cap.text.toUpperCase(), cap.area, juce::Justification::centredLeft, 1, theme::kMinHorizontalScale);
         const int textRight = cap.text.isEmpty() ? cap.area.getX()   // rule-only caption
-                                                 : cap.area.getX() + static_cast<int> (std::ceil (theme::textWidth (f, cap.text))) + theme::kGap;
+                                                 : cap.area.getX() + static_cast<int> (std::ceil (theme::drawnSilkWidth (cap.text, area, theme::kFontBody, 0.0f))) + theme::kGap;
         if (textRight < cap.area.getRight())
         {
-            g.setColour (theme::colours::divider);
+            g.setColour (theme::colours::silkOrange.withAlpha (0.35f));
             g.fillRect (textRight, cap.area.getCentreY(), cap.area.getRight() - textRight, 1);
         }
     }
