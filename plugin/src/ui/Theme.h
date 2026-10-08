@@ -5,11 +5,17 @@
 // Every visual constant of the editor lives here (docs/PLUGIN_SPECS.md "Editor"): colours,
 // font sizes, spacing, control and region sizes, strokes, radii and UI timings. Nothing
 // else in plugin/src/ui hard-codes one; the other files only combine these (sums, halves)
-// and use layout proportions and counts.
+// and use layout proportions and counts. The drawing helpers of the faceplate style are in
+// ui/Theme.cpp.
 //
-// Style rules: neutral greys plus one accent, flat fills, 1 px borders, 4 px corner radius,
-// no gradients, shadows, glow or textures, one sans-serif family, hierarchy by size and
-// weight only. Motion is limited to control-state transitions of kTransitionMs.
+// Style (owner decision, 2026-10-08): the front panel of a 1990s rack module. A dark
+// brushed-metal faceplate generated in code; sections without boxes, titled in light blue
+// silkscreen capitals over a thin line with a short bracket tick at each end; secondary
+// print (control names, captions) in orange silkscreen; dark rectangular buttons with a
+// slight vertical gradient, a black edge and a light top line, selection buttons carrying
+// a small red LED in the top-left corner; recessed black windows for lists, text fields,
+// displays and the diagnostics; list and menu selection in blue with amber text. Lettering:
+// Bahnschrift. Motion is limited to control-state transitions of kTransitionMs.
 //
 // Grid: every spacing, height and width is a multiple of 4 px. The only exceptions are
 // the 1 px borders and hairlines, the strokes below and kOpticalOffset (2 px), used to
@@ -37,60 +43,97 @@ inline constexpr int kScopeHeight = 56;
 inline constexpr int kHostWindowAllowance = 64;  // screen height kept free for the host window frame
 
 // ----- colours --------------------------------------------------------------------------------
-// WCAG 2.x contrast ratios (relative luminance, sRGB) measured for the pairs that occur:
-//   text      on background 14.2:1, on panel 12.9:1, on surface 11.0:1, on hover 9.4:1  (AA text >= 4.5)
-//   textDim   on background  7.3:1, on panel  6.6:1, on surface  5.6:1                  (AA text >= 4.5)
-//   accent    on background  6.3:1, on panel  5.7:1, on surface  4.9:1                  (AA text >= 4.5, graphics >= 3)
-//   onAccent  on accent      6.8:1                                                      (text on filled toggles)
-//   border    on panel       3.2:1, on background 3.5:1                                 (AA non-text >= 3)
-//   accent    on track       3.3:1                                                      (knob value arc vs. its track)
-//   textDisabled on panel    3.3:1 (disabled controls are exempt from the text minimum)
-// The knob track (1.7:1 on panel) is decorative context only; the value arc and the
-// pointer carry the information and both meet 3:1.
+// WCAG 2.x contrast (relative luminance, sRGB) of every text colour against the brightest
+// point of the faceplate (#434346, the limit makeFaceplate() never exceeds), minimum 4.5:1,
+// then against the plain faceplate (#222225) and a recessed window (#0C0D0F):
+//   text        #E8E8E6  8.0:1  12.9:1  15.8:1
+//   textDim     #AEB2B8  4.6:1   7.4:1   9.1:1
+//   silk        #86BCEB  4.9:1   7.9:1   9.6:1
+//   silkOrange  #E8A24C  4.6:1   7.3:1   9.0:1
+//   listAmber   #DCC870  5.9:1   9.5:1  11.6:1   (MIDI learn value; list selection text)
+// On their own backgrounds: text on a button 8.8:1 (top, #3D3D42) to 10.4:1 (bottom,
+// #323236); textDim on a button 5.1:1 to 6.0:1; listAmber on listBlue 5.4:1.
+// Decorative colours never used for text: the red LED (#FF4636, 2.9:1 on #434346) and the
+// selection blue. textDisabled (2.0:1) marks disabled controls, which are exempt from the
+// text minimum. The knob value arc and the scope traces use silk (graphics, >= 3:1).
 namespace colours
 {
-    inline const juce::Colour background   { 0xff18191c };  // editor background
-    inline const juce::Colour panel        { 0xff212226 };  // group boxes, strips
-    inline const juce::Colour surface      { 0xff2c2e33 };  // control bodies (buttons, combos, fields)
-    inline const juce::Colour surfaceHover { 0xff363940 };  // hovered control body
-    inline const juce::Colour border       { 0xff6b6f78 };  // 1 px outlines of controls
-    inline const juce::Colour divider      { 0xff34363b };  // group outlines and separators (structure, not controls)
-    inline const juce::Colour track        { 0xff44474e };  // knob arc background, scope grid line
-    inline const juce::Colour text         { 0xffe6e7ea };  // primary text
-    inline const juce::Colour textDim      { 0xffa3a7af };  // secondary text, captions, values
-    inline const juce::Colour textDisabled { 0xff6e727a };
-    inline const juce::Colour accent       { 0xff5b9fe3 };  // the only accent: value arcs, active toggles, focus, MIDI learn
-    inline const juce::Colour onAccent     { 0xff0e1116 };  // text drawn on an accent fill
+    inline const juce::Colour faceplate       { 0xff222225 };  // reference colour of the brushed metal, floating windows
+    inline const juce::Colour faceplateBright { 0xff434346 };  // brightest point of the faceplate (contrast reference)
+    inline const juce::Colour recess          { 0xff0c0d0f };  // recessed black windows
+    inline const juce::Colour recessHover     { 0xff1b1d22 };
+    inline const juce::Colour control         { 0xff323236 };  // button body, bottom of its gradient
+    inline const juce::Colour controlTop      { 0xff3d3d42 };  // button body, top of its gradient
+    inline const juce::Colour controlEdge     { 0xff0a0a0b };  // edges of buttons and windows
+    inline const juce::Colour separator       { 0xff38383d };  // menu separators, scroll bar thumb
+    inline const juce::Colour rule            { 0x73000000 };  // thin dark lines engraved in the faceplate
+    inline const juce::Colour text            { 0xffe8e8e6 };  // primary text, values on buttons
+    inline const juce::Colour textDim         { 0xffaeb2b8 };  // values, secondary text
+    inline const juce::Colour textDisabled    { 0xff6e727a };
+    inline const juce::Colour silk            { 0xff86bceb };  // light blue silkscreen: section titles, knob arcs, scope traces
+    inline const juce::Colour silkOrange      { 0xffe8a24c };  // orange silkscreen: control names, captions
+    inline const juce::Colour tick            { 0xff6f7378 };  // resizer, scale marks
+    inline const juce::Colour listBlue        { 0xff2234c0 };  // selection in a list or a menu
+    inline const juce::Colour listAmber       { 0xffdcc870 };  // text of a selection; MIDI learn
+    inline const juce::Colour ledOn           { 0xffff4636 };
+    inline const juce::Colour ledOff          { 0xff431816 };
 } // namespace colours
 
 // ----- typography -----------------------------------------------------------------------------
 // Sizes are em sizes in logical px (FontOptions::withPointHeight), like CSS font-size, so
 // "13 px" really is 13 px at scale 1.0. Nothing is smaller than kFontBody.
-inline constexpr float kFontBody = 13.0f;     // labels, values, menus, tooltips
-inline constexpr float kFontGroup = 14.0f;    // group titles (bold)
+inline constexpr float kFontBody = 13.0f;     // labels, values, menus, tooltips, silkscreen names
+inline constexpr float kFontGroup = 14.0f;    // section titles (silkscreen)
+inline constexpr float kFontProduct = 24.0f;  // product name in the header (italic)
+inline constexpr float kSilkSpacing = 0.05f;  // extra kerning of the silkscreen capitals
+inline constexpr float kMinHorizontalScale = 0.6f;   // tightest squeeze of a knob name before it is cut
+inline constexpr float kNameLayoutScale = 0.8f;      // share of a name's width a knob cell reserves (the rest is squeezed)
 
-// Windows' system sans-serif is Segoe UI; JUCE's generic sans-serif placeholder maps to
-// Verdana on Windows, which is much wider and costs a column of knobs per group. Segoe UI
-// is used when installed, otherwise the JUCE default sans-serif.
-inline const juce::String& fontFamily()
-{
-    static const juce::String family = []
-    {
-        const auto names = juce::Font::findAllTypefaceNames();
-        return names.contains ("Segoe UI") ? juce::String ("Segoe UI") : juce::Font::getDefaultSansSerifFontName();
-    }();
-    return family;
-}
-
-inline juce::Font font (float size = kFontBody, bool bold = false)
-{
-    return juce::Font (juce::FontOptions (fontFamily(), size, bold ? juce::Font::bold : juce::Font::plain)
-                           .withPointHeight (size));
-}
+// Lettering: Bahnschrift, a DIN 1451 design shipped with Windows 10 and 11, in its Regular
+// and SemiBold cuts for text and SemiBold SemiCondensed, slightly spaced, for the
+// silkscreen. Without it, JUCE's default sans-serif.
+//
+// Optional user typeface: the first .ttf or .otf file (by name) in
+// %APPDATA%\retro-chip-vst\fonts replaces Bahnschrift everywhere, drawn at
+// kUserTypefaceScale of the size. Loaded at run time only, never bundled. Every open editor
+// holds it (acquireUserTypeface() in its constructor, releaseUserTypeface() in its
+// destructor) and the last one closed frees it: a static reference destroyed when the
+// plugin is unloaded, after JUCE's font system, crashes the host. Message thread only.
+//
+// Layout never depends on the user typeface: widths are measured with the layout fonts
+// (always Bahnschrift), and text drawn with a wider user typeface is squeezed into them
+// (drawFittedText, down to kMinHorizontalScale) before it is cut with an ellipsis. So the
+// panels keep every control in place whatever the typeface.
+inline constexpr float kUserTypefaceScale = 0.9f;
+const juce::String& fontFamily();
+juce::Font font (float size = kFontBody, bool bold = false);
+juce::Font silkFont (float size = kFontBody, float spacing = kSilkSpacing);
+juce::Font layoutFont (float size = kFontBody, bool bold = false);
+juce::Font layoutSilkFont (float size = kFontBody, float spacing = kSilkSpacing);
+void acquireUserTypeface();
+void releaseUserTypeface();
+void setUserTypefaceAllowed (bool allowed);   // false: Bahnschrift even with a user typeface (screenshots)
 
 inline float textWidth (const juce::Font& f, const juce::String& text)
 {
     return juce::GlyphArrangement::getStringWidth (f, text);
+}
+
+// Control names (knobs, combo boxes, sidebar rows): orange silkscreen capitals without extra
+// spacing, squeezed down to kMinHorizontalScale rather than cut.
+inline juce::Font nameFont() { return silkFont (kFontBody, 0.0f); }
+inline juce::Font layoutNameFont() { return layoutSilkFont (kFontBody, 0.0f); }
+
+// Layout width of a silkscreen caption (drawn in capitals).
+inline float silkWidth (const juce::String& text, float size = kFontBody, float spacing = kSilkSpacing)
+{
+    return textWidth (layoutSilkFont (size, spacing), text.toUpperCase());
+}
+
+// Drawn width of a silkscreen caption, at most `available` (the text is squeezed to fit).
+inline float drawnSilkWidth (const juce::String& text, float available, float size = kFontBody, float spacing = kSilkSpacing)
+{
+    return juce::jmin (available, textWidth (silkFont (size, spacing), text.toUpperCase()));
 }
 
 // ----- spacing (4 / 8 px grid) --------------------------------------------------------------
@@ -98,7 +141,7 @@ inline constexpr int kUnit = 4;
 inline constexpr int kGap = 8;            // between controls and between groups
 inline constexpr int kPad = 8;            // inner padding of group boxes and strips
 inline constexpr float kBorder = 1.0f;    // every outline
-inline constexpr float kRadius = 4.0f;    // every rounded corner
+inline constexpr float kRadius = 2.0f;    // every rounded corner (square hardware buttons)
 inline constexpr int kOpticalOffset = 2;  // optical centring of text lines and knobs (grid exception)
 
 // ----- control sizes ----------------------------------------------------------------------------
@@ -120,7 +163,7 @@ inline constexpr int kControlHeight = 28;        // buttons, combo boxes, text f
 inline constexpr int kToggleStackGap = kGap;     // two toggles stacked in one cell: 28 + 8 + 28 = 64
 inline constexpr int kClusterGap = 16;           // between clusters of related controls
 inline constexpr int kClusterTitleHeight = 16;   // caption above a cluster of related controls
-inline constexpr int kGroupTitleHeight = 24;     // group box header
+inline constexpr int kGroupTitleHeight = 24;     // section title and its bracket line
 inline constexpr int kGridRowHeight = 32;        // operator grid row (28 px control + 4)
 inline constexpr int kGridCellMaxWidth = 64;     // operator grid column (wider combo values get an ellipsis)
 inline constexpr int kMinTarget = 24;            // minimum interactive size at scale 1.0
@@ -128,13 +171,15 @@ inline constexpr int kComboArrowWidth = 20;      // arrow zone at the right of a
 inline constexpr int kPopupItemHeight = 24;      // popup menu, list and tooltip rows
 
 // ----- header widgets -------------------------------------------------------------------------
-inline constexpr int kSearchWidth = 160;         // preset search field
+inline constexpr int kSearchWidth = 144;         // preset search field
 inline constexpr int kResultsWidth = 640;        // search results list under the field (right-aligned to it)
 inline constexpr int kResultsMaxRows = 16;       // rows shown before the list scrolls (24 px each)
 inline constexpr int kChipTagWidth = 44;         // "NES" / "SNES" / "GEN" label of a result row
 inline constexpr int kChipTagHeight = 20;        // inside the 24 px row: 2 px above and below
 inline constexpr int kResultsCategoryWidth = 160;  // "Category / Subcategory" column of a result row
-inline constexpr int kScaleBoxWidth = 84;        // UI scale combo box
+inline constexpr int kScaleBoxWidth = 72;        // UI scale combo box
+inline constexpr int kModelLineWidth = 96;       // "CHIPTUNE / SOUND MODULE" beside the product name
+inline constexpr int kHeaderGap = 8;             // between the header's groups (kClusterGap would not fit at 1280 px)
 
 // ----- diagnostics overlay --------------------------------------------------------------------
 inline constexpr int kDiagLabelColumn = 156;
@@ -147,7 +192,13 @@ inline constexpr float kKnobPointerThickness = 2.0f;
 inline constexpr float kChevronHalfLength = 4.0f;   // menu / combo arrows: 8 x 4 px
 inline constexpr float kChevronHalfDepth = 2.0f;
 inline constexpr float kChevronThickness = 1.5f;
-inline constexpr int kTickWidth = 4;             // accent bar of a ticked menu item
+inline constexpr float kBracketTick = 6.0f;      // downward ticks at the ends of a section line
+inline constexpr float kLedWidth = 10.0f;        // red LED of a selection button
+inline constexpr float kLedHeight = 3.0f;
+inline constexpr float kLedInsetX = 5.0f;        // from the button's top-left corner
+inline constexpr float kLedInsetY = 4.0f;
+inline constexpr float kLedGlow = 2.0f;          // halo around a lit LED
+inline constexpr int kTickWidth = 4;             // amber bar of a ticked menu item
 inline constexpr int kCaretWidth = 2;            // text caret (a stroke, not a spacing)
 inline constexpr int kPopupBorder = kUnit;       // inner margin of popup menus
 inline constexpr int kPopupSeparatorHeight = kGap;
@@ -163,5 +214,21 @@ inline constexpr int kTooltipOffsetFlipped = 12; // when shown to the left of / 
 inline constexpr double kTransitionMs = 120.0;   // hover and toggle-state transitions
 inline constexpr int kTooltipDelayMs = 700;
 inline constexpr double kScopeIntervalMs = 16.0; // channel scopes read their rings at most at ~60 Hz
+
+// ----- faceplate drawing (ui/Theme.cpp) -------------------------------------------------------
+// A section of the faceplate: no box, a thin silkscreen line with a short downward tick at
+// each end. `lineY` is the y of the line.
+void drawBracket (juce::Graphics& g, float left, float right, float lineY);
+// A section title in silkscreen capitals over its bracket line, at the top of `area`.
+void drawSectionTitle (juce::Graphics& g, const juce::String& title, juce::Rectangle<int> area);
+// A recessed black window (lists, text fields, displays, the diagnostics).
+void drawRecess (juce::Graphics& g, juce::Rectangle<float> area);
+// Dark rectangular button face; `hover` 0..1 lightens it.
+void drawButtonFace (juce::Graphics& g, juce::Rectangle<float> area, bool enabled, float hover, bool down);
+// Red LED in the top-left corner of a selection button; `on` 0..1 fades it.
+void drawLed (juce::Graphics& g, juce::Rectangle<float> buttonArea, float on);
+// The brushed metal faceplate, generated (no image file) at the given pixel size.
+// Deterministic; callers cache it per size.
+juce::Image makeFaceplate (int width, int height);
 
 } // namespace rcv::theme

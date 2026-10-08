@@ -51,7 +51,7 @@ juce::String Knob::valueText() const
 
 int Knob::valueTextWidth() const
 {
-    const auto f = theme::font();
+    const auto f = theme::layoutFont();
     const auto& d = info->desc;
     float w = 0.0f;
     if (d.choiceLabels != nullptr)
@@ -74,7 +74,7 @@ int Knob::preferredWidth() const
     const int valueW = valueTextWidth();
     switch (controlStyle)
     {
-        case ControlStyle::Stacked: return juce::jmax (theme::kKnobMinWidth, labelW + theme::kUnit, valueW + theme::kUnit);
+        case ControlStyle::Stacked: return juce::jmax (theme::kKnobMinWidth, stackedLabelWidth() + theme::kUnit, valueW + theme::kUnit);
         case ControlStyle::Inline:  return labelW + theme::kGap + theme::kKnobDiameter + theme::kGap + valueW;
         case ControlStyle::Bare:    return theme::kKnobDiameter + theme::kGap + valueW;
     }
@@ -122,25 +122,24 @@ void Knob::resized()
 void Knob::paint (juce::Graphics& g)
 {
     const bool enabled = isEnabled();
-    g.setFont (theme::font());
 
+    // The name in orange silkscreen capitals, squeezed rather than cut (the tooltip carries
+    // the full parameter name).
+    g.setFont (theme::nameFont());
+    g.setColour (enabled ? theme::colours::silkOrange : theme::colours::textDisabled);
     if (controlStyle == ControlStyle::Stacked)
-    {
-        g.setColour (enabled ? theme::colours::text : theme::colours::textDisabled);
-        g.drawText (label, getLocalBounds().removeFromTop (theme::kLabelHeight), juce::Justification::centred, false);
-    }
+        g.drawFittedText (label.toUpperCase(), getLocalBounds().removeFromTop (theme::kLabelHeight), juce::Justification::centred, 1,
+                          theme::kMinHorizontalScale);
     else if (controlStyle == ControlStyle::Inline)
-    {
-        g.setColour (enabled ? theme::colours::text : theme::colours::textDisabled);
-        g.drawText (label, getLocalBounds().withRight (slider.knobArea.getX() - theme::kGap),
-                    juce::Justification::centredLeft, false);
-    }
+        g.drawFittedText (label.toUpperCase(), getLocalBounds().withRight (slider.knobArea.getX() - theme::kGap),
+                          juce::Justification::centredLeft, 1, theme::kMinHorizontalScale);
 
-    // While MIDI learn is armed for this knob the value turns accent (with the outline
-    // drawn by ParamControl::paintOverChildren).
-    g.setColour (isLearning() ? theme::colours::accent : (enabled ? theme::colours::textDim : theme::colours::textDisabled));
+    // While MIDI learn is armed for this knob the value turns amber (with the outline drawn
+    // by ParamControl::paintOverChildren).
+    g.setFont (theme::font());
+    g.setColour (isLearning() ? theme::colours::listAmber : (enabled ? theme::colours::textDim : theme::colours::textDisabled));
     const auto just = controlStyle == ControlStyle::Stacked ? juce::Justification::centred : juce::Justification::centredLeft;
-    g.drawText (valueText(), valueArea(), just, false);
+    g.drawFittedText (valueText(), valueArea(), just, 1, theme::kMinHorizontalScale);
 }
 
 } // namespace rcv

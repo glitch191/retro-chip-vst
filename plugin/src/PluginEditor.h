@@ -36,6 +36,14 @@ namespace rcv
 // content still wants focus for the moment of the click, so JUCE never moves the focus
 // to the search field on its own.
 //
+// Faceplate: the editor itself paints the brushed metal (theme::makeFaceplate()), outside the
+// content's scale transform, at the window's size in physical pixels, so the streaks stay
+// one device pixel fine at 150 % and 200 %. The image is made once per pixel size and
+// cached; the content and the chip panels on top of it are transparent.
+//
+// Typeface: every open editor holds the optional user typeface (theme::acquireUserTypeface(),
+// TypefaceHold, the first member, released last); the last editor closed frees it.
+//
 // Rendering: a juce::VBlankAttachment drives everything that moves: MIDI learn draining,
 // control-state transitions (RcvLookAndFeel), the channel scopes and the diagnostics
 // overlay. There is no juce::Timer for painting, and nothing repaints while nothing changes
@@ -57,7 +65,10 @@ namespace rcv
 // "<name>_menu.png" next to the editor snapshot. RCV_SCREENSHOT_PRESET applies a factory
 // preset of the selected chip by name; RCV_SCREENSHOT_NOTES=1 queues a held chord (C2 C3 E3
 // G3) through RetroChipProcessor::queueTestNotes() and waits 0.5 s, so the channel scopes
-// show real waveforms. None of this runs unless RCV_SCREENSHOT is set.
+// show real waveforms. RCV_SCREENSHOT_FONT=default draws Bahnschrift even when a user
+// typeface is installed. An RCV_UI_SCALE larger than the display allows renders the snapshot
+// at that scale (the window stays at the limit). None of this runs unless RCV_SCREENSHOT is
+// set.
 class RetroChipEditor final : public juce::AudioProcessorEditor,
                               private juce::ChangeListener
 {
@@ -66,21 +77,22 @@ public:
     ~RetroChipEditor() override;
 
     void paint (juce::Graphics& g) override;
+    void paintOverChildren (juce::Graphics& g) override;
     void resized() override;
     void parentHierarchyChanged() override;
 
 private:
-    // Background of the whole editor at 1280 x 720; counts repaints for the diagnostics.
+    // The whole editor at 1280 x 720, transparent over the faceplate.
     class Content final : public juce::Component
     {
     public:
-        explicit Content (DiagnosticsOverlay& overlay);
-        void paint (juce::Graphics& g) override;
-        void paintOverChildren (juce::Graphics& g) override;
+        Content();
+    };
 
-    private:
-        DiagnosticsOverlay& diagnostics;
-        double paintStartMs = 0.0;
+    struct TypefaceHold
+    {
+        TypefaceHold();
+        ~TypefaceHold() { theme::releaseUserTypeface(); }
     };
 
     void onVBlank (double timestampSec);
@@ -96,12 +108,13 @@ private:
     void applyScreenshotSearch();
     void takeScreenshotIfRequested();
 
-    RcvLookAndFeel lookAndFeel;   // first: outlives every child
+    TypefaceHold typefaceHold;    // first: the user typeface outlives every font user
+    RcvLookAndFeel lookAndFeel;   // outlives every child
     RetroChipProcessor& rcvProcessor;
     UiContext ctx;
 
     DiagnosticsOverlay diagnostics;
-    Content content { diagnostics };
+    Content content;
     std::array<std::unique_ptr<ChipPanel>, ParamRegistry::kNumChips> panels;
     ChannelScope scope;
     CommonStrip strip;
@@ -119,6 +132,9 @@ private:
     std::unique_ptr<juce::ParameterAttachment> scaleAttachment;
     std::unique_ptr<juce::ParameterAttachment> echoDelayAttachment;
 
+    juce::Image faceplate;        // brushed metal at the window's physical pixel size
+    double paintStartMs = 0.0;
+
     float scale = 1.0f;
     float screenMax = 2.0f;            // largest scale that fits the display (theme::kMaxScale at most)
     float pendingScaleCommit = -1.0f;  // ui_scale to write once the resize drag has ended
@@ -128,6 +144,7 @@ private:
 
     juce::String screenshotPath;
     juce::String screenshotMenu;
+    float screenshotScale = 0.0f;   // requested RCV_UI_SCALE (0: none)
     bool screenshotQuit = false;
     bool screenshotNotes = false;
     bool editorShotTaken = false;

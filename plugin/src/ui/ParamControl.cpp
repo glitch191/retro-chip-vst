@@ -46,7 +46,12 @@ int ParamControl::labelWidth() const
 {
     if (fixedLabelWidth >= 0)
         return fixedLabelWidth;
-    return static_cast<int> (std::ceil (theme::textWidth (theme::font(), label)));
+    return static_cast<int> (std::ceil (theme::textWidth (theme::layoutNameFont(), label.toUpperCase())));
+}
+
+int ParamControl::stackedLabelWidth() const
+{
+    return static_cast<int> (std::ceil (theme::textWidth (theme::layoutNameFont(), label.toUpperCase()) * theme::kNameLayoutScale));
 }
 
 bool ParamControl::isLearning() const
@@ -75,7 +80,7 @@ void ParamControl::paintOverChildren (juce::Graphics& g)
 {
     if (! isLearning())
         return;
-    g.setColour (theme::colours::accent);
+    g.setColour (theme::colours::listAmber);
     g.drawRoundedRectangle (getLocalBounds().toFloat().reduced (theme::kBorder * 0.5f), theme::kRadius, theme::kBorder);
 }
 

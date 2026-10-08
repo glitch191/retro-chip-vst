@@ -20,7 +20,8 @@ ParamToggle::ParamToggle (UiContext& context, const ParamInfo& paramInfo, const 
 
 int ParamToggle::preferredWidth() const
 {
-    const int textW = static_cast<int> (std::ceil (theme::textWidth (theme::font(), label)));
+    // Capitals; when the LED does not fit beside them, they sit under its line.
+    const int textW = static_cast<int> (std::ceil (theme::silkWidth (label) * theme::kNameLayoutScale));
     return juce::jmax (theme::kControlHeight, textW + 2 * theme::kGap + theme::kUnit);
 }
 

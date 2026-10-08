@@ -95,10 +95,10 @@ int OperatorGrid::gridTop() noexcept
 
 int OperatorGrid::labelColumnWidth() const
 {
-    const auto f = theme::font();
+    const auto f = theme::layoutNameFont();
     float w = 0.0f;
     for (const auto& row : rows)
-        w = juce::jmax (w, theme::textWidth (f, row.label));
+        w = juce::jmax (w, theme::textWidth (f, row.label.toUpperCase()));
     return static_cast<int> (std::ceil (w));
 }
 
@@ -143,25 +143,26 @@ void OperatorGrid::paint (juce::Graphics& g)
 
     const int labelW = labelColumnWidth();
     const int cellW = cellWidth();
-    const auto f = theme::font();
-    g.setFont (f);
-
-    g.setColour (theme::colours::textDim);
+    // Column and row names in orange silkscreen, rows separated by engraved rules.
+    g.setColour (theme::colours::silkOrange);
+    g.setFont (theme::silkFont());
     for (int op = 0; op < numOps; ++op)
-        g.drawText ("Op " + juce::String (op + 1),
-                    theme::kPad + labelW + theme::kGap + op * (cellW + theme::kGap), theme::kGroupTitleHeight,
-                    cellW, theme::kLabelHeight, juce::Justification::centredLeft, false);
+        g.drawFittedText ("OP " + juce::String (op + 1),
+                          theme::kPad + labelW + theme::kGap + op * (cellW + theme::kGap), theme::kGroupTitleHeight,
+                          cellW, theme::kLabelHeight, juce::Justification::centredLeft, 1, theme::kMinHorizontalScale);
 
+    g.setFont (theme::nameFont());
     for (size_t r = 0; r < rows.size(); ++r)
     {
         const int y = gridTop() + static_cast<int> (r) * theme::kGridRowHeight;
         if (r > 0)
         {
-            g.setColour (theme::colours::divider);
+            g.setColour (theme::colours::rule);
             g.fillRect (theme::kPad, y, getWidth() - 2 * theme::kPad, 1);
         }
-        g.setColour (theme::colours::text);
-        g.drawText (rows[r].label, theme::kPad, y, labelW, theme::kGridRowHeight, juce::Justification::centredLeft, false);
+        g.setColour (theme::colours::silkOrange);
+        g.drawFittedText (rows[r].label.toUpperCase(), theme::kPad, y, labelW, theme::kGridRowHeight, juce::Justification::centredLeft, 1,
+                          theme::kMinHorizontalScale);
     }
 }
 

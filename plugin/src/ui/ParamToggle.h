@@ -5,7 +5,7 @@
 namespace rcv
 {
 
-// On/off parameter shown as a labelled toggle button (accent fill when on), attached to
+// On/off parameter shown as a labelled hardware button with a red LED (lit when on), attached to
 // the APVTS through a ButtonAttachment. Half a knob cell high: two toggles stack in one
 // column of a group. Right-click opens the MIDI learn menu.
 class ParamToggle final : public ParamControl

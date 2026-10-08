@@ -8,7 +8,8 @@
 namespace rcv
 {
 
-// A titled box of the editor that knows its height for a given width. Chip panels stack
+// A titled section of the faceplate (no box: a silkscreen title over a bracket line) that
+// knows its height for a given width. Chip panels stack
 // sections in columns (ChipPanel::layoutRows).
 //
 // Tooltips: a title (or, in a ParamGroup, a cluster caption) that is cut with an ellipsis
@@ -28,8 +29,9 @@ public:
     juce::String getTooltip() override;
 
 protected:
-    void paintBox (juce::Graphics& g) const;  // panel fill, 1 px outline, bold title
+    void paintBox (juce::Graphics& g) const;  // silkscreen title and bracket line
     juce::Rectangle<int> titleArea() const;
+    static float titleWidth (const juce::String& text);
 
     // Full text of a truncated caption at 'position' (local coordinates), or empty.
     virtual juce::String truncatedCaptionAt (juce::Point<int>) const { return {}; }
@@ -37,7 +39,7 @@ protected:
     juce::String title;
 };
 
-// Group box of parameter controls laid out in knob cells.
+// Section of parameter controls laid out in knob cells.
 //
 // Controls are organised in clusters: related parameters under a small caption ("Sweep",
 // "Vibrato", "Voice echo"), and untitled clusters of single parameters. Clusters flow left

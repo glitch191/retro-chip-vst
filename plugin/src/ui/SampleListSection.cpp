@@ -26,7 +26,8 @@ void SampleListSection::setContent (std::vector<Entry> entries, int freeBytes)
 
 int SampleListSection::heightForWidth (int) const
 {
-    return theme::kGroupTitleHeight + kMinRows * kRowHeight + theme::kGap + theme::kLabelHeight + theme::kPad;
+    // + 2 x kOpticalOffset: the inner margin of the recessed window.
+    return theme::kGroupTitleHeight + kMinRows * kRowHeight + 2 * theme::kOpticalOffset + theme::kGap + theme::kLabelHeight + theme::kPad;
 }
 
 int SampleListSection::preferredWidth() const
@@ -49,6 +50,10 @@ void SampleListSection::paint (juce::Graphics& g)
                     juce::Justification::centredLeft, true);
         area.removeFromBottom (theme::kGap);
     }
+
+    // The slots in a recessed window.
+    theme::drawRecess (g, area.toFloat());
+    area = area.reduced (theme::kUnit, theme::kOpticalOffset);
 
     if (slots.empty())
     {

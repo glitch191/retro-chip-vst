@@ -21,26 +21,26 @@ one scope per hardware channel plus the main output.
 
 NES: two pulses, triangle, noise and DMC, with the arpeggiator, glide and output sidebar.
 
-![NES panel](docs/images/editor-nes.png)
+![NES panel](docs/images/editor-nes.jpg)
 
 SNES: instrument (sample, ADSR/GAIN, vibrato, noise, pitch modulation), echo with FIR
 presets and per-voice echo, and the loaded samples with the free APU RAM.
 
-![SNES panel](docs/images/editor-snes.png)
+![SNES panel](docs/images/editor-snes.jpg)
 
 Genesis: FM patch, the four-operator grid, DAC, PSG and the global chip settings (clock,
 chip revision, Model 1 low-pass, LFO).
 
-![Genesis panel](docs/images/editor-genesis.png)
+![Genesis panel](docs/images/editor-genesis.jpg)
 
 Diagnostics overlay (detected refresh rate, frame cost, repaints per second).
 
-![Diagnostics overlay](docs/images/editor-nes-diagnostics.png)
+![Diagnostics overlay](docs/images/editor-nes-diagnostics.jpg)
 
 Preset search over the three chips ("warm"): results grouped by chip with a chip tag,
 the name and the category / subcategory; the header line counts the results per chip.
 
-![Preset search](docs/images/editor-search.png)
+![Preset search](docs/images/editor-search.jpg)
 
 Screenshots are taken by the standalone build's capture hook (`RCV_SCREENSHOT`, see
 `plugin/src/PluginEditor.h`) with a held chord so the scopes show real waveforms.

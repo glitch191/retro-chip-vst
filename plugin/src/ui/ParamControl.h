@@ -94,6 +94,9 @@ public:
     // Inline style: width of the label column (so rows of a form align); -1 = the label's own width.
     void setLabelWidth (int width) { fixedLabelWidth = width; resized(); }
     int labelWidth() const;
+    // Width a stacked cell reserves for the name: names in capitals are squeezed down to
+    // theme::kNameLayoutScale before they widen the cell.
+    int stackedLabelWidth() const;
 
     void paintOverChildren (juce::Graphics& g) override;
 

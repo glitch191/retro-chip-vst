@@ -24,7 +24,7 @@ ParamChoice::ParamChoice (UiContext& context, const ParamInfo& paramInfo, const 
 
 int ParamChoice::comboWidth() const
 {
-    const auto f = theme::font();
+    const auto f = theme::layoutFont();
     float w = 0.0f;
     for (int i = 0; i < combo.getNumItems(); ++i)
         w = juce::jmax (w, theme::textWidth (f, combo.getItemText (i)));
@@ -35,7 +35,7 @@ int ParamChoice::preferredWidth() const
 {
     switch (controlStyle)
     {
-        case ControlStyle::Stacked: return juce::jmax (comboWidth(), labelWidth() + theme::kUnit);
+        case ControlStyle::Stacked: return juce::jmax (comboWidth(), stackedLabelWidth() + theme::kUnit);
         case ControlStyle::Inline:  return labelWidth() + theme::kGap + comboWidth();
         case ControlStyle::Bare:    return comboWidth();
     }
@@ -68,12 +68,14 @@ void ParamChoice::paint (juce::Graphics& g)
 {
     if (controlStyle == ControlStyle::Bare)
         return;
-    g.setFont (theme::font());
-    g.setColour (isEnabled() ? theme::colours::text : theme::colours::textDisabled);
+    g.setFont (theme::nameFont());
+    g.setColour (isEnabled() ? theme::colours::silkOrange : theme::colours::textDisabled);
     if (controlStyle == ControlStyle::Stacked)
-        g.drawText (label, getLocalBounds().removeFromTop (theme::kLabelHeight), juce::Justification::centred, false);
+        g.drawFittedText (label.toUpperCase(), getLocalBounds().removeFromTop (theme::kLabelHeight), juce::Justification::centred, 1,
+                          theme::kMinHorizontalScale);
     else
-        g.drawText (label, getLocalBounds().withWidth (labelWidth()), juce::Justification::centredLeft, false);
+        g.drawFittedText (label.toUpperCase(), getLocalBounds().withWidth (labelWidth()), juce::Justification::centredLeft, 1,
+                          theme::kMinHorizontalScale);
 }
 
 } // namespace rcv

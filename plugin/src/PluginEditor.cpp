@@ -28,32 +28,18 @@ namespace
 
 // ----- Content ----------------------------------------------------------------------------------
 
-RetroChipEditor::Content::Content (DiagnosticsOverlay& overlay) : diagnostics (overlay)
+RetroChipEditor::Content::Content()
 {
-    setOpaque (true);
+    // Transparent: the editor paints the faceplate under it.
     // Clicks on empty areas focus the content (it handles no keys, so keys reach the host).
     setWantsKeyboardFocus (true);
 }
 
-void RetroChipEditor::Content::paint (juce::Graphics& g)
+RetroChipEditor::TypefaceHold::TypefaceHold()
 {
-    paintStartMs = juce::Time::getMillisecondCounterHiRes();
-    g.fillAll (theme::colours::background);
-
-    // Every paint of the editor passes through here (the content is the opaque bottom
-    // layer); paints confined to the opaque overlay itself are not counted.
-    if (diagnostics.isActive() && ! diagnostics.getBounds().expanded (theme::kOpticalOffset).contains (g.getClipBounds()))
-        diagnostics.countRepaint();
-}
-
-void RetroChipEditor::Content::paintOverChildren (juce::Graphics&)
-{
-    // paint() .. paintOverChildren() brackets the whole editor paint (children included).
-    // JUCE skips paint() but still calls paintOverChildren() when the dirty area is covered
-    // by an opaque child (the overlay alone): nothing is measured then.
-    if (paintStartMs > 0.0)
-        diagnostics.addPaintTime (juce::Time::getMillisecondCounterHiRes() - paintStartMs);
-    paintStartMs = 0.0;
+    if (env ("RCV_SCREENSHOT").isNotEmpty() && env ("RCV_SCREENSHOT_FONT").equalsIgnoreCase ("default"))
+        theme::setUserTypefaceAllowed (false);
+    theme::acquireUserTypeface();
 }
 
 // ----- RetroChipEditor --------------------------------------------------------------------------
@@ -145,6 +131,7 @@ RetroChipEditor::RetroChipEditor (RetroChipProcessor& p)
     if (const auto overrideScale = env ("RCV_UI_SCALE"); overrideScale.isNotEmpty())
     {
         initialScale = juce::jlimit (theme::kMinScale, theme::kMaxScale, overrideScale.getFloatValue());
+        screenshotScale = initialScale;
         if (scaleAttachment != nullptr)
             scaleAttachment->setValueAsCompleteGesture (initialScale);
     }
@@ -171,8 +158,30 @@ RetroChipEditor::~RetroChipEditor()
 
 void RetroChipEditor::paint (juce::Graphics& g)
 {
-    // Only visible if the host gives a size slightly off the 16:9 ratio.
-    g.fillAll (theme::colours::background);
+    paintStartMs = juce::Time::getMillisecondCounterHiRes();
+
+    // The faceplate at the physical pixel size of the window (made once per size), drawn
+    // one image pixel per device pixel.
+    const float pixelScale = g.getInternalContext().getPhysicalPixelScaleFactor();
+    const int w = juce::roundToInt (static_cast<float> (getWidth()) * pixelScale);
+    const int h = juce::roundToInt (static_cast<float> (getHeight()) * pixelScale);
+    if (faceplate.getWidth() != w || faceplate.getHeight() != h)
+        faceplate = theme::makeFaceplate (w, h);
+    g.drawImageTransformed (faceplate, juce::AffineTransform::scale (1.0f / pixelScale));
+
+    // Every paint of the editor passes through here (the editor is the opaque bottom
+    // layer); paints confined to the opaque overlay itself are not counted.
+    const auto overlayArea = getLocalArea (&diagnostics, diagnostics.getLocalBounds());
+    if (diagnostics.isActive() && ! overlayArea.expanded (theme::kOpticalOffset).contains (g.getClipBounds()))
+        diagnostics.countRepaint();
+}
+
+void RetroChipEditor::paintOverChildren (juce::Graphics&)
+{
+    // paint() .. paintOverChildren() brackets the whole editor paint (faceplate and children).
+    if (paintStartMs > 0.0)
+        diagnostics.addPaintTime (juce::Time::getMillisecondCounterHiRes() - paintStartMs);
+    paintStartMs = 0.0;
 }
 
 void RetroChipEditor::resized()
@@ -411,7 +420,9 @@ void RetroChipEditor::takeScreenshotIfRequested()
     if (! editorShotTaken)
     {
         editorShotTaken = true;
-        writePng (createComponentSnapshot (getLocalBounds(), true, 1.0f), file);
+        // A scale larger than the display allows is rendered into the snapshot instead.
+        const float renderScale = screenshotScale > scale + 0.0005f ? screenshotScale / scale : 1.0f;
+        writePng (createComponentSnapshot (getLocalBounds(), true, renderScale), file);
 
         // Menus are separate desktop windows: open the requested one, capture it a few
         // frames later into "<name>_menu.png".
