@@ -14,7 +14,7 @@ endif()
 
 juce_add_plugin(RetroChip
     PRODUCT_NAME "Retro Chip"
-    COMPANY_NAME "retro-chip-vst"
+    COMPANY_NAME "glitch191"
     BUNDLE_ID "com.retro-chip-vst.retrochip"
     PLUGIN_MANUFACTURER_CODE Rcvs
     PLUGIN_CODE Rchp
